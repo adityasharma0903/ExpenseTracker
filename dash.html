@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Expense Dashboard</title>
+    <link rel="stylesheet" href="dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>College Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active"><a href="dash.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+                    <li><a href="#"><i class="fas fa-building"></i> Departments</a></li>
+                    <li><a href="#"><i class="fas fa-calendar-alt"></i> Events</a></li>
+                    <li><a href="#"><i class="fas fa-file-invoice-dollar"></i> Budget</a></li>
+                    <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-left">
+                    <button id="sidebar-toggle" class="sidebar-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>Expense Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div class="filter-container">
+                        <button id="filter-button" class="filter-button">
+                            <i class="fas fa-filter"></i> Filters
+                        </button>
+                        <div id="filter-dropdown" class="filter-dropdown">
+                            <div class="filter-group">
+                                <label>Department</label>
+                                <select id="department-filter">
+                                    <option value="all">All Departments</option>
+                                    <option value="cs">Computer Science</option>
+                                    <option value="eng">Engineering</option>
+                                    <option value="bus">Business</option>
+                                    <option value="arts">Arts & Humanities</option>
+                                    <option value="sci">Science</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Expense Type</label>
+                                <select id="expense-filter">
+                                    <option value="all">All Types</option>
+                                    <option value="venue">Venue</option>
+                                    <option value="catering">Catering</option>
+                                    <option value="equipment">Equipment</option>
+                                    <option value="misc">Miscellaneous</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Date Range</label>
+                                <div class="date-inputs">
+                                    <input type="date" id="start-date">
+                                    <input type="date" id="end-date">
+                                </div>
+                            </div>
+                            <button id="apply-filters" class="apply-button">Apply Filters</button>
+                        </div>
+                    </div>
+                    <div class="user-profile">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User Profile">
+                        <span>Admin User</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <!-- Summary Cards -->
+                <section class="summary-cards">
+                    <div class="card summary-card past-events">
+                        <div class="card-content">
+                            <div class="card-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="card-info">
+                                <h3>Past Events</h3>
+                                <p class="description">Total expenses for completed events</p>
+                                <div class="amount">$245,678</div>
+                                <div class="trend negative">
+                                    <i class="fas fa-arrow-down"></i> 2.5% from last period
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card summary-card planned-events">
+                        <div class="card-content">
+                            <div class="card-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="card-info">
+                                <h3>Planned Events</h3>
+                                <p class="description">Allocated budget for upcoming events</p>
+                                <div class="amount">$187,350</div>
+                                <div class="trend positive">
+                                    <i class="fas fa-arrow-up"></i> 5.8% from last period
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card summary-card future-events">
+                        <div class="card-content">
+                            <div class="card-icon">
+                                <i class="fas fa-calendar-plus"></i>
+                            </div>
+                            <div class="card-info">
+                                <h3>To-Be-Planned</h3>
+                                <p class="description">Estimated budget for future events</p>
+                                <div class="amount">$120,000</div>
+                                <div class="trend positive">
+                                    <i class="fas fa-arrow-up"></i> 12.3% from last period
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Charts Section -->
+                <section class="charts-section">
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3>Expense Overview</h3>
+                            <p>Expense distribution across departments</p>
+                            <div class="chart-controls">
+                                <div class="tab-controls">
+                                    <button class="tab-button active" data-tab="past">Past Events</button>
+                                    <button class="tab-button" data-tab="planned">Planned Events</button>
+                                    <button class="tab-button" data-tab="future">To-Be-Planned</button>
+                                </div>
+                                <div class="chart-type-controls">
+                                    <button class="chart-type-button active" data-type="bar">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                    <button class="chart-type-button" data-type="pie">
+                                        <i class="fas fa-chart-pie"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="expense-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card departments-card">
+                        <div class="card-header">
+                            <h3>Departments</h3>
+                            <p>Click to view detailed breakdown</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="departments-list">
+                                <!-- Department items will be added by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="dash.js"></script>
+</body>
+</html>
