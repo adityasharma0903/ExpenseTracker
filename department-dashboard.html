@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Dashboard</title>
+  <link rel="stylesheet" href="department-styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <i class="fas fa-university"></i>
+          <span>Campus Connect</span>
+        </div>
+        <button id="sidebarToggle" class="sidebar-toggle">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li class="nav-item active" data-tab="overview">
+            <a href="#"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
+          </li>
+          <li class="nav-item" data-tab="events">
+            <a href="#"><i class="fas fa-calendar-alt"></i><span>Events</span></a>
+          </li>
+          <li class="nav-item" data-tab="expenses">
+            <a href="#"><i class="fas fa-chart-pie"></i><span>Expenses</span></a>
+          </li>
+          <li class="nav-item" data-tab="members">
+            <a href="#"><i class="fas fa-users"></i><span>Members</span></a>
+          </li>
+          <li class="nav-item" data-tab="settings">
+            <a href="#"><i class="fas fa-cog"></i><span>Settings</span></a>
+          </li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search...">
+        </div>
+        <div class="header-profile">
+          <div class="notifications">
+            <i class="fas fa-bell"></i>
+            <span class="badge">3</span>
+          </div>
+          <div class="profile-dropdown">
+            <button class="profile-btn" id="profileDropdownBtn">
+              <div class="profile-info">
+                <span id="departmentName">Department</span>
+                <span id="departmentId" class="department-id">ID</span>
+              </div>
+              <div class="profile-avatar">
+                <i class="fas fa-user-circle"></i>
+              </div>
+            </button>
+            <div class="dropdown-menu" id="profileDropdown">
+              <ul>
+                <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="#" id="logoutLink"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content">
+        <!-- Overview Tab -->
+        <section class="tab-content active" id="overview">
+          <div class="section-header">
+            <h2>Department Overview</h2>
+            <p id="currentDate">Today's Date</p>
+          </div>
+          
+          <div class="overview-stats">
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Total Events</h3>
+                <p id="totalEvents">0</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Total Expenses</h3>
+                <p id="totalExpenses">$0</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Members</h3>
+                <p id="totalMembers">0</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-calendar-day"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Upcoming Events</h3>
+                <p id="upcomingEvents">0</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="overview-charts">
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>Expense Distribution</h3>
+                <select id="expenseChartYear">
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                </select>
+              </div>
+              <div class="chart-body">
+                <canvas id="expenseChart"></canvas>
+              </div>
+            </div>
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>Events Timeline</h3>
+                <select id="eventsTimelineYear">
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                </select>
+              </div>
+              <div class="chart-body">
+                <canvas id="eventsChart"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <div class="recent-events">
+            <div class="section-header">
+              <h3>Recent Events</h3>
+              <a href="#" class="view-all" data-tab="events">View All</a>
+            </div>
+            <div class="table-container">
+              <table id="recentEventsTable">
+                <thead>
+                  <tr>
+                    <th>Event Name</th>
+                    <th>Date</th>
+                    <th>Venue</th>
+                    <th>Total Expense</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Recent events will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Events Tab -->
+        <section class="tab-content" id="events">
+          <div class="section-header">
+            <h2>Events Management</h2>
+            <button id="createEventBtn" class="primary-btn">
+              <i class="fas fa-plus"></i> Create Event
+            </button>
+          </div>
+          
+          <div class="events-filters">
+            <div class="search-filter">
+              <i class="fas fa-search"></i>
+              <input type="text" id="eventSearchInput" placeholder="Search events...">
+            </div>
+            <div class="filter-group">
+              <select id="eventStatusFilter">
+                <option value="all">All Status</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="completed">Completed</option>
+              </select>
+              <select id="eventDateFilter">
+                <option value="all">All Time</option>
+                <option value="thisMonth">This Month</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="thisYear">This Year</option>
+              </select>
+              <button id="resetEventFilters" class="secondary-btn">Reset</button>
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <table id="eventsTable">
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Club</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Venue</th>
+                  <th>Total Expense</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Events will be populated here -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Event Form Modal -->
+          <div id="eventFormModal" class="modal">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 id="eventFormTitle">Create New Event</h3>
+                <button class="close-btn" id="closeEventModal">&times;</button>
+              </div>
+              <div class="modal-body">
+                <form id="eventForm">
+                  <input type="hidden" id="eventId">
+                  <div class="form-group">
+                    <label for="eventName">Event Name</label>
+                    <input type="text" id="eventName" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="eventClub">Organizing Club</label>
+                    <input type="text" id="eventClub" required>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="eventStartDate">Start Date</label>
+                      <input type="date" id="eventStartDate" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="eventEndDate">End Date</label>
+                      <input type="date" id="eventEndDate" required>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="eventStartTime">Start Time</label>
+                      <input type="time" id="eventStartTime" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="eventEndTime">End Time</label>
+                      <input type="time" id="eventEndTime" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="eventVenue">Venue</label>
+                    <input type="text" id="eventVenue" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="eventDescription">Description</label>
+                    <textarea id="eventDescription" rows="3"></textarea>
+                  </div>
+                  
+                  <div class="expenses-section">
+                    <h4>Event Expenses</h4>
+                    <div id="expenseItems">
+                      <!-- Expense items will be added here -->
+                      <div class="expense-item">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label for="expenseCategory0">Category</label>
+                            <select id="expenseCategory0" class="expense-category" required>
+                              <option value="">Select Category</option>
+                              <option value="Speakers">Speakers</option>
+                              <option value="Sponsors">Sponsors</option>
+                              <option value="Food">Food & Beverages</option>
+                              <option value="Venue">Venue</option>
+                              <option value="Marketing">Marketing</option>
+                              <option value="Equipment">Equipment</option>
+                              <option value="Transportation">Transportation</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <label for="expenseAmount0">Amount ($)</label>
+                            <input type="number" id="expenseAmount0" class="expense-amount" min="0" step="0.01" required>
+                          </div>
+                          <div class="form-group expense-actions">
+                            <button type="button" class="remove-expense-btn" disabled>
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" id="addExpenseBtn" class="secondary-btn">
+                      <i class="fas fa-plus"></i> Add Expense
+                    </button>
+                  </div>
+                  
+                  <div class="form-actions">
+                    <button type="button" id="cancelEventBtn" class="secondary-btn">Cancel</button>
+                    <button type="submit" id="saveEventBtn" class="primary-btn">Save Event</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Event Details Modal -->
+          <div id="eventDetailsModal" class="modal">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 id="eventDetailsTitle">Event Details</h3>
+                <button class="close-btn" id="closeEventDetailsModal">&times;</button>
+              </div>
+              <div class="modal-body" id="eventDetailsContent">
+                <!-- Event details will be populated here -->
+              </div>
+              <div class="modal-footer">
+                <button id="editEventBtn" class="secondary-btn">Edit</button>
+                <button id="deleteEventBtn" class="danger-btn">Delete</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Expenses Tab -->
+        <section class="tab-content" id="expenses">
+          <div class="section-header">
+            <h2>Expenses Management</h2>
+            <div class="date-range">
+              <input type="month" id="expensesMonthFilter">
+            </div>
+          </div>
+          
+          <div class="expenses-overview">
+            <div class="expense-summary-cards">
+              <div class="expense-card total">
+                <div class="expense-icon">
+                  <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="expense-details">
+                  <h3>Total Expenses</h3>
+                  <p id="expensesTotalAmount">$0</p>
+                </div>
+              </div>
+              <div class="expense-card">
+                <div class="expense-icon">
+                  <i class="fas fa-utensils"></i>
+                </div>
+                <div class="expense-details">
+                  <h3>Food & Beverages</h3>
+                  <p id="expensesFoodAmount">$0</p>
+                </div>
+              </div>
+              <div class="expense-card">
+                <div class="expense-icon">
+                  <i class="fas fa-microphone"></i>
+                </div>
+                <div class="expense-details">
+                  <h3>Speakers</h3>
+                  <p id="expensesSpeakersAmount">$0</p>
+                </div>
+              </div>
+              <div class="expense-card">
+                <div class="expense-icon">
+                  <i class="fas fa-ad"></i>
+                </div>
+                <div class="expense-details">
+                  <h3>Marketing</h3>
+                  <p id="expensesMarketingAmount">$0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="expenses-charts">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3>Expense Breakdown</h3>
+                </div>
+                <div class="chart-body">
+                  <canvas id="expenseBreakdownChart"></canvas>
+                </div>
+              </div>
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3>Monthly Expenses</h3>
+                </div>
+                <div class="chart-body">
+                  <canvas id="monthlyExpensesChart"></canvas>
+                </div>
+              </div>
+            </div>
+            
+            <div class="expenses-list">
+              <div class="section-header">
+                <h3>Expense Transactions</h3>
+                <div class="filter-group">
+                  <select id="expenseCategoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="Speakers">Speakers</option>
+                    <option value="Sponsors">Sponsors</option>
+                    <option value="Food">Food & Beverages</option>
+                    <option value="Venue">Venue</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Equipment">Equipment</option>
+                    <option value="Transportation">Transportation</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <select id="expenseEventFilter">
+                    <option value="all">All Events</option>
+                    <!-- Events will be populated here -->
+                  </select>
+                  <button id="resetExpenseFilters" class="secondary-btn">Reset</button>
+                </div>
+              </div>
+              <div class="table-container">
+                <table id="expensesTable">
+                  <thead>
+                    <tr>
+                      <th>Event</th>
+                      <th>Category</th>
+                      <th>Amount</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Expenses will be populated here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Members Tab -->
+        <section class="tab-content" id="members">
+          <div class="section-header">
+            <h2>Department Members</h2>
+          </div>
+          <div class="members-grid" id="membersGrid">
+            <!-- Members will be populated here -->
+          </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section class="tab-content" id="settings">
+          <div class="section-header">
+            <h2>Department Settings</h2>
+          </div>
+          <div class="settings-container">
+            <div class="settings-card">
+              <h3>Department Information</h3>
+              <form id="departmentInfoForm">
+                <div class="form-group">
+                  <label for="deptFullName">Department Full Name</label>
+                  <input type="text" id="deptFullName" disabled>
+                </div>
+                <div class="form-group">
+                  <label for="deptShortName">Department Short Name</label>
+                  <input type="text" id="deptShortName" disabled>
+                </div>
+                <div class="form-group">
+                  <label for="deptEmail">Department Email</label>
+                  <input type="email" id="deptEmail">
+                </div>
+                <div class="form-group">
+                  <label for="deptPhone">Department Phone</label>
+                  <input type="tel" id="deptPhone">
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="primary-btn">Save Changes</button>
+                </div>
+              </form>
+            </div>
+            
+            <div class="settings-card">
+              <h3>Change Password</h3>
+              <form id="changePasswordForm">
+                <div class="form-group">
+                  <label for="currentPassword">Current Password</label>
+                  <input type="password" id="currentPassword" required>
+                </div>
+                <div class="form-group">
+                  <label for="newPassword">New Password</label>
+                  <input type="password" id="newPassword" required>
+                </div>
+                <div class="form-group">
+                  <label for="confirmPassword">Confirm New Password</label>
+                  <input type="password" id="confirmPassword" required>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="primary-btn">Update Password</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmationModal" class="modal">
+    <div class="modal-content confirmation-modal">
+      <div class="modal-header">
+        <h3 id="confirmationTitle">Confirmation</h3>
+        <button class="close-btn" id="closeConfirmationModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmationMessage">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelConfirmationBtn" class="secondary-btn">Cancel</button>
+        <button id="confirmBtn" class="danger-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <div class="toast-content">
+      <i id="toastIcon" class="fas fa-check-circle"></i>
+      <div class="toast-message">
+        <span id="toastTitle">Success!</span>
+        <span id="toastMessage">Action completed successfully.</span>
+      </div>
+    </div>
+    <div class="toast-progress"></div>
+  </div>
+
+  <script src="department-script.js"></script>
+</body>
+</html>
+
