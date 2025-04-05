@@ -471,35 +471,48 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function initializeDashboard() {
-    // Load department data
-    const department = loggedInUser.department
-    const deptData = JSON.parse(localStorage.getItem(`${department}_data`))
-
-    // Update overview stats
-    updateOverviewStats(deptData)
-
-    // Initialize charts
-    initializeCharts(deptData)
-
-    // Update recent events table
-    updateRecentEventsTable(deptData)
-
-    // Update events table
-    updateEventsTable()
-
-    // Update expenses data
-    updateExpensesData()
-
-    // Update members grid
-    updateMembersGrid(deptData)
-
-    // Update settings form
-    updateSettingsForm(deptData)
-
-    // Populate event filter dropdown
-    populateEventFilterDropdown(deptData)
+    const department = loggedInUser.department;
+    
+    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        const deptData = {
+          events: data.events,
+          members: JSON.parse(localStorage.getItem(`${department}_members`) || '[]'),
+          settings: JSON.parse(localStorage.getItem(`${department}_settings`) || '{}')
+        };
+  
+        // Update all dashboard components
+        updateOverviewStats(deptData);
+        initializeCharts(deptData);
+        updateRecentEventsTable(deptData);
+        updateEventsTable();
+        updateExpensesData();
+        updateMembersGrid(deptData);
+        updateSettingsForm(deptData);
+        populateEventFilterDropdown(deptData);
+      } else {
+        throw new Error(data.message || 'Failed to fetch events');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast("Error", "Failed to fetch events", "error");
+    });
   }
-
+  
+  
   function updateOverviewStats(deptData) {
     const totalEvents = document.getElementById("totalEvents")
     const totalExpenses = document.getElementById("totalExpenses")
@@ -797,206 +810,183 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateEventsTable() {
-    const department = loggedInUser.department
-    const deptData = JSON.parse(localStorage.getItem(`${department}_data`))
-    const eventsTable = document.getElementById("eventsTable").querySelector("tbody")
-    eventsTable.innerHTML = ""
-
-    // Get filter values
-    const searchTerm = eventSearchInput.value.toLowerCase()
-    const statusFilter = eventStatusFilter.value
-    const dateFilter = eventDateFilter.value
-
-    // Filter events
-    let filteredEvents = [...deptData.events]
-
-    // Apply search filter
-    if (searchTerm) {
-      filteredEvents = filteredEvents.filter(
-        (event) =>
-          event.name.toLowerCase().includes(searchTerm) ||
-          event.club.toLowerCase().includes(searchTerm) ||
-          event.venue.toLowerCase().includes(searchTerm),
-      )
-    }
-
-    // Apply status filter
-    if (statusFilter !== "all") {
-      const today = new Date()
-
-      if (statusFilter === "upcoming") {
-        filteredEvents = filteredEvents.filter((event) => {
-          const startDate = new Date(event.startDate)
-          return startDate > today
-        })
-      } else if (statusFilter === "ongoing") {
-        filteredEvents = filteredEvents.filter((event) => {
-          const startDate = new Date(event.startDate)
-          const endDate = new Date(event.endDate)
-          return startDate <= today && endDate >= today
-        })
-      } else if (statusFilter === "completed") {
-        filteredEvents = filteredEvents.filter((event) => {
-          const endDate = new Date(event.endDate)
-          return endDate < today
-        })
+    const department = loggedInUser.department;
+  
+    // Fetch events from the server
+    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    }
-
-    // Apply date filter
-    if (dateFilter !== "all") {
-      const today = new Date()
-      const currentMonth = today.getMonth()
-      const currentYear = today.getFullYear()
-
-      if (dateFilter === "thisMonth") {
-        filteredEvents = filteredEvents.filter((event) => {
-          const eventDate = new Date(event.startDate)
-          return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear
-        })
-      } else if (dateFilter === "lastMonth") {
-        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
-        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear
-
-        filteredEvents = filteredEvents.filter((event) => {
-          const eventDate = new Date(event.startDate)
-          return eventDate.getMonth() === lastMonth && eventDate.getFullYear() === lastMonthYear
-        })
-      } else if (dateFilter === "thisYear") {
-        filteredEvents = filteredEvents.filter((event) => {
-          const eventDate = new Date(event.startDate)
-          return eventDate.getFullYear() === currentYear
-        })
-      }
-    }
-
-    // Sort events by date (most recent first)
-    filteredEvents.sort((a, b) => {
-      return new Date(b.startDate) - new Date(a.startDate)
     })
-
-    if (filteredEvents.length === 0) {
-      const row = document.createElement("tr")
-      row.innerHTML = `<td colspan="8" class="text-center">No events found</td>`
-      eventsTable.appendChild(row)
-      return
-    }
-
-    filteredEvents.forEach((event) => {
-      const row = document.createElement("tr")
-
-      // Calculate total expense for the event
-      let totalExpense = 0
-      event.expenses.forEach((expense) => {
-        totalExpense += expense.amount
-      })
-
-      // Determine event status
-      const status = getEventStatus(event)
-
-      row.innerHTML = `
-        <td>${event.name}</td>
-        <td>${event.club}</td>
-        <td>${formatDate(event.startDate)}</td>
-        <td>${formatDate(event.endDate)}</td>
-        <td>${event.venue}</td>
-        <td>${formatCurrency(totalExpense)}</td>
-        <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
-        <td>
-          <button class="action-btn view-btn" data-event-id="${event.id}">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button class="action-btn edit-btn" data-event-id="${event.id}">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="action-btn delete-btn" data-event-id="${event.id}">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      `
-
-      eventsTable.appendChild(row)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
     })
-
-    // Add event listeners to action buttons
-    const viewButtons = document.querySelectorAll(".view-btn")
-    const editButtons = document.querySelectorAll(".edit-btn")
-    const deleteButtons = document.querySelectorAll(".delete-btn")
-
-    viewButtons.forEach((button) => {
-      button.addEventListener("click", function () {
-        const eventId = Number.parseInt(this.getAttribute("data-event-id"))
-        openEventDetails(eventId)
-      })
+    .then(data => {
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch events');
+      }
+  
+      const eventsTable = document.getElementById("eventsTable").querySelector("tbody");
+      eventsTable.innerHTML = "";
+  
+      // Get filter values
+      const searchTerm = eventSearchInput.value.toLowerCase();
+      const statusFilter = eventStatusFilter.value;
+      const dateFilter = eventDateFilter.value;
+  
+      // Filter events
+      let filteredEvents = [...data.events];
+  
+      // Apply search filter
+      if (searchTerm) {
+        filteredEvents = filteredEvents.filter(
+          (event) =>
+            event.name.toLowerCase().includes(searchTerm) ||
+            event.club.toLowerCase().includes(searchTerm) ||
+            event.venue.toLowerCase().includes(searchTerm)
+        );
+      }
+  
+      // Apply status filter
+      if (statusFilter !== "all") {
+        const today = new Date();
+  
+        if (statusFilter === "upcoming") {
+          filteredEvents = filteredEvents.filter((event) => {
+            const startDate = new Date(event.startDate);
+            return startDate > today;
+          });
+        } else if (statusFilter === "ongoing") {
+          filteredEvents = filteredEvents.filter((event) => {
+            const startDate = new Date(event.startDate);
+            const endDate = new Date(event.endDate);
+            return startDate <= today && endDate >= today;
+          });
+        } else if (statusFilter === "completed") {
+          filteredEvents = filteredEvents.filter((event) => {
+            const endDate = new Date(event.endDate);
+            return endDate < today;
+          });
+        }
+      }
+  
+      // Apply date filter
+      if (dateFilter !== "all") {
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+  
+        if (dateFilter === "thisMonth") {
+          filteredEvents = filteredEvents.filter((event) => {
+            const eventDate = new Date(event.startDate);
+            return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
+          });
+        } else if (dateFilter === "lastMonth") {
+          const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+          const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  
+          filteredEvents = filteredEvents.filter((event) => {
+            const eventDate = new Date(event.startDate);
+            return eventDate.getMonth() === lastMonth && eventDate.getFullYear() === lastMonthYear;
+          });
+        } else if (dateFilter === "thisYear") {
+          filteredEvents = filteredEvents.filter((event) => {
+            const eventDate = new Date(event.startDate);
+            return eventDate.getFullYear() === currentYear;
+          });
+        }
+      }
+  
+      // Sort events by date (most recent first)
+      filteredEvents.sort((a, b) => {
+        return new Date(b.startDate) - new Date(a.startDate);
+      });
+  
+      if (filteredEvents.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="8" class="text-center">No events found</td>`;
+        eventsTable.appendChild(row);
+        return;
+      }
+  
+      filteredEvents.forEach((event) => {
+        const row = document.createElement("tr");
+  
+        // Calculate total expense for the event
+        let totalExpense = 0;
+        event.expenses.forEach((expense) => {
+          totalExpense += expense.amount;
+        });
+  
+        // Determine event status
+        const status = getEventStatus(event);
+  
+        row.innerHTML = `
+          <td>${event.name}</td>
+          <td>${event.club}</td>
+          <td>${formatDate(event.startDate)}</td>
+          <td>${formatDate(event.endDate)}</td>
+          <td>${event.venue}</td>
+          <td>${formatCurrency(totalExpense)}</td>
+          <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
+          <td>
+            <button class="action-btn view-btn" data-event-id="${event._id}">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="action-btn edit-btn" data-event-id="${event._id}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-btn delete-btn" data-event-id="${event._id}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        `;
+  
+        eventsTable.appendChild(row);
+      });
+  
+      // Add event listeners to action buttons
+      const viewButtons = document.querySelectorAll(".view-btn");
+      const editButtons = document.querySelectorAll(".edit-btn");
+      const deleteButtons = document.querySelectorAll(".delete-btn");
+  
+      viewButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const eventId = this.getAttribute("data-event-id");
+          openEventDetails(eventId);
+        });
+      });
+  
+      editButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const eventId = this.getAttribute("data-event-id");
+          openEventForm(eventId);
+        });
+      });
+  
+      deleteButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const eventId = this.getAttribute("data-event-id");
+          openConfirmationModal(
+            "Delete Event",
+            "Are you sure you want to delete this event? This action cannot be undone.",
+            () => {
+              deleteEvent(eventId);
+            }
+          );
+        });
+      });
     })
-
-    editButtons.forEach((button) => {
-      button.addEventListener("click", function () {
-        const eventId = Number.parseInt(this.getAttribute("data-event-id"))
-        openEventForm(eventId)
-      })
-    })
-
-    deleteButtons.forEach((button) => {
-      button.addEventListener("click", function () {
-        const eventId = Number.parseInt(this.getAttribute("data-event-id"))
-        openConfirmationModal(
-          "Delete Event",
-          "Are you sure you want to delete this event? This action cannot be undone.",
-          () => {
-            deleteEvent(eventId)
-          },
-        )
-      })
-    })
-
-    // Add CSS for status badges
-    const style = document.createElement("style")
-    style.textContent = `
-      .status-badge {
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 500;
-      }
-      .upcoming {
-        background-color: #e0f2fe;
-        color: #0284c7;
-      }
-      .ongoing {
-        background-color: #dcfce7;
-        color: #16a34a;
-      }
-      .completed {
-        background-color: #f1f5f9;
-        color: #64748b;
-      }
-      .action-btn {
-        background: none;
-        border: none;
-        color: #64748b;
-        cursor: pointer;
-        font-size: 1rem;
-        margin-right: 5px;
-        transition: color 0.2s ease;
-      }
-      .view-btn:hover {
-        color: #0ea5e9;
-      }
-      .edit-btn:hover {
-        color: #f59e0b;
-      }
-      .delete-btn:hover {
-        color: #ef4444;
-      }
-    `
-
-    if (!document.querySelector("style")) {
-      document.head.appendChild(style)
-    }
+    .catch(error => {
+      console.error('Error:', error);
+      showToast("Error", "Failed to fetch events", "error");
+    });
   }
-
+  
   function updateExpensesData() {
     const department = loggedInUser.department
     const deptData = JSON.parse(localStorage.getItem(`${department}_data`))
@@ -1475,117 +1465,168 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function saveEvent() {
-    const department = loggedInUser.department
-    const deptData = JSON.parse(localStorage.getItem(`${department}_data`))
-
-    const eventIdInput = document.getElementById("eventId")
-    const eventName = document.getElementById("eventName").value
-    const eventClub = document.getElementById("eventClub").value
-    const eventStartDate = document.getElementById("eventStartDate").value
-    const eventEndDate = document.getElementById("eventEndDate").value
-    const eventStartTime = document.getElementById("eventStartTime").value
-    const eventEndTime = document.getElementById("eventEndTime").value
-    const eventVenue = document.getElementById("eventVenue").value
-    const eventDescription = document.getElementById("eventDescription").value
-
+    const department = loggedInUser.department;
+    
+    const eventIdInput = document.getElementById("eventId");
+    const eventName = document.getElementById("eventName").value;
+    const eventClub = document.getElementById("eventClub").value;
+    const eventStartDate = document.getElementById("eventStartDate").value;
+    const eventEndDate = document.getElementById("eventEndDate").value;
+    const eventStartTime = document.getElementById("eventStartTime").value;
+    const eventEndTime = document.getElementById("eventEndTime").value;
+    const eventVenue = document.getElementById("eventVenue").value;
+    const eventDescription = document.getElementById("eventDescription").value;
+  
     // Collect expenses
-    const expenses = []
-    const expenseCategories = document.querySelectorAll(".expense-category")
-    const expenseAmounts = document.querySelectorAll(".expense-amount")
-
+    const expenses = [];
+    const expenseCategories = document.querySelectorAll(".expense-category");
+    const expenseAmounts = document.querySelectorAll(".expense-amount");
+  
     for (let i = 0; i < expenseCategories.length; i++) {
-      const category = expenseCategories[i].value
-      const amount = Number.parseFloat(expenseAmounts[i].value)
-
+      const category = expenseCategories[i].value;
+      const amount = Number.parseFloat(expenseAmounts[i].value);
+  
       if (category && !isNaN(amount)) {
         expenses.push({
           category,
           amount,
-        })
+        });
       }
     }
-
-    if (eventIdInput.value) {
-      // Update existing event
-      const eventId = Number.parseInt(eventIdInput.value)
-      const eventIndex = deptData.events.findIndex((event) => event.id === eventId)
-
-      if (eventIndex !== -1) {
-        deptData.events[eventIndex] = {
-          id: eventId,
-          name: eventName,
-          club: eventClub,
-          startDate: eventStartDate,
-          endDate: eventEndDate,
-          startTime: eventStartTime,
-          endTime: eventEndTime,
-          venue: eventVenue,
-          description: eventDescription,
-          expenses: expenses,
-        }
-
-        // Save updated data
-        localStorage.setItem(`${department}_data`, JSON.stringify(deptData))
-
-        // Show success message
-        showToast("Success", "Event updated successfully", "success")
+  
+    const eventData = {
+      department,
+      name: eventName,
+      club: eventClub,
+      startDate: eventStartDate,
+      endDate: eventEndDate,
+      startTime: eventStartTime,
+      endTime: eventEndTime,
+      venue: eventVenue,
+      description: eventDescription,
+      expenses: expenses,
+    };
+  
+    fetch('http://127.0.0.1:5000/api/add-event', { // Ensure the URL is correct
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(eventData),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    } else {
-      // Create new event
-      const newEventId = deptData.events.length > 0 ? Math.max(...deptData.events.map((event) => event.id)) + 1 : 1
-
-      const newEvent = {
-        id: newEventId,
-        name: eventName,
-        club: eventClub,
-        startDate: eventStartDate,
-        endDate: eventEndDate,
-        startTime: eventStartTime,
-        endTime: eventEndTime,
-        venue: eventVenue,
-        description: eventDescription,
-        expenses: expenses,
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        showToast("Success", "Event saved successfully", "success");
+        closeModal(eventFormModal);
+        initializeDashboard();
+      } else {
+        showToast("Error", data.message || "Failed to save event", "error");
       }
-
-      deptData.events.push(newEvent)
-
-      // Save updated data
-      localStorage.setItem(`${department}_data`, JSON.stringify(deptData))
-
-      // Show success message
-      showToast("Success", "Event created successfully", "success")
-    }
-
-    // Close modal
-    closeModal(eventFormModal)
-
-    // Update dashboard
-    initializeDashboard()
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast("Error", "Failed to save event", "error");
+    });
   }
 
-  function deleteEvent(eventId) {
-    const department = loggedInUser.department
-    const deptData = JSON.parse(localStorage.getItem(`${department}_data`))
-
-    // Find event index
-    const eventIndex = deptData.events.findIndex((event) => event.id === eventId)
-
-    if (eventIndex !== -1) {
-      // Remove event
-      deptData.events.splice(eventIndex, 1)
-
-      // Save updated data
-      localStorage.setItem(`${department}_data`, JSON.stringify(deptData))
-
-      // Show success message
-      showToast("Success", "Event deleted successfully", "success")
-
-      // Close event details modal if open
-      closeModal(eventDetailsModal)
-
-      // Update dashboard
-      initializeDashboard()
+  function openEventForm(eventId = null) {
+    // Reset form
+    eventForm.reset();
+    expenseItems.innerHTML = "";
+  
+    // Add default expense item
+    addExpenseItem();
+  
+    if (eventId) {
+      // Edit existing event
+      const department = loggedInUser.department;
+      fetch(`/api/get-events?department=${department}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const event = data.events.find(event => event.id === eventId);
+            if (event) {
+              eventFormTitle.textContent = "Edit Event";
+              document.getElementById("eventId").value = event.id;
+              document.getElementById("eventName").value = event.name;
+              document.getElementById("eventClub").value = event.club;
+              document.getElementById("eventStartDate").value = event.startDate;
+              document.getElementById("eventEndDate").value = event.endDate;
+              document.getElementById("eventStartTime").value = event.startTime;
+              document.getElementById("eventEndTime").value = event.endTime;
+              document.getElementById("eventVenue").value = event.venue;
+              document.getElementById("eventDescription").value = event.description;
+  
+              // Clear default expense item
+              expenseItems.innerHTML = "";
+  
+              // Add expense items
+              event.expenses.forEach((expense) => {
+                addExpenseItem(expense.category, expense.amount);
+              });
+            }
+          }
+        });
+    } else {
+      // Create new event
+      eventFormTitle.textContent = "Create New Event";
+      document.getElementById("eventId").value = "";
+  
+      // Set default dates to today and tomorrow
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(today.getDate() + 1);
+  
+      document.getElementById("eventStartDate").value = formatDateForInput(today);
+      document.getElementById("eventEndDate").value = formatDateForInput(tomorrow);
     }
+  
+    // Show modal
+    openModal(eventFormModal);
+  }
+  
+  function openModal(modal) {
+    modal.classList.add("active");
+  }
+  
+  function closeModal(modal) {
+    modal.classList.remove("active");
+  }
+
+  function showToast(title, message, type = "success") {
+    const toast = document.getElementById("toast");
+    const toastTitle = document.getElementById("toastTitle");
+    const toastMessage = document.getElementById("toastMessage");
+    const toastIcon = document.getElementById("toastIcon");
+  
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+  
+    // Set icon based on type
+    toastIcon.className = "";
+    if (type === "success") {
+      toastIcon.className = "fas fa-check-circle success";
+    } else if (type === "error") {
+      toastIcon.className = "fas fa-times-circle error";
+    } else if (type === "warning") {
+      toastIcon.className = "fas fa-exclamation-circle warning";
+    } else if (type === "info") {
+      toastIcon.className = "fas fa-info-circle info";
+    }
+  
+    // Show toast
+    toast.classList.add("active");
+  
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+      toast.classList.remove("active");
+    }, 3000);
   }
 
   function getEventStatus(event) {
@@ -1665,3 +1706,58 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
+fetch(`http://127.0.0.1:5000/api/get-events?department=${department}`)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Network response was not ok: ${response.statusText}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      // Process and display the data
+    } else {
+      showToast("Error", data.message || "Failed to fetch events", "error");
+    }
+  })
+  .catch(error => {
+    console.error('Error fetching events:', error);
+    showToast("Error", `Failed to fetch events: ${error.message}`, "error");
+  });
+
+
+
+  function loadEvents() {
+    const department = loggedInUser.department;
+    
+    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        // Update the UI with the events data
+        updateEventsTable(data.events);
+        updateRecentEventsTable({ events: data.events });
+        updateExpensesData(data.events);
+        updateOverviewStats({ events: data.events });
+        initializeCharts({ events: data.events });
+      } else {
+        throw new Error(data.message || 'Failed to fetch events');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast("Error", "Failed to fetch events", "error");
+    });
+  }
+  
+  
