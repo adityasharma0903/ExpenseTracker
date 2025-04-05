@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login & Signup System</title>
+  <link rel="stylesheet" href="login.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="forms-container">
+      <!-- Main Selection Panel -->
+      <div class="user-type-selection" id="userTypeSelection">
+        <h1>Welcome</h1>
+        <p>Please select your user type to continue</p>
+        <div class="selection-buttons">
+          <button id="adminBtn" class="selection-btn">
+            <i class="fas fa-user-shield"></i>
+            <span>Administrator</span>
+          </button>
+          <button id="deptBtn" class="selection-btn">
+            <i class="fas fa-users"></i>
+            <span>Department</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Forms -->
+      <div class="admin-forms hidden" id="adminForms">
+        <div class="back-btn" id="adminBackBtn">
+          <i class="fas fa-arrow-left"></i>
+        </div>
+        <div class="form-toggle">
+          <button class="toggle-btn active" id="adminLoginToggle">Login</button>
+          <button class="toggle-btn" id="adminSignupToggle">Signup</button>
+        </div>
+
+        <!-- Admin Login Form -->
+        <form id="adminLoginForm" class="form">
+          <h2>Administrator Login</h2>
+          <div class="input-field">
+            <i class="fas fa-user"></i>
+            <input type="text" id="adminLoginUsername" placeholder="Username" required>
+          </div>
+          <div class="input-field">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="adminLoginPassword" placeholder="Password" required>
+          </div>
+          <button type="submit" class="submit-btn">Login</button>
+          <div id="adminLoginMessage" class="message"></div>
+        </form>
+
+        <!-- Admin Signup Form -->
+        <form id="adminSignupForm" class="form hidden">
+          <h2>Administrator Signup</h2>
+          <div class="input-field">
+            <i class="fas fa-user"></i>
+            <input type="text" id="adminSignupUsername" placeholder="Username" required>
+          </div>
+          <div class="input-field">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="adminSignupEmail" placeholder="Email" required>
+          </div>
+          <div class="input-field">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="adminSignupPassword" placeholder="Password" required>
+          </div>
+          <div class="input-field">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="adminSignupConfirmPassword" placeholder="Confirm Password" required>
+          </div>
+          <button type="submit" class="submit-btn">Signup</button>
+          <div id="adminSignupMessage" class="message"></div>
+        </form>
+      </div>
+
+      <!-- Department Login Form -->
+      <div class="dept-form hidden" id="deptForm">
+        <div class="back-btn" id="deptBackBtn">
+          <i class="fas fa-arrow-left"></i>
+        </div>
+        <form id="deptLoginForm" class="form">
+          <h2>Department Login</h2>
+          <div class="input-field select-field">
+            <i class="fas fa-building"></i>
+            <select id="deptSelect" required>
+              <option value="" disabled selected>Select Department</option>
+              <option value="CSE">CSE</option>
+              <option value="Architecture">Architecture</option>
+              <option value="Pharma">Pharma</option>
+              <option value="Business School">Business School</option>
+            </select>
+          </div>
+          <div class="input-field">
+            <i class="fas fa-id-card"></i>
+            <input type="text" id="deptId" placeholder="Department ID" required>
+          </div>
+          <div class="input-field">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="deptPassword" placeholder="Password" required>
+          </div>
+          <button type="submit" class="submit-btn">Login</button>
+          <div id="deptLoginMessage" class="message"></div>
+        </form>
+      </div>
+
+      <!-- Dashboard (shown after successful login) -->
+      <div class="dashboard hidden" id="dashboard">
+        <div class="dashboard-header">
+          <h2 id="welcomeMessage">Welcome!</h2>
+          <button id="logoutBtn" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+        <div class="dashboard-content">
+          <div class="dashboard-card">
+            <i class="fas fa-tachometer-alt"></i>
+            <h3>Dashboard</h3>
+            <p>Welcome to your dashboard. You are logged in successfully.</p>
+          </div>
+          <div class="dashboard-card" id="userInfoCard">
+            <i class="fas fa-user-circle"></i>
+            <h3>User Information</h3>
+            <div id="userInfo"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panels-container">
+      <div class="panel left-panel">
+        <div class="content">
+          <h3>Campus Connect</h3>
+          <p>Streamlined access management for educational institutions</p>
+        </div>
+        <img src="/placeholder.svg?height=400&width=400" class="image" alt="Campus illustration">
+      </div>
+    </div>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>
+
