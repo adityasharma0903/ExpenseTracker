@@ -471,45 +471,45 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function initializeDashboard() {
-    const department = loggedInUser.department;
-    
-    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.success) {
-        const deptData = {
-          events: data.events,
-          members: JSON.parse(localStorage.getItem(`${department}_members`) || '[]'),
-          settings: JSON.parse(localStorage.getItem(`${department}_settings`) || '{}')
-        };
+    const department = loggedInUser.department
   
-        // Update all dashboard components
-        updateOverviewStats(deptData);
-        initializeCharts(deptData);
-        updateRecentEventsTable(deptData);
-        updateEventsTable();
-        updateExpensesData();
-        updateMembersGrid(deptData);
-        updateSettingsForm(deptData);
-        populateEventFilterDropdown(deptData);
-      } else {
-        throw new Error(data.message || 'Failed to fetch events');
-      }
+    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
     })
-    .catch(error => {
-      console.error('Error:', error);
-      showToast("Error", "Failed to fetch events", "error");
-    });
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok")
+        }
+        return response.json()
+      })
+      .then((data) => {
+        if (data.success) {
+          const deptData = {
+            events: data.events,
+            members: JSON.parse(localStorage.getItem(`${department}_data`))?.members || [],
+            settings: JSON.parse(localStorage.getItem(`${department}_data`))?.settings || {},
+          }
+  
+          // Update all dashboard components
+          updateOverviewStats(deptData)
+          initializeCharts(deptData)
+          updateRecentEventsTable(deptData)
+          updateEventsTable()
+          updateExpensesData()
+          updateMembersGrid(deptData)
+          updateSettingsForm(deptData)
+          populateEventFilterDropdown()
+        } else {
+          throw new Error(data.message || "Failed to fetch events")
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+        showToast("Error", "Failed to fetch events", "error")
+      })
   }
   
   
@@ -989,37 +989,57 @@ document.addEventListener("DOMContentLoaded", () => {
   
   function updateExpensesData() {
     const department = loggedInUser.department
-    const deptData = JSON.parse(localStorage.getItem(`${department}_data`))
-
-    // Get selected month and year
     const monthFilter = expensesMonthFilter.value
     const [year, month] = monthFilter.split("-").map((num) => Number.parseInt(num))
-
-    // Filter expenses for the selected month
-    const filteredExpenses = []
-    deptData.events.forEach((event) => {
-      const eventDate = new Date(event.startDate)
-      if (eventDate.getFullYear() === year && eventDate.getMonth() === month - 1) {
-        event.expenses.forEach((expense) => {
-          filteredExpenses.push({
-            eventId: event.id,
-            eventName: event.name,
-            category: expense.category,
-            amount: expense.amount,
-            date: event.startDate,
-          })
-        })
-      }
+  
+    // Fetch events from the server
+    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
     })
-
-    // Update expense summary cards
-    updateExpenseSummaryCards(filteredExpenses)
-
-    // Update expense charts
-    updateExpenseCharts(filteredExpenses)
-
-    // Update expenses table
-    updateExpensesTable(filteredExpenses)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok")
+        }
+        return response.json()
+      })
+      .then((data) => {
+        if (data.success) {
+          // Filter expenses for the selected month
+          const filteredExpenses = []
+          data.events.forEach((event) => {
+            const eventDate = new Date(event.startDate)
+            if (eventDate.getFullYear() === year && eventDate.getMonth() === month - 1) {
+              event.expenses.forEach((expense) => {
+                filteredExpenses.push({
+                  eventId: event._id,
+                  eventName: event.name,
+                  category: expense.category,
+                  amount: expense.amount,
+                  date: event.startDate,
+                })
+              })
+            }
+          })
+  
+          // Update expense summary cards
+          updateExpenseSummaryCards(filteredExpenses)
+  
+          // Update expense charts
+          updateExpenseCharts(filteredExpenses)
+  
+          // Update expenses table
+          updateExpensesTable(filteredExpenses)
+        } else {
+          throw new Error(data.message || "Failed to fetch events")
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+        showToast("Error", "Failed to fetch expense data", "error")
+      })
   }
 
   function updateExpenseSummaryCards(expenses) {
@@ -1027,29 +1047,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const foodAmount = document.getElementById("expensesFoodAmount")
     const speakersAmount = document.getElementById("expensesSpeakersAmount")
     const marketingAmount = document.getElementById("expensesMarketingAmount")
-
+  
     // Calculate total amount
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0)
     totalAmount.textContent = formatCurrency(total)
-
+  
     // Calculate food amount
     const food = expenses
-        .filter((expense) => expense.category === "Food")
-        .reduce((sum, expense) => sum + expense.amount, 0)
+      .filter((expense) => expense.category === "Food")
+      .reduce((sum, expense) => sum + expense.amount, 0)
     foodAmount.textContent = formatCurrency(food)
-
+  
     // Calculate speakers amount
     const speakers = expenses
-        .filter((expense) => expense.category === "Speakers")
-        .reduce((sum, expense) => sum + expense.amount, 0)
+      .filter((expense) => expense.category === "Speakers")
+      .reduce((sum, expense) => sum + expense.amount, 0)
     speakersAmount.textContent = formatCurrency(speakers)
-
+  
     // Calculate marketing amount
     const marketing = expenses
-        .filter((expense) => expense.category === "Marketing")
-        .reduce((sum, expense) => sum + expense.amount, 0)
+      .filter((expense) => expense.category === "Marketing")
+      .reduce((sum, expense) => sum + expense.amount, 0)
     marketingAmount.textContent = formatCurrency(marketing)
-}
+  }
 
   function updateExpenseCharts(expenses) {
     // Group expenses by category
@@ -1091,65 +1111,83 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateExpensesTable(filteredExpenses = null) {
     const department = loggedInUser.department
-    const deptData = JSON.parse(localStorage.getItem(`${department}_data`))
     const expensesTable = document.getElementById("expensesTable").querySelector("tbody")
     expensesTable.innerHTML = ""
-
-    // If no filtered expenses provided, get all expenses
-    let expenses = []
+  
+    // If no filtered expenses provided, fetch all expenses
     if (!filteredExpenses) {
-      deptData.events.forEach((event) => {
-        event.expenses.forEach((expense) => {
-          expenses.push({
-            eventId: event.id,
-            eventName: event.name,
-            category: expense.category,
-            amount: expense.amount,
-            date: event.startDate,
-          })
-        })
+      fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            const expenses = []
+            data.events.forEach((event) => {
+              event.expenses.forEach((expense) => {
+                expenses.push({
+                  eventId: event._id,
+                  eventName: event.name,
+                  category: expense.category,
+                  amount: expense.amount,
+                  date: event.startDate,
+                })
+              })
+            })
+  
+            renderExpensesTable(expenses)
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error)
+          showToast("Error", "Failed to fetch expenses", "error")
+        })
     } else {
-      expenses = filteredExpenses
+      renderExpensesTable(filteredExpenses)
     }
-
-    // Get filter values
-    const categoryFilter = expenseCategoryFilter.value
-    const eventFilter = expenseEventFilter.value
-
-    // Apply filters
-    if (categoryFilter !== "all") {
-      expenses = expenses.filter((expense) => expense.category === categoryFilter)
+  
+    function renderExpensesTable(expenses) {
+      // Get filter values
+      const categoryFilter = expenseCategoryFilter.value
+      const eventFilter = expenseEventFilter.value
+  
+      // Apply filters
+      if (categoryFilter !== "all") {
+        expenses = expenses.filter((expense) => expense.category === categoryFilter)
+      }
+  
+      if (eventFilter !== "all") {
+        expenses = expenses.filter((expense) => expense.eventId === eventFilter)
+      }
+  
+      // Sort expenses by date (most recent first)
+      expenses.sort((a, b) => {
+        return new Date(b.date) - new Date(a.date)
+      })
+  
+      if (expenses.length === 0) {
+        const row = document.createElement("tr")
+        row.innerHTML = `<td colspan="4" class="text-center">No expenses found</td>`
+        expensesTable.appendChild(row)
+        return
+      }
+  
+      expenses.forEach((expense) => {
+        const row = document.createElement("tr")
+  
+        row.innerHTML = `
+          <td>${expense.eventName}</td>
+          <td>${expense.category}</td>
+          <td>${formatCurrency(expense.amount)}</td>
+          <td>${formatDate(expense.date)}</td>
+        `
+  
+        expensesTable.appendChild(row)
+      })
     }
-
-    if (eventFilter !== "all") {
-      expenses = expenses.filter((expense) => expense.eventId === Number.parseInt(eventFilter))
-    }
-
-    // Sort expenses by date (most recent first)
-    expenses.sort((a, b) => {
-      return new Date(b.date) - new Date(a.date)
-    })
-
-    if (expenses.length === 0) {
-      const row = document.createElement("tr")
-      row.innerHTML = `<td colspan="4" class="text-center">No expenses found</td>`
-      expensesTable.appendChild(row)
-      return
-    }
-
-    expenses.forEach((expense) => {
-      const row = document.createElement("tr")
-
-      row.innerHTML = `
-        <td>${expense.eventName}</td>
-        <td>${expense.category}</td>
-        <td>${formatCurrency(expense.amount)}</td>
-        <td>${formatDate(expense.date)}</td>
-      `
-
-      expensesTable.appendChild(row)
-    })
   }
 
   function updateMembersGrid(deptData) {
@@ -1255,16 +1293,32 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  function populateEventFilterDropdown(deptData) {
+  function populateEventFilterDropdown() {
+    const department = loggedInUser.department
     const expenseEventFilter = document.getElementById("expenseEventFilter")
-    expenseEventFilter.innerHTML = '<option value="all">All Events</option>'
-
-    deptData.events.forEach((event) => {
-      const option = document.createElement("option")
-      option.value = event.id
-      option.textContent = event.name
-      expenseEventFilter.appendChild(option)
+  
+    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
     })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          expenseEventFilter.innerHTML = '<option value="all">All Events</option>'
+  
+          data.events.forEach((event) => {
+            const option = document.createElement("option")
+            option.value = event._id
+            option.textContent = event.name
+            expenseEventFilter.appendChild(option)
+          })
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+      })
   }
 
   function openEventForm(eventId = null) {
