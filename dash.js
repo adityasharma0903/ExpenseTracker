@@ -180,11 +180,21 @@ let currentTab = 'past';
 let currentChartType = 'bar';
 let chart = null;
 
+const logoutBtn = document.querySelector('.sidebar-footer a');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "login.html"; // Redirect to login page
+        });
+    }
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the dashboard
     renderDepartmentsList();
     initializeChart();
+    displayUserInfo();
     
     // Filter dropdown toggle
     filterButton.addEventListener('click', function() {
@@ -233,6 +243,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function displayUserInfo() {
+    // Get logged in user from localStorage
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    
+    if (loggedInUser) {
+        // Find the user profile element and update it
+        const userProfileName = document.querySelector('.user-profile span');
+        
+        if (userProfileName) {
+            // For admin users, show their username
+            if (loggedInUser.type === "admin") {
+                userProfileName.textContent = loggedInUser.username;
+            } 
+            // For department users, show their department
+            else if (loggedInUser.type === "department") {
+                userProfileName.textContent = `${loggedInUser.department} User`;
+            }
+            // Fallback for any other user type
+            else {
+                userProfileName.textContent = "User";
+            }
+        }
+    }
+}
 
 // Render departments list
 function renderDepartmentsList() {
