@@ -231,7 +231,7 @@ deptLoginForm.addEventListener("submit", async (e) => {
 
     // For admin users, redirect to dash.html
     if (loggedInUser.type === "admin") {
-      window.location.href = "dash.html";
+      window.location.href = "admin-dashboard.html";
       return;
     }
 
