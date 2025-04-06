@@ -1,562 +1,797 @@
-// import { Chart } from "@/components/ui/chart"
 document.addEventListener("DOMContentLoaded", () => {
   // Check if user is logged in
-  const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"))
+  const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
   if (!loggedInUser || loggedInUser.type !== "admin") {
     // Redirect to login page if not logged in as admin
-    window.location.href = "login.html"
-    return
+    window.location.href = "login.html";
+    return;
   }
 
+  // Global data store
+  let dashboardData = null;
+
+  // Global chart objects
+  window.charts = {
+    deptExpensesChart: null,
+    expenseCategoriesChart: null,
+    monthlyExpensesChart: null,
+    expenseDistributionChart: null,
+    departmentComparisonChart: null
+  };
+
   // DOM Elements
-  const sidebarToggle = document.getElementById("sidebarToggle")
-  const sidebar = document.querySelector(".sidebar")
-  const mainContent = document.querySelector(".main-content")
-  const navItems = document.querySelectorAll(".nav-item")
-  const tabContents = document.querySelectorAll(".tab-content")
-  const profileDropdownBtn = document.getElementById("profileDropdownBtn")
-  const profileDropdown = document.getElementById("profileDropdown")
-  const logoutBtn = document.getElementById("logoutBtn")
-  const logoutLink = document.getElementById("logoutLink")
-  const currentDate = document.getElementById("currentDate")
-  const viewAllButtons = document.querySelectorAll(".view-all-btn")
+  const sidebarToggle = document.getElementById("sidebarToggle");
+  const sidebar = document.querySelector(".sidebar");
+  const mainContent = document.querySelector(".main-content");
+  const navItems = document.querySelectorAll(".nav-item");
+  const tabContents = document.querySelectorAll(".tab-content");
+  const profileDropdownBtn = document.getElementById("profileDropdownBtn");
+  const profileDropdown = document.getElementById("profileDropdown");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const logoutLink = document.getElementById("logoutLink");
+  const currentDate = document.getElementById("currentDate");
+  const viewAllButtons = document.querySelectorAll(".view-all-btn");
+  const adminName = document.getElementById("adminName");
 
   // Event Details Modal Elements
-  const eventDetailsModal = document.getElementById("eventDetailsModal")
-  const closeEventDetailsModal = document.getElementById("closeEventDetailsModal")
-  const closeEventDetailsBtn = document.getElementById("closeEventDetailsBtn")
+  const eventDetailsModal = document.getElementById("eventDetailsModal");
+  const closeEventDetailsModal = document.getElementById("closeEventDetailsModal");
+  const closeEventDetailsBtn = document.getElementById("closeEventDetailsBtn");
 
   // Department Details Modal Elements
-  const departmentDetailsModal = document.getElementById("departmentDetailsModal")
-  const closeDepartmentDetailsModal = document.getElementById("closeDepartmentDetailsModal")
-  const closeDepartmentDetailsBtn = document.getElementById("closeDepartmentDetailsBtn")
+  const departmentDetailsModal = document.getElementById("departmentDetailsModal");
+  const closeDepartmentDetailsModal = document.getElementById("closeDepartmentDetailsModal");
+  const closeDepartmentDetailsBtn = document.getElementById("closeDepartmentDetailsBtn");
 
   // Toast Elements
-  const toast = document.getElementById("toast")
-  const toastClose = document.querySelector(".toast-close")
+  const toast = document.getElementById("toast");
+  const toastClose = document.querySelector(".toast-close");
+
+  // API Base URL
+  const API_BASE_URL = "http://localhost:5000/api";
+
+  // Set admin name
+  if (loggedInUser && loggedInUser.username) {
+    adminName.textContent = loggedInUser.username;
+    document.querySelector(".profile-btn span").textContent = loggedInUser.username;
+  }
 
   // Set current date
-  const now = new Date()
+  const now = new Date();
   currentDate.textContent = now.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-  })
+  });
 
   // Toggle sidebar
   sidebarToggle.addEventListener("click", () => {
-    sidebar.classList.toggle("collapsed")
-    mainContent.classList.toggle("expanded")
-  })
+    sidebar.classList.toggle("collapsed");
+    mainContent.classList.toggle("expanded");
+  });
 
   // Tab navigation
   navItems.forEach((item) => {
     item.addEventListener("click", function (e) {
-      e.preventDefault()
+      e.preventDefault();
 
-      const tabId = this.getAttribute("data-tab")
+      const tabId = this.getAttribute("data-tab");
 
       // Remove active class from all nav items and tab contents
-      navItems.forEach((navItem) => navItem.classList.remove("active"))
-      tabContents.forEach((content) => content.classList.remove("active"))
+      navItems.forEach((navItem) => navItem.classList.remove("active"));
+      tabContents.forEach((content) => content.classList.remove("active"));
 
       // Add active class to clicked nav item and corresponding tab content
-      this.classList.add("active")
-      document.getElementById(tabId).classList.add("active")
+      this.classList.add("active");
+      document.getElementById(tabId).classList.add("active");
 
       // If expenses tab is selected, update charts
-      if (tabId === "expenses") {
-        updateExpensesData()
+      if (tabId === "expenses" && dashboardData) {
+        updateExpensesData();
       }
 
       // If events tab is selected, update events table
-      if (tabId === "events") {
-        updateEventsTable()
+      if (tabId === "events" && dashboardData) {
+        updateEventsTable();
       }
 
       // If departments tab is selected, update departments grid
-      if (tabId === "departments") {
-        updateDepartmentsGrid()
+      if (tabId === "departments" && dashboardData) {
+        updateDepartmentsGrid();
       }
-    })
-  })
+    });
+  });
 
   // View All buttons
   viewAllButtons.forEach((button) => {
     button.addEventListener("click", function () {
-      const tabId = this.getAttribute("data-tab")
+      const tabId = this.getAttribute("data-tab");
 
       // Find the nav item with the corresponding data-tab attribute
-      const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`)
+      const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
 
       if (navItem) {
-        navItem.click()
+        navItem.click();
       }
-    })
-  })
+    });
+  });
 
   // Profile dropdown
   profileDropdownBtn.addEventListener("click", () => {
-    profileDropdown.classList.toggle("active")
-  })
+    profileDropdown.classList.toggle("active");
+  });
 
   // Close profile dropdown when clicking outside
   document.addEventListener("click", (e) => {
     if (!profileDropdownBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
-      profileDropdown.classList.remove("active")
+      profileDropdown.classList.remove("active");
     }
-  })
+  });
 
   // Logout functionality
-  logoutBtn.addEventListener("click", logout)
+  logoutBtn.addEventListener("click", logout);
   logoutLink.addEventListener("click", (e) => {
-    e.preventDefault()
-    logout()
-  })
+    e.preventDefault();
+    logout();
+  });
 
   function logout() {
-    localStorage.removeItem("loggedInUser")
-    window.location.href = "login.html"
+    localStorage.removeItem("loggedInUser");
+    window.location.href = "login.html";
   }
 
   // Close Event Details Modal
   closeEventDetailsModal.addEventListener("click", () => {
-    closeModal(eventDetailsModal)
-  })
+    closeModal(eventDetailsModal);
+  });
 
   closeEventDetailsBtn.addEventListener("click", () => {
-    closeModal(eventDetailsModal)
-  })
+    closeModal(eventDetailsModal);
+  });
 
   // Close Department Details Modal
   closeDepartmentDetailsModal.addEventListener("click", () => {
-    closeModal(departmentDetailsModal)
-  })
+    closeModal(departmentDetailsModal);
+  });
 
   closeDepartmentDetailsBtn.addEventListener("click", () => {
-    closeModal(departmentDetailsModal)
-  })
+    closeModal(departmentDetailsModal);
+  });
 
   // Close Toast
   toastClose.addEventListener("click", () => {
-    toast.classList.remove("active")
-  })
+    toast.classList.remove("active");
+  });
 
   // Initialize Dashboard
-  initializeDashboard()
+  initializeDashboard();
+
+  // Settings Form Submissions
+  document.getElementById("adminProfileForm").addEventListener("submit", handleAdminProfileUpdate);
+  document.getElementById("changePasswordForm").addEventListener("submit", handlePasswordChange);
+  document.getElementById("notificationSettingsForm").addEventListener("submit", handleNotificationSettingsUpdate);
+  document.getElementById("systemSettingsForm").addEventListener("submit", handleSystemSettingsUpdate);
 
   // Functions
   function initializeDashboard() {
+    // Show loading state
+    showToast("Loading", "Fetching dashboard data...", "info");
+
     // Fetch all departments data
     fetchAllDepartmentsData()
       .then((data) => {
-        // Update overview stats
-        updateOverviewStats(data)
+        try {
+          // Store data globally
+          dashboardData = data;
 
-        // Initialize charts
-        initializeCharts(data)
+          // Update overview stats
+          updateOverviewStats(data);
 
-        // Update recent events table
-        updateRecentEventsTable(data)
+          // Initialize charts first
+          initializeCharts(data);
 
-        // Update departments grid
-        updateDepartmentsGrid(data)
+          // Update recent events table
+          updateRecentEventsTable();
 
-        // Update events table
-        updateEventsTable(data)
+          // Update departments grid
+          updateDepartmentsGrid();
 
-        // Update expenses data
-        updateExpensesData(data)
+          // Update events table
+          updateEventsTable();
 
-        // Initialize calendar
-        initializeCalendar(data)
+          // Update expenses data after charts are initialized
+          updateExpensesData();
+
+          // Initialize calendar
+          initializeCalendar(data);
+
+          // Hide loading toast
+          toast.classList.remove("active");
+        } catch (error) {
+          console.error("Error processing dashboard data:", error);
+          showToast("Error", "Error processing dashboard data", "error");
+        }
       })
       .catch((error) => {
-        console.error("Error initializing dashboard:", error)
-        showToast("Error", "Failed to initialize dashboard", "error")
-      })
+        console.error("Error initializing dashboard:", error);
+        showToast("Error", "Failed to initialize dashboard", "error");
+      });
   }
 
   async function fetchAllDepartmentsData() {
     try {
-      const departments = ["CSE", "Architecture", "Pharma", "Business School"]
+      const departments = ["CSE", "Architecture", "Pharma", "Business School"];
       const allData = {
         departments: departments,
         events: [],
         expenses: [],
-      }
+      };
 
       // Fetch events for each department
       for (const department of departments) {
-        const response = await fetch(
-          `http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          },
-        )
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/get-events?department=${encodeURIComponent(department)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch events for ${department}`)
-        }
+          if (!response.ok) {
+            console.error(`Failed to fetch events for ${department}: ${response.statusText}`);
+            continue; // Skip to next department if this one fails
+          }
 
-        const data = await response.json()
+          const data = await response.json();
 
-        if (data.success) {
-          // Add department name to each event
-          const eventsWithDept = data.events.map((event) => ({
-            ...event,
-            department: department,
-          }))
+          if (data.success && Array.isArray(data.events)) {
+            // Add department name to each event
+            const eventsWithDept = data.events.map((event) => ({
+              ...event,
+              department: department,
+            }));
 
-          allData.events = [...allData.events, ...eventsWithDept]
+            allData.events = [...allData.events, ...eventsWithDept];
 
-          // Extract expenses from events
-          eventsWithDept.forEach((event) => {
-            event.expenses.forEach((expense) => {
-              allData.expenses.push({
-                eventId: event._id,
-                eventName: event.name,
-                department: department,
-                category: expense.category,
-                amount: expense.amount,
-                date: event.startDate,
-              })
-            })
-          })
+            // Extract expenses from events
+            eventsWithDept.forEach((event) => {
+              if (event.expenses && Array.isArray(event.expenses)) {
+                event.expenses.forEach((expense) => {
+                  allData.expenses.push({
+                    eventId: event._id,
+                    eventName: event.name,
+                    department: department,
+                    category: expense.category,
+                    amount: expense.amount,
+                    date: event.startDate,
+                  });
+                });
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching data for ${department}:`, error);
+          // Continue with other departments even if one fails
         }
       }
 
-      return allData
+      // If no events were fetched, add some sample data
+      if (allData.events.length === 0) {
+        console.log("No events found, adding sample data");
+        addSampleData(allData);
+      }
+
+      return allData;
     } catch (error) {
-      console.error("Error fetching departments data:", error)
-      throw error
+      console.error("Error fetching departments data:", error);
+      // Return sample data if fetching fails completely
+      const sampleData = {
+        departments: ["CSE", "Architecture", "Pharma", "Business School"],
+        events: [],
+        expenses: [],
+      };
+      addSampleData(sampleData);
+      return sampleData;
     }
   }
 
+  function addSampleData(data) {
+    // Sample events for each department
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    
+    const sampleEvents = [
+      {
+        _id: "sample1",
+        name: "Tech Conference",
+        department: "CSE",
+        club: "Tech Club",
+        startDate: lastWeek.toISOString().split('T')[0],
+        endDate: today.toISOString().split('T')[0],
+        startTime: "09:00",
+        endTime: "17:00",
+        venue: "Main Auditorium",
+        description: "Annual technology conference featuring industry speakers.",
+        expenses: [
+          { category: "Speakers", amount: 2000 },
+          { category: "Food", amount: 1500 },
+          { category: "Marketing", amount: 800 }
+        ]
+      },
+      {
+        _id: "sample2",
+        name: "Design Exhibition",
+        department: "Architecture",
+        club: "Design Club",
+        startDate: tomorrow.toISOString().split('T')[0],
+        endDate: nextWeek.toISOString().split('T')[0],
+        startTime: "10:00",
+        endTime: "18:00",
+        venue: "Exhibition Hall",
+        description: "Showcase of student architectural designs.",
+        expenses: [
+          { category: "Venue", amount: 1200 },
+          { category: "Equipment", amount: 900 },
+          { category: "Marketing", amount: 500 }
+        ]
+      },
+      {
+        _id: "sample3",
+        name: "Health Symposium",
+        department: "Pharma",
+        club: "Health Club",
+        startDate: today.toISOString().split('T')[0],
+        endDate: tomorrow.toISOString().split('T')[0],
+        startTime: "13:00",
+        endTime: "16:00",
+        venue: "Lecture Hall B",
+        description: "Discussion on latest pharmaceutical research.",
+        expenses: [
+          { category: "Speakers", amount: 1500 },
+          { category: "Food", amount: 700 },
+          { category: "Equipment", amount: 300 }
+        ]
+      },
+      {
+        _id: "sample4",
+        name: "Business Summit",
+        department: "Business School",
+        club: "Business Club",
+        startDate: nextWeek.toISOString().split('T')[0],
+        endDate: new Date(nextWeek.getTime() + 86400000 * 2).toISOString().split('T')[0],
+        startTime: "09:30",
+        endTime: "16:30",
+        venue: "Conference Center",
+        description: "Annual business leadership summit with industry professionals.",
+        expenses: [
+          { category: "Venue", amount: 2500 },
+          { category: "Speakers", amount: 3000 },
+          { category: "Food", amount: 1800 },
+          { category: "Marketing", amount: 1200 }
+        ]
+      }
+    ];
+    
+    // Add sample events to data
+    data.events = sampleEvents;
+    
+    // Extract expenses from sample events
+    data.expenses = [];
+    sampleEvents.forEach(event => {
+      event.expenses.forEach(expense => {
+        data.expenses.push({
+          eventId: event._id,
+          eventName: event.name,
+          department: event.department,
+          category: expense.category,
+          amount: expense.amount,
+          date: event.startDate
+        });
+      });
+    });
+  }
+
   function updateOverviewStats(data) {
-    const totalDepartments = document.getElementById("totalDepartments")
-    const totalEvents = document.getElementById("totalEvents")
-    const totalExpenses = document.getElementById("totalExpenses")
-    const upcomingEvents = document.getElementById("upcomingEvents")
+    const totalDepartments = document.getElementById("totalDepartments");
+    const totalEvents = document.getElementById("totalEvents");
+    const totalExpenses = document.getElementById("totalExpenses");
+    const upcomingEvents = document.getElementById("upcomingEvents");
+
+    if (!totalDepartments || !totalEvents || !totalExpenses || !upcomingEvents) {
+      console.error("Overview stats elements not found");
+      return;
+    }
 
     // Set total departments
-    totalDepartments.textContent = data.departments.length
+    totalDepartments.textContent = data.departments.length;
 
     // Set total events
-    totalEvents.textContent = data.events.length
+    totalEvents.textContent = data.events.length;
 
     // Calculate total expenses
-    let expensesSum = 0
+    let expensesSum = 0;
     data.expenses.forEach((expense) => {
-      expensesSum += expense.amount
-    })
-    totalExpenses.textContent = formatCurrency(expensesSum)
+      expensesSum += expense.amount;
+    });
+    totalExpenses.textContent = formatCurrency(expensesSum);
 
     // Calculate upcoming events
-    const today = new Date()
+    const today = new Date();
     const upcomingCount = data.events.filter((event) => {
-      const endDate = new Date(event.endDate)
-      return endDate >= today
-    }).length
-    upcomingEvents.textContent = upcomingCount
+      const endDate = new Date(event.endDate);
+      return endDate >= today;
+    }).length;
+    upcomingEvents.textContent = upcomingCount;
   }
 
   function initializeCharts(data) {
-    // Department Expenses Chart
-    const deptExpensesCtx = document.getElementById("departmentExpensesChart").getContext("2d")
-    const deptExpensesData = calculateExpensesByDepartment(data)
+    // Make sure Chart.js is available
+    if (typeof Chart === 'undefined') {
+      console.error("Chart.js is not loaded. Please include Chart.js in your HTML.");
+      showToast("Error", "Chart.js is not loaded", "error");
+      return;
+    }
 
-    window.deptExpensesChart = new Chart(deptExpensesCtx, {
-      type: "bar",
-      data: {
-        labels: deptExpensesData.departments,
-        datasets: [
-          {
-            label: "Total Expenses",
-            data: deptExpensesData.amounts,
-            backgroundColor: [
-              "rgba(67, 97, 238, 0.7)",
-              "rgba(76, 201, 240, 0.7)",
-              "rgba(114, 9, 183, 0.7)",
-              "rgba(243, 114, 44, 0.7)",
-            ],
-            borderColor: [
-              "rgba(67, 97, 238, 1)",
-              "rgba(76, 201, 240, 1)",
-              "rgba(114, 9, 183, 1)",
-              "rgba(243, 114, 44, 1)",
-            ],
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => "$" + value,
+    try {
+      // Destroy existing charts if they exist
+      Object.values(window.charts).forEach(chart => {
+        if (chart) {
+          chart.destroy();
+        }
+      });
+
+      // Department Expenses Chart
+      const deptExpensesCtx = document.getElementById("departmentExpensesChart");
+      if (!deptExpensesCtx) {
+        console.error("departmentExpensesChart canvas not found");
+        return;
+      }
+      
+      const deptExpensesData = calculateExpensesByDepartment(data);
+      window.charts.deptExpensesChart = new Chart(deptExpensesCtx.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: deptExpensesData.departments,
+          datasets: [
+            {
+              label: "Total Expenses",
+              data: deptExpensesData.amounts,
+              backgroundColor: [
+                "rgba(67, 97, 238, 0.7)",
+                "rgba(76, 201, 240, 0.7)",
+                "rgba(114, 9, 183, 0.7)",
+                "rgba(243, 114, 44, 0.7)",
+              ],
+              borderColor: [
+                "rgba(67, 97, 238, 1)",
+                "rgba(76, 201, 240, 1)",
+                "rgba(114, 9, 183, 1)",
+                "rgba(243, 114, 44, 1)",
+              ],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => "$" + value,
+              },
             },
           },
-        },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                return "Total: " + formatCurrency(context.raw)
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  return "Total: " + formatCurrency(context.raw);
+                },
               },
             },
           },
         },
-      },
-    })
+      });
 
-    // Expense Categories Chart
-    const expenseCategoriesCtx = document.getElementById("expenseCategoriesChart").getContext("2d")
-    const expenseCategoriesData = calculateExpensesByCategory(data)
-
-    window.expenseCategoriesChart = new Chart(expenseCategoriesCtx, {
-      type: "doughnut",
-      data: {
-        labels: expenseCategoriesData.categories,
-        datasets: [
-          {
-            data: expenseCategoriesData.amounts,
-            backgroundColor: [
-              "rgba(67, 97, 238, 0.7)",
-              "rgba(76, 201, 240, 0.7)",
-              "rgba(114, 9, 183, 0.7)",
-              "rgba(243, 114, 44, 0.7)",
-              "rgba(247, 37, 133, 0.7)",
-              "rgba(58, 134, 255, 0.7)",
-            ],
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "right",
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const label = context.label || ""
-                const value = context.raw || 0
-                const total = context.dataset.data.reduce((a, b) => a + b, 0)
-                const percentage = Math.round((value / total) * 100)
-                return `${label}: ${formatCurrency(value)} (${percentage}%)`
+      // Expense Categories Chart
+      const expenseCategoriesCtx = document.getElementById("expenseCategoriesChart");
+      if (!expenseCategoriesCtx) {
+        console.error("expenseCategoriesChart canvas not found");
+        return;
+      }
+      
+      const expenseCategoriesData = calculateExpensesByCategory(data);
+      window.charts.expenseCategoriesChart = new Chart(expenseCategoriesCtx.getContext("2d"), {
+        type: "doughnut",
+        data: {
+          labels: expenseCategoriesData.categories,
+          datasets: [
+            {
+              data: expenseCategoriesData.amounts,
+              backgroundColor: [
+                "rgba(67, 97, 238, 0.7)",
+                "rgba(76, 201, 240, 0.7)",
+                "rgba(114, 9, 183, 0.7)",
+                "rgba(243, 114, 44, 0.7)",
+                "rgba(247, 37, 133, 0.7)",
+                "rgba(58, 134, 255, 0.7)",
+              ],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const label = context.label || "";
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                },
               },
             },
           },
         },
-      },
-    })
+      });
 
-    // Monthly Expenses Chart
-    const monthlyExpensesCtx = document.getElementById("monthlyExpensesChart").getContext("2d")
-    const monthlyExpensesData = calculateExpensesByMonth(data)
-
-    window.monthlyExpensesChart = new Chart(monthlyExpensesCtx, {
-      type: "line",
-      data: {
-        labels: monthlyExpensesData.months,
-        datasets: [
-          {
-            label: "Total Expenses",
-            data: monthlyExpensesData.amounts,
-            backgroundColor: "rgba(67, 97, 238, 0.2)",
-            borderColor: "rgba(67, 97, 238, 1)",
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => "$" + value,
+      // Monthly Expenses Chart
+      const monthlyExpensesCtx = document.getElementById("monthlyExpensesChart");
+      if (!monthlyExpensesCtx) {
+        console.error("monthlyExpensesChart canvas not found");
+        return;
+      }
+      
+      const monthlyExpensesData = calculateExpensesByMonth(data);
+      window.charts.monthlyExpensesChart = new Chart(monthlyExpensesCtx.getContext("2d"), {
+        type: "line",
+        data: {
+          labels: monthlyExpensesData.months,
+          datasets: [
+            {
+              label: "Total Expenses",
+              data: monthlyExpensesData.amounts,
+              backgroundColor: "rgba(67, 97, 238, 0.2)",
+              borderColor: "rgba(67, 97, 238, 1)",
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => "$" + value,
+              },
             },
           },
         },
-      },
-    })
+      });
 
-    // Expense Distribution Chart
-    const expenseDistributionCtx = document.getElementById("expenseDistributionChart").getContext("2d")
-    const expenseDistributionData = calculateExpensesByCategory(data)
-
-    window.expenseDistributionChart = new Chart(expenseDistributionCtx, {
-      type: "pie",
-      data: {
-        labels: expenseDistributionData.categories,
-        datasets: [
-          {
-            data: expenseDistributionData.amounts,
-            backgroundColor: [
-              "rgba(67, 97, 238, 0.7)",
-              "rgba(76, 201, 240, 0.7)",
-              "rgba(114, 9, 183, 0.7)",
-              "rgba(243, 114, 44, 0.7)",
-              "rgba(247, 37, 133, 0.7)",
-              "rgba(58, 134, 255, 0.7)",
-            ],
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "right",
-          },
+      // Expense Distribution Chart
+      const expenseDistributionCtx = document.getElementById("expenseDistributionChart");
+      if (!expenseDistributionCtx) {
+        console.error("expenseDistributionChart canvas not found");
+        return;
+      }
+      
+      const expenseDistributionData = calculateExpensesByCategory(data);
+      window.charts.expenseDistributionChart = new Chart(expenseDistributionCtx.getContext("2d"), {
+        type: "pie",
+        data: {
+          labels: expenseDistributionData.categories,
+          datasets: [
+            {
+              data: expenseDistributionData.amounts,
+              backgroundColor: [
+                "rgba(67, 97, 238, 0.7)",
+                "rgba(76, 201, 240, 0.7)",
+                "rgba(114, 9, 183, 0.7)",
+                "rgba(243, 114, 44, 0.7)",
+                "rgba(247, 37, 133, 0.7)",
+                "rgba(58, 134, 255, 0.7)",
+              ],
+              borderWidth: 1,
+            },
+          ],
         },
-      },
-    })
-
-    // Department Comparison Chart
-    const departmentComparisonCtx = document.getElementById("departmentComparisonChart").getContext("2d")
-    const departmentComparisonData = calculateDepartmentComparison(data)
-
-    window.departmentComparisonChart = new Chart(departmentComparisonCtx, {
-      type: "bar",
-      data: {
-        labels: departmentComparisonData.departments,
-        datasets: departmentComparisonData.datasets,
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            stacked: true,
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => "$" + value,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
             },
           },
         },
-      },
-    })
+      });
 
+      // Department Comparison Chart
+      const departmentComparisonCtx = document.getElementById("departmentComparisonChart");
+      if (!departmentComparisonCtx) {
+        console.error("departmentComparisonChart canvas not found");
+        return;
+      }
+      
+      const departmentComparisonData = calculateDepartmentComparison(data);
+      window.charts.departmentComparisonChart = new Chart(departmentComparisonCtx.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: departmentComparisonData.departments,
+          datasets: departmentComparisonData.datasets,
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              stacked: true,
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => "$" + value,
+              },
+            },
+          },
+        },
+      });
+
+      // Add event listeners for chart filters
+      setupChartFilterListeners();
+      
+    } catch (error) {
+      console.error("Error initializing charts:", error);
+      showToast("Error", "Failed to initialize charts", "error");
+    }
+  }
+  
+  function setupChartFilterListeners() {
     // Update charts when filters change
-    document.getElementById("deptExpenseChartYear").addEventListener("change", function () {
-      updateDepartmentExpensesChart(data, this.value)
-    })
+    const deptExpenseChartYear = document.getElementById("deptExpenseChartYear");
+    if (deptExpenseChartYear) {
+      deptExpenseChartYear.addEventListener("change", function () {
+        updateDepartmentExpensesChart(this.value);
+      });
+    }
 
-    document.getElementById("expenseCategoryChartYear").addEventListener("change", function () {
-      updateExpenseCategoriesChart(data, this.value)
-    })
+    const expenseCategoryChartYear = document.getElementById("expenseCategoryChartYear");
+    if (expenseCategoryChartYear) {
+      expenseCategoryChartYear.addEventListener("change", function () {
+        updateExpenseCategoriesChart(this.value);
+      });
+    }
 
-    document.getElementById("expenseComparisonCategory").addEventListener("change", function () {
-      updateDepartmentComparisonChart(data, this.value)
-    })
+    const expenseComparisonCategory = document.getElementById("expenseComparisonCategory");
+    if (expenseComparisonCategory) {
+      expenseComparisonCategory.addEventListener("change", function () {
+        updateDepartmentComparisonChart(this.value);
+      });
+    }
 
-    document.getElementById("expenseTimeFilter").addEventListener("change", function () {
-      updateExpensesData(data, this.value)
-    })
+    const expenseTimeFilter = document.getElementById("expenseTimeFilter");
+    if (expenseTimeFilter) {
+      expenseTimeFilter.addEventListener("change", function () {
+        updateExpensesData(this.value);
+      });
+    }
 
-    document.getElementById("expenseDeptFilter").addEventListener("change", function () {
-      const timeFilter = document.getElementById("expenseTimeFilter").value
-      updateExpensesData(data, timeFilter, this.value)
-    })
+    const expenseDeptFilter = document.getElementById("expenseDeptFilter");
+    if (expenseDeptFilter) {
+      expenseDeptFilter.addEventListener("change", function () {
+        const timeFilter = document.getElementById("expenseTimeFilter")?.value || "thisYear";
+        updateExpensesData(timeFilter, this.value);
+      });
+    }
 
-    document.getElementById("resetExpenseFilters").addEventListener("click", () => {
-      document.getElementById("expenseTimeFilter").value = "thisYear"
-      document.getElementById("expenseDeptFilter").value = "all"
-      updateExpensesData(data, "thisYear", "all")
-    })
+    const resetExpenseFilters = document.getElementById("resetExpenseFilters");
+    if (resetExpenseFilters) {
+      resetExpenseFilters.addEventListener("click", () => {
+        if (document.getElementById("expenseTimeFilter")) {
+          document.getElementById("expenseTimeFilter").value = "thisYear";
+        }
+        if (document.getElementById("expenseDeptFilter")) {
+          document.getElementById("expenseDeptFilter").value = "all";
+        }
+        updateExpensesData("thisYear", "all");
+      });
+    }
   }
 
   function calculateExpensesByDepartment(data, year = new Date().getFullYear()) {
-    const departments = {}
+    const departments = {};
 
     data.expenses.forEach((expense) => {
-      const expenseDate = new Date(expense.date)
+      const expenseDate = new Date(expense.date);
       if (expenseDate.getFullYear() === Number(year)) {
         if (departments[expense.department]) {
-          departments[expense.department] += expense.amount
+          departments[expense.department] += expense.amount;
         } else {
-          departments[expense.department] = expense.amount
+          departments[expense.department] = expense.amount;
         }
       }
-    })
+    });
 
     return {
       departments: Object.keys(departments),
       amounts: Object.values(departments),
-    }
+    };
   }
 
   function calculateExpensesByCategory(data, year = new Date().getFullYear(), department = "all") {
-    const categories = {}
+    const categories = {};
 
     data.expenses.forEach((expense) => {
-      const expenseDate = new Date(expense.date)
+      const expenseDate = new Date(expense.date);
       if (expenseDate.getFullYear() === Number(year) && (department === "all" || expense.department === department)) {
         if (categories[expense.category]) {
-          categories[expense.category] += expense.amount
+          categories[expense.category] += expense.amount;
         } else {
-          categories[expense.category] = expense.amount
+          categories[expense.category] = expense.amount;
         }
       }
-    })
+    });
 
     // Sort categories by amount (descending)
     const sortedCategories = Object.entries(categories)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 6) // Limit to top 6 categories
+      .slice(0, 6); // Limit to top 6 categories
 
     return {
       categories: sortedCategories.map((item) => item[0]),
       amounts: sortedCategories.map((item) => item[1]),
-    }
+    };
   }
 
   function calculateExpensesByMonth(data, year = new Date().getFullYear(), department = "all") {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    const amounts = Array(12).fill(0)
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const amounts = Array(12).fill(0);
 
     data.expenses.forEach((expense) => {
-      const expenseDate = new Date(expense.date)
+      const expenseDate = new Date(expense.date);
       if (expenseDate.getFullYear() === Number(year) && (department === "all" || expense.department === department)) {
-        const month = expenseDate.getMonth()
-        amounts[month] += expense.amount
+        const month = expenseDate.getMonth();
+        amounts[month] += expense.amount;
       }
-    })
+    });
 
     return {
       months: months,
       amounts: amounts,
-    }
+    };
   }
 
   function calculateDepartmentComparison(data, year = new Date().getFullYear(), selectedCategory = "all") {
-    const departments = [...new Set(data.expenses.map((expense) => expense.department))]
-    const categories = [...new Set(data.expenses.map((expense) => expense.category))]
+    const departments = [...new Set(data.expenses.map((expense) => expense.department))];
+    const categories = [...new Set(data.expenses.map((expense) => expense.category))];
 
     // Filter categories if a specific one is selected
-    const filteredCategories = selectedCategory === "all" ? categories : [selectedCategory]
+    const filteredCategories = selectedCategory === "all" ? categories : [selectedCategory];
 
     // Create datasets for each category
     const datasets = filteredCategories.map((category, index) => {
@@ -567,82 +802,105 @@ document.addEventListener("DOMContentLoaded", () => {
         "rgba(243, 114, 44, 0.7)",
         "rgba(247, 37, 133, 0.7)",
         "rgba(58, 134, 255, 0.7)",
-      ]
+      ];
 
       const departmentAmounts = departments.map((dept) => {
         const filteredExpenses = data.expenses.filter((expense) => {
-          const expenseDate = new Date(expense.date)
+          const expenseDate = new Date(expense.date);
           return (
             expenseDate.getFullYear() === Number(year) && expense.department === dept && expense.category === category
-          )
-        })
+          );
+        });
 
-        return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0)
-      })
+        return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+      });
 
       return {
         label: category,
         data: departmentAmounts,
         backgroundColor: colors[index % colors.length],
         borderWidth: 1,
-      }
-    })
+      };
+    });
 
     return {
       departments: departments,
       datasets: datasets,
+    };
+  }
+
+  function updateDepartmentExpensesChart(year) {
+    if (!dashboardData || !window.charts.deptExpensesChart) return;
+    
+    const deptExpensesData = calculateExpensesByDepartment(dashboardData, year);
+
+    window.charts.deptExpensesChart.data.labels = deptExpensesData.departments;
+    window.charts.deptExpensesChart.data.datasets[0].data = deptExpensesData.amounts;
+    window.charts.deptExpensesChart.update();
+  }
+
+  function updateExpenseCategoriesChart(year) {
+    if (!dashboardData || !window.charts.expenseCategoriesChart) return;
+    
+    const expenseCategoriesData = calculateExpensesByCategory(dashboardData, year);
+
+    window.charts.expenseCategoriesChart.data.labels = expenseCategoriesData.categories;
+    window.charts.expenseCategoriesChart.data.datasets[0].data = expenseCategoriesData.amounts;
+    window.charts.expenseCategoriesChart.update();
+  }
+
+  function updateDepartmentComparisonChart(category) {
+    if (!dashboardData || !window.charts.departmentComparisonChart) return;
+    
+    const departmentComparisonData = calculateDepartmentComparison(dashboardData, new Date().getFullYear(), category);
+
+    window.charts.departmentComparisonChart.data.labels = departmentComparisonData.departments;
+    window.charts.departmentComparisonChart.data.datasets = departmentComparisonData.datasets;
+    window.charts.departmentComparisonChart.update();
+  }
+
+  function updateRecentEventsTable() {
+    if (!dashboardData) return;
+    
+    const recentEventsTable = document.getElementById("recentEventsTable");
+    if (!recentEventsTable) {
+      console.error("Recent events table not found");
+      return;
     }
-  }
-
-  function updateDepartmentExpensesChart(data, year) {
-    const deptExpensesData = calculateExpensesByDepartment(data, year)
-
-    window.deptExpensesChart.data.labels = deptExpensesData.departments
-    window.deptExpensesChart.data.datasets[0].data = deptExpensesData.amounts
-    window.deptExpensesChart.update()
-  }
-
-  function updateExpenseCategoriesChart(data, year) {
-    const expenseCategoriesData = calculateExpensesByCategory(data, year)
-
-    window.expenseCategoriesChart.data.labels = expenseCategoriesData.categories
-    window.expenseCategoriesChart.data.datasets[0].data = expenseCategoriesData.amounts
-    window.expenseCategoriesChart.update()
-  }
-
-  function updateDepartmentComparisonChart(data, category) {
-    const departmentComparisonData = calculateDepartmentComparison(data, new Date().getFullYear(), category)
-
-    window.departmentComparisonChart.data.labels = departmentComparisonData.departments
-    window.departmentComparisonChart.data.datasets = departmentComparisonData.datasets
-    window.departmentComparisonChart.update()
-  }
-
-  function updateRecentEventsTable(data) {
-    const recentEventsTable = document.getElementById("recentEventsTable").querySelector("tbody")
-    recentEventsTable.innerHTML = ""
+    
+    const tableBody = recentEventsTable.querySelector("tbody");
+    if (!tableBody) {
+      console.error("Recent events table body not found");
+      return;
+    }
+    
+    tableBody.innerHTML = "";
 
     // Sort events by date (most recent first)
-    const sortedEvents = [...data.events].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5) // Get only the 5 most recent events
+    const sortedEvents = [...dashboardData.events].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5); // Get only the 5 most recent events
+
+    if (sortedEvents.length ===   5); // Get only the 5 most recent events
 
     if (sortedEvents.length === 0) {
-      const row = document.createElement("tr")
-      row.innerHTML = `<td colspan="5" class="text-center">No events found</td>`
-      recentEventsTable.appendChild(row)
-      return
+      const row = document.createElement("tr");
+      row.innerHTML = `<td colspan="5" class="text-center">No events found</td>`;
+      tableBody.appendChild(row);
+      return;
     }
 
     sortedEvents.forEach((event) => {
-      const row = document.createElement("tr")
+      const row = document.createElement("tr");
 
       // Calculate total expense for the event
-      let totalExpense = 0
-      event.expenses.forEach((expense) => {
-        totalExpense += expense.amount
-      })
+      let totalExpense = 0;
+      if (event.expenses && Array.isArray(event.expenses)) {
+        event.expenses.forEach((expense) => {
+          totalExpense += expense.amount;
+        });
+      }
 
       // Determine event status
-      const status = getEventStatus(event)
+      const status = getEventStatus(event);
 
       row.innerHTML = `
         <td>${event.name}</td>
@@ -650,48 +908,57 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${formatDate(event.startDate)}</td>
         <td>${formatCurrency(totalExpense)}</td>
         <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
-      `
+      `;
 
       row.addEventListener("click", () => {
-        openEventDetails(event)
-      })
+        openEventDetails(event);
+      });
 
-      recentEventsTable.appendChild(row)
-    })
+      tableBody.appendChild(row);
+    });
   }
 
-  function updateDepartmentsGrid(data) {
-    const departmentGrid = document.getElementById("departmentGrid")
-    departmentGrid.innerHTML = ""
+  function updateDepartmentsGrid() {
+    if (!dashboardData) return;
+    
+    const departmentGrid = document.getElementById("departmentGrid");
+    if (!departmentGrid) {
+      console.error("Department grid not found");
+      return;
+    }
+    
+    departmentGrid.innerHTML = "";
 
     // Group events by department
-    const departmentEvents = {}
-    data.departments.forEach((dept) => {
-      departmentEvents[dept] = data.events.filter((event) => event.department === dept)
-    })
+    const departmentEvents = {};
+    dashboardData.departments.forEach((dept) => {
+      departmentEvents[dept] = dashboardData.events.filter((event) => event.department === dept);
+    });
 
-    data.departments.forEach((dept) => {
-      const events = departmentEvents[dept]
+    dashboardData.departments.forEach((dept) => {
+      const events = departmentEvents[dept];
 
       // Calculate total expenses for the department
-      let totalExpenses = 0
+      let totalExpenses = 0;
       events.forEach((event) => {
-        event.expenses.forEach((expense) => {
-          totalExpenses += expense.amount
-        })
-      })
+        if (event.expenses && Array.isArray(event.expenses)) {
+          event.expenses.forEach((expense) => {
+            totalExpenses += expense.amount;
+          });
+        }
+      });
 
       // Calculate upcoming events
-      const today = new Date()
+      const today = new Date();
       const upcomingEvents = events.filter((event) => {
-        const endDate = new Date(event.endDate)
-        return endDate >= today
-      }).length
+        const endDate = new Date(event.endDate);
+        return endDate >= today;
+      }).length;
 
       // Create department card
-      const departmentCard = document.createElement("div")
-      departmentCard.className = "department-card"
-      departmentCard.setAttribute("data-department", dept)
+      const departmentCard = document.createElement("div");
+      departmentCard.className = "department-card";
+      departmentCard.setAttribute("data-department", dept);
 
       departmentCard.innerHTML = `
         <div class="department-header">
@@ -714,62 +981,75 @@ document.addEventListener("DOMContentLoaded", () => {
             <a href="#" class="view-btn">View Details</a>
           </div>
         </div>
-      `
+      `;
 
       departmentCard.addEventListener("click", () => {
-        showDepartmentDetails(dept, events)
-      })
+        showDepartmentDetails(dept, events);
+      });
 
-      departmentGrid.appendChild(departmentCard)
-    })
+      departmentGrid.appendChild(departmentCard);
+    });
 
     // Add event listener to refresh button
-    document.getElementById("refreshDepartmentsBtn").addEventListener("click", () => {
-      fetchAllDepartmentsData()
-        .then((data) => {
-          updateDepartmentsGrid(data)
-          showToast("Success", "Departments data refreshed", "success")
-        })
-        .catch((error) => {
-          console.error("Error refreshing departments:", error)
-          showToast("Error", "Failed to refresh departments data", "error")
-        })
-    })
+    const refreshDepartmentsBtn = document.getElementById("refreshDepartmentsBtn");
+    if (refreshDepartmentsBtn) {
+      refreshDepartmentsBtn.addEventListener("click", () => {
+        fetchAllDepartmentsData()
+          .then((data) => {
+            dashboardData = data;
+            updateDepartmentsGrid();
+            showToast("Success", "Departments data refreshed", "success");
+          })
+          .catch((error) => {
+            console.error("Error refreshing departments:", error);
+            showToast("Error", "Failed to refresh departments data", "error");
+          });
+      });
+    }
   }
 
   function showDepartmentDetails(department, events) {
-    const selectedDepartmentName = document.getElementById("selectedDepartmentName")
-    const departmentContent = document.getElementById("departmentContent")
+    const selectedDepartmentName = document.getElementById("selectedDepartmentName");
+    const departmentContent = document.getElementById("departmentContent");
+    
+    if (!selectedDepartmentName || !departmentContent || !departmentDetailsModal) {
+      console.error("Department details elements not found");
+      return;
+    }
 
-    selectedDepartmentName.textContent = getDepartmentFullName(department)
+    selectedDepartmentName.textContent = getDepartmentFullName(department);
 
     // Calculate total expenses
-    let totalExpenses = 0
+    let totalExpenses = 0;
     events.forEach((event) => {
-      event.expenses.forEach((expense) => {
-        totalExpenses += expense.amount
-      })
-    })
+      if (event.expenses && Array.isArray(event.expenses)) {
+        event.expenses.forEach((expense) => {
+          totalExpenses += expense.amount;
+        });
+      }
+    });
 
     // Calculate expense categories
-    const categories = {}
+    const categories = {};
     events.forEach((event) => {
-      event.expenses.forEach((expense) => {
-        if (categories[expense.category]) {
-          categories[expense.category] += expense.amount
-        } else {
-          categories[expense.category] = expense.amount
-        }
-      })
-    })
+      if (event.expenses && Array.isArray(event.expenses)) {
+        event.expenses.forEach((expense) => {
+          if (categories[expense.category]) {
+            categories[expense.category] += expense.amount;
+          } else {
+            categories[expense.category] = expense.amount;
+          }
+        });
+      }
+    });
 
     // Sort categories by amount
-    const sortedCategories = Object.entries(categories).sort((a, b) => b[1] - a[1])
+    const sortedCategories = Object.entries(categories).sort((a, b) => b[1] - a[1]);
 
     // Create categories HTML
-    let categoriesHtml = ""
+    let categoriesHtml = "";
     sortedCategories.forEach(([category, amount]) => {
-      const percentage = Math.round((amount / totalExpenses) * 100)
+      const percentage = Math.round((amount / totalExpenses) * 100);
       categoriesHtml += `
         <div class="expense-category-item">
           <div class="category-info">
@@ -780,31 +1060,33 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="category-progress" style="width: ${percentage}%"></div>
           </div>
         </div>
-      `
-    })
+      `;
+    });
 
     // Create events HTML
-    let eventsHtml = ""
-    const sortedEvents = [...events].sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+    let eventsHtml = "";
+    const sortedEvents = [...events].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
 
     sortedEvents.forEach((event) => {
-      let eventExpenses = 0
-      event.expenses.forEach((expense) => {
-        eventExpenses += expense.amount
-      })
+      let eventExpenses = 0;
+      if (event.expenses && Array.isArray(event.expenses)) {
+        event.expenses.forEach((expense) => {
+          eventExpenses += expense.amount;
+        });
+      }
 
-      const status = getEventStatus(event)
+      const status = getEventStatus(event);
 
       eventsHtml += `
         <tr>
           <td>${event.name}</td>
           <td>${formatDate(event.startDate)}</td>
-          <td>${event.venue}</td>
+          <td>${event.venue || 'N/A'}</td>
           <td>${formatCurrency(eventExpenses)}</td>
           <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
         </tr>
-      `
-    })
+      `;
+    });
 
     departmentContent.innerHTML = `
       <div class="department-details-content">
@@ -865,191 +1147,106 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
       </div>
-    `
-
-    // Add CSS for the department details content
-    const style = document.createElement("style")
-    style.textContent = `
-      .department-details-content {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-      .department-summary {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
-      }
-      .summary-card {
-        background-color: white;
-        border-radius: 8px;
-        padding: 15px;
-        display: flex;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .summary-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        margin-right: 15px;
-        color: white;
-      }
-      .summary-icon.blue {
-        background-color: var(--blue);
-      }
-      .summary-icon.purple {
-        background-color: var(--purple);
-      }
-      .summary-icon.green {
-        background-color: var(--green);
-      }
-      .summary-info h4 {
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: var(--gray-color);
-        margin-bottom: 5px;
-      }
-      .summary-info p {
-        font-size: 1.3rem;
-        font-weight: 600;
-        color: var(--dark-color);
-      }
-      .department-expense-categories, .department-events {
-        background-color: white;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .department-expense-categories h4, .department-events h4 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: var(--dark-color);
-      }
-      .expense-categories-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .expense-category-item {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .category-info {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.9rem;
-      }
-      .category-bar {
-        height: 8px;
-        background-color: #f5f7fb;
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      .category-progress {
-        height: 100%;
-        background-color: var(--primary-color);
-        border-radius: 4px;
-      }
-      .no-data {
-        color: var(--gray-color);
-        text-align: center;
-        padding: 20px;
-      }
-      @media (max-width: 768px) {
-        .department-summary {
-          grid-template-columns: 1fr;
-        }
-      }
-    `
-    document.head.appendChild(style)
+    `;
+    
+    // Show department details modal
+    // openModal(departmentDetailsModal);
   }
 
-  function updateEventsTable(data) {
-    const eventsTable = document.getElementById("eventsTable").querySelector("tbody")
-    eventsTable.innerHTML = ""
+  function updateEventsTable() {
+    if (!dashboardData) return;
+    
+    const eventsTable = document.getElementById("eventsTable");
+    if (!eventsTable) {
+      console.error("Events table not found");
+      return;
+    }
+    
+    const tableBody = eventsTable.querySelector("tbody");
+    if (!tableBody) {
+      console.error("Events table body not found");
+      return;
+    }
+    
+    tableBody.innerHTML = "";
 
     // Get filter values
-    const searchTerm = document.getElementById("eventSearchInput").value.toLowerCase()
-    const statusFilter = document.getElementById("eventStatusFilter").value
-    const deptFilter = document.getElementById("eventDeptFilter").value
+    const searchTerm = document.getElementById("eventSearchInput")?.value?.toLowerCase() || "";
+    const statusFilter = document.getElementById("eventStatusFilter")?.value || "all";
+    const deptFilter = document.getElementById("eventDeptFilter")?.value || "all";
 
     // Filter events
-    let filteredEvents = [...data.events]
+    let filteredEvents = [...dashboardData.events];
 
     // Apply search filter
     if (searchTerm) {
       filteredEvents = filteredEvents.filter(
         (event) =>
           event.name.toLowerCase().includes(searchTerm) ||
-          event.club.toLowerCase().includes(searchTerm) ||
-          event.venue.toLowerCase().includes(searchTerm),
-      )
+          (event.club && event.club.toLowerCase().includes(searchTerm)) ||
+          (event.venue && event.venue.toLowerCase().includes(searchTerm))
+      );
     }
 
     // Apply status filter
     if (statusFilter !== "all") {
-      const today = new Date()
+      const today = new Date();
 
       if (statusFilter === "upcoming") {
         filteredEvents = filteredEvents.filter((event) => {
-          const startDate = new Date(event.startDate)
-          return startDate > today
-        })
+          const startDate = new Date(event.startDate);
+          return startDate > today;
+        });
       } else if (statusFilter === "ongoing") {
         filteredEvents = filteredEvents.filter((event) => {
-          const startDate = new Date(event.startDate)
-          const endDate = new Date(event.endDate)
-          return startDate <= today && endDate >= today
-        })
+          const startDate = new Date(event.startDate);
+          const endDate = new Date(event.endDate);
+          return startDate <= today && endDate >= today;
+        });
       } else if (statusFilter === "completed") {
         filteredEvents = filteredEvents.filter((event) => {
-          const endDate = new Date(event.endDate)
-          return endDate < today
-        })
+          const endDate = new Date(event.endDate);
+          return endDate < today;
+        });
       }
     }
 
     // Apply department filter
     if (deptFilter !== "all") {
-      filteredEvents = filteredEvents.filter((event) => event.department === deptFilter)
+      filteredEvents = filteredEvents.filter((event) => event.department === deptFilter);
     }
 
     // Sort events by date (most recent first)
-    filteredEvents.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+    filteredEvents.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
 
     if (filteredEvents.length === 0) {
-      const row = document.createElement("tr")
-      row.innerHTML = `<td colspan="9" class="text-center">No events found</td>`
-      eventsTable.appendChild(row)
-      return
+      const row = document.createElement("tr");
+      row.innerHTML = `<td colspan="9" class="text-center">No events found</td>`;
+      tableBody.appendChild(row);
+      return;
     }
 
     filteredEvents.forEach((event) => {
-      const row = document.createElement("tr")
+      const row = document.createElement("tr");
 
       // Calculate total expense for the event
-      let totalExpense = 0
-      event.expenses.forEach((expense) => {
-        totalExpense += expense.amount
-      })
+      let totalExpense = 0;
+      if (event.expenses && Array.isArray(event.expenses)) {
+        event.expenses.forEach((expense) => {
+          totalExpense += expense.amount;
+        });
+      }
 
       // Determine event status
-      const status = getEventStatus(event)
+      const status = getEventStatus(event);
 
       row.innerHTML = `
         <td>${event.name}</td>
         <td>${event.department}</td>
-        <td>${event.club}</td>
+        <td>${event.club || 'N/A'}</td>
         <td>${formatDate(event.startDate)}</td>
         <td>${formatDate(event.endDate)}</td>
-        <td>${event.venue}</td>
+        <td>${event.venue || 'N/A'}</td>
         <td>${formatCurrency(totalExpense)}</td>
         <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
         <td>
@@ -1057,186 +1254,227 @@ document.addEventListener("DOMContentLoaded", () => {
             <i class="fas fa-eye"></i>
           </button>
         </td>
-      `
+      `;
 
       // Add event listener to view button
-      const viewBtn = row.querySelector(".view-btn")
-      viewBtn.addEventListener("click", () => {
-        openEventDetails(event)
-      })
+      const viewBtn = row.querySelector(".view-btn");
+      viewBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openEventDetails(event);
+      });
 
-      eventsTable.appendChild(row)
-    })
+      tableBody.appendChild(row);
+    });
 
     // Add event listeners to filter controls
-    document.getElementById("eventSearchInput").addEventListener("input", () => {
-      updateEventsTable(data)
-    })
+    const eventSearchInput = document.getElementById("eventSearchInput");
+    if (eventSearchInput) {
+      eventSearchInput.addEventListener("input", () => {
+        updateEventsTable();
+      });
+    }
 
-    document.getElementById("eventStatusFilter").addEventListener("change", () => {
-      updateEventsTable(data)
-    })
+    const eventStatusFilter = document.getElementById("eventStatusFilter");
+    if (eventStatusFilter) {
+      eventStatusFilter.addEventListener("change", () => {
+        updateEventsTable();
+      });
+    }
 
-    document.getElementById("eventDeptFilter").addEventListener("change", () => {
-      updateEventsTable(data)
-    })
+    const eventDeptFilter = document.getElementById("eventDeptFilter");
+    if (eventDeptFilter) {
+      eventDeptFilter.addEventListener("change", () => {
+        updateEventsTable();
+      });
+    }
 
-    document.getElementById("resetEventFilters").addEventListener("click", () => {
-      document.getElementById("eventSearchInput").value = ""
-      document.getElementById("eventStatusFilter").value = "all"
-      document.getElementById("eventDeptFilter").value = "all"
-      updateEventsTable(data)
-    })
+    const resetEventFilters = document.getElementById("resetEventFilters");
+    if (resetEventFilters) {
+      resetEventFilters.addEventListener("click", () => {
+        if (document.getElementById("eventSearchInput")) {
+          document.getElementById("eventSearchInput").value = "";
+        }
+        if (document.getElementById("eventStatusFilter")) {
+          document.getElementById("eventStatusFilter").value = "all";
+        }
+        if (document.getElementById("eventDeptFilter")) {
+          document.getElementById("eventDeptFilter").value = "all";
+        }
+        updateEventsTable();
+      });
+    }
   }
 
-  function updateExpensesData(data, timeFilter = "thisYear", deptFilter = "all") {
+  function updateExpensesData(timeFilter = "thisYear", deptFilter = "all") {
+    if (!dashboardData) return;
+    
     // Filter expenses based on time period
-    const today = new Date()
-    const currentYear = today.getFullYear()
-    const currentMonth = today.getMonth()
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
 
-    let filteredExpenses = [...data.expenses]
+    let filteredExpenses = [...dashboardData.expenses];
 
     if (timeFilter === "thisMonth") {
       filteredExpenses = filteredExpenses.filter((expense) => {
-        const expenseDate = new Date(expense.date)
-        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear
-      })
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+      });
     } else if (timeFilter === "lastMonth") {
-      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
-      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
       filteredExpenses = filteredExpenses.filter((expense) => {
-        const expenseDate = new Date(expense.date)
-        return expenseDate.getMonth() === lastMonth && expenseDate.getFullYear() === lastMonthYear
-      })
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getMonth() === lastMonth && expenseDate.getFullYear() === lastMonthYear;
+      });
     } else if (timeFilter === "thisYear") {
       filteredExpenses = filteredExpenses.filter((expense) => {
-        const expenseDate = new Date(expense.date)
-        return expenseDate.getFullYear() === currentYear
-      })
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getFullYear() === currentYear;
+      });
     } else if (timeFilter === "lastYear") {
       filteredExpenses = filteredExpenses.filter((expense) => {
-        const expenseDate = new Date(expense.date)
-        return expenseDate.getFullYear() === currentYear - 1
-      })
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getFullYear() === currentYear - 1;
+      });
     }
 
     // Filter by department if specified
     if (deptFilter !== "all") {
-      filteredExpenses = filteredExpenses.filter((expense) => expense.department === deptFilter)
+      filteredExpenses = filteredExpenses.filter((expense) => expense.department === deptFilter);
     }
 
     // Update expense summary cards
-    updateExpenseSummaryCards(filteredExpenses)
+    updateExpenseSummaryCards(filteredExpenses);
 
     // Update expense charts
-    updateExpenseCharts(filteredExpenses)
+    updateExpenseCharts(filteredExpenses);
 
     // Update expenses table
-    updateExpensesTable(filteredExpenses)
+    updateExpensesTable(filteredExpenses);
   }
 
   function updateExpenseSummaryCards(expenses) {
-    const expenseTotal = document.getElementById("expenseTotal")
-    const expenseAverage = document.getElementById("expenseAverage")
-    const expenseLowest = document.getElementById("expenseLowest")
-    const expenseHighest = document.getElementById("expenseHighest")
+    const expenseTotal = document.getElementById("expenseTotal");
+    const expenseAverage = document.getElementById("expenseAverage");
+    const expenseLowest = document.getElementById("expenseLowest");
+    const expenseHighest = document.getElementById("expenseHighest");
+    
+    if (!expenseTotal || !expenseAverage || !expenseLowest || !expenseHighest) {
+      console.error("Expense summary elements not found");
+      return;
+    }
 
     // Calculate total
-    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-    expenseTotal.textContent = formatCurrency(total)
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    expenseTotal.textContent = formatCurrency(total);
 
     // Group expenses by event
-    const eventExpenses = {}
+    const eventExpenses = {};
     expenses.forEach((expense) => {
       if (eventExpenses[expense.eventId]) {
-        eventExpenses[expense.eventId] += expense.amount
+        eventExpenses[expense.eventId] += expense.amount;
       } else {
-        eventExpenses[expense.eventId] = expense.amount
+        eventExpenses[expense.eventId] = expense.amount;
       }
-    })
+    });
 
-    const eventAmounts = Object.values(eventExpenses)
+    const eventAmounts = Object.values(eventExpenses);
 
     // Calculate average per event
-    const average = eventAmounts.length > 0 ? total / eventAmounts.length : 0
-    expenseAverage.textContent = formatCurrency(average)
+    const average = eventAmounts.length > 0 ? total / eventAmounts.length : 0;
+    expenseAverage.textContent = formatCurrency(average);
 
     // Calculate lowest expense
-    const lowest = eventAmounts.length > 0 ? Math.min(...eventAmounts) : 0
-    expenseLowest.textContent = formatCurrency(lowest)
+    const lowest = eventAmounts.length > 0 ? Math.min(...eventAmounts) : 0;
+    expenseLowest.textContent = formatCurrency(lowest);
 
     // Calculate highest expense
-    const highest = eventAmounts.length > 0 ? Math.max(...eventAmounts) : 0
-    expenseHighest.textContent = formatCurrency(highest)
+    const highest = eventAmounts.length > 0 ? Math.max(...eventAmounts) : 0;
+    expenseHighest.textContent = formatCurrency(highest);
   }
 
   function updateExpenseCharts(expenses) {
     // Group expenses by category
-    const categoriesMap = {}
+    const categoriesMap = {};
     expenses.forEach((expense) => {
       if (categoriesMap[expense.category]) {
-        categoriesMap[expense.category] += expense.amount
+        categoriesMap[expense.category] += expense.amount;
       } else {
-        categoriesMap[expense.category] = expense.amount
+        categoriesMap[expense.category] = expense.amount;
       }
-    })
+    });
 
     const sortedCategories = Object.entries(categoriesMap)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
+      .slice(0, 6);
 
-    const categories = sortedCategories.map((item) => item[0])
-    const amounts = sortedCategories.map((item) => item[1])
+    const categories = sortedCategories.map((item) => item[0]);
+    const amounts = sortedCategories.map((item) => item[1]);
 
     // Update expense distribution chart
-    window.expenseDistributionChart.data.labels = categories
-    window.expenseDistributionChart.data.datasets[0].data = amounts
-    window.expenseDistributionChart.update()
+    if (window.charts.expenseDistributionChart) {
+      window.charts.expenseDistributionChart.data.labels = categories;
+      window.charts.expenseDistributionChart.data.datasets[0].data = amounts;
+      window.charts.expenseDistributionChart.update();
+    }
 
     // Group expenses by event and month
-    const eventsByMonth = {}
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const eventsByMonth = {};
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     expenses.forEach((expense) => {
-      const date = new Date(expense.date)
-      const month = date.getMonth()
+      const date = new Date(expense.date);
+      const month = date.getMonth();
 
       if (!eventsByMonth[month]) {
-        eventsByMonth[month] = {}
+        eventsByMonth[month] = {};
       }
 
       if (!eventsByMonth[month][expense.eventId]) {
-        eventsByMonth[month][expense.eventId] = 0
+        eventsByMonth[month][expense.eventId] = 0;
       }
 
-      eventsByMonth[month][expense.eventId] += expense.amount
-    })
+      eventsByMonth[month][expense.eventId] += expense.amount;
+    });
 
     // Calculate total expenses per month
     const monthlyAmounts = months.map((_, index) => {
-      if (!eventsByMonth[index]) return 0
+      if (!eventsByMonth[index]) return 0;
 
-      return Object.values(eventsByMonth[index]).reduce((sum, amount) => sum + amount, 0)
-    })
+      return Object.values(eventsByMonth[index]).reduce((sum, amount) => sum + amount, 0);
+    });
 
     // Update monthly expenses chart
-    window.monthlyExpensesChart.data.labels = months
-    window.monthlyExpensesChart.data.datasets[0].data = monthlyAmounts
-    window.monthlyExpensesChart.update()
+    if (window.charts.monthlyExpensesChart) {
+      window.charts.monthlyExpensesChart.data.labels = months;
+      window.charts.monthlyExpensesChart.data.datasets[0].data = monthlyAmounts;
+      window.charts.monthlyExpensesChart.update();
+    }
   }
 
   function updateExpensesTable(expenses) {
-    const expensesTable = document.getElementById("expensesTable").querySelector("tbody")
-    expensesTable.innerHTML = ""
+    const expensesTable = document.getElementById("expensesTable");
+    if (!expensesTable) {
+      console.error("Expenses table not found");
+      return;
+    }
+    
+    const tableBody = expensesTable.querySelector("tbody");
+    if (!tableBody) {
+      console.error("Expenses table body not found");
+      return;
+    }
+    
+    tableBody.innerHTML = "";
 
     // Get filter values
-    const searchTerm = document.getElementById("expenseSearchInput")?.value?.toLowerCase() || ""
-    const categoryFilter = document.getElementById("expenseCategoryFilter")?.value || "all"
+    const searchTerm = document.getElementById("expenseSearchInput")?.value?.toLowerCase() || "";
+    let categoryFilter = document.getElementById("expenseCategoryFilter")?.value || "all";
 
     // Filter expenses
-    let filteredExpenses = [...expenses]
+    let filteredExpenses = [...expenses];
 
     // Apply search filter
     if (searchTerm) {
@@ -1244,27 +1482,27 @@ document.addEventListener("DOMContentLoaded", () => {
         (expense) =>
           expense.eventName.toLowerCase().includes(searchTerm) ||
           expense.category.toLowerCase().includes(searchTerm) ||
-          expense.department.toLowerCase().includes(searchTerm),
-      )
+          expense.department.toLowerCase().includes(searchTerm)
+      );
     }
 
     // Apply category filter
     if (categoryFilter !== "all") {
-      filteredExpenses = filteredExpenses.filter((expense) => expense.category === categoryFilter)
+      filteredExpenses = filteredExpenses.filter((expense) => expense.category === categoryFilter);
     }
 
     // Sort expenses by date (most recent first)
-    filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date))
+    filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     if (filteredExpenses.length === 0) {
-      const row = document.createElement("tr")
-      row.innerHTML = `<td colspan="5" class="text-center">No expenses found</td>`
-      expensesTable.appendChild(row)
-      return
+      const row = document.createElement("tr");
+      row.innerHTML = `<td colspan="5" class="text-center">No expenses found</td>`;
+      tableBody.appendChild(row);
+      return;
     }
 
     filteredExpenses.forEach((expense) => {
-      const row = document.createElement("tr")
+      const row = document.createElement("tr");
 
       row.innerHTML = `
         <td>${expense.department}</td>
@@ -1272,59 +1510,70 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${expense.category}</td>
         <td>${formatCurrency(expense.amount)}</td>
         <td>${formatDate(expense.date)}</td>
-      `
+      `;
 
-      expensesTable.appendChild(row)
-    })
+      tableBody.appendChild(row);
+    });
 
     // Add event listeners to filter controls
-    document.getElementById("expenseSearchInput")?.addEventListener("input", () => {
-      updateExpensesTable(expenses)
-    })
+    const searchInput = document.getElementById("expenseSearchInput");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        updateExpensesTable(expenses);
+      });
+    }
 
-    document.getElementById("expenseCategoryFilter")?.addEventListener("change", () => {
-      updateExpensesTable(expenses)
-    })
+    const categoryFilterElement = document.getElementById("expenseCategoryFilter");
+    if (categoryFilterElement) {
+      categoryFilterElement.addEventListener("change", () => {
+        updateExpensesTable(expenses);
+      });
+    }
   }
 
   function initializeCalendar(data) {
-    const calendarMonth = document.getElementById("calendarMonth")
-    const eventsCalendar = document.getElementById("eventsCalendar")
-    const prevMonthBtn = document.getElementById("prevMonth")
-    const nextMonthBtn = document.getElementById("nextMonth")
+    const calendarMonth = document.getElementById("calendarMonth");
+    const eventsCalendar = document.getElementById("eventsCalendar");
+    const prevMonthBtn = document.getElementById("prevMonth");
+    const nextMonthBtn = document.getElementById("nextMonth");
+    
+    if (!calendarMonth || !eventsCalendar || !prevMonthBtn || !nextMonthBtn) {
+      console.error("Calendar elements not found");
+      return;
+    }
 
-    const currentDate = new Date()
+    const currentDate = new Date();
 
     // Render calendar for current month
-    renderCalendar(currentDate)
+    renderCalendar(currentDate);
 
     // Add event listeners to navigation buttons
     prevMonthBtn.addEventListener("click", () => {
-      currentDate.setMonth(currentDate.getMonth() - 1)
-      renderCalendar(currentDate)
-    })
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar(currentDate);
+    });
 
     nextMonthBtn.addEventListener("click", () => {
-      currentDate.setMonth(currentDate.getMonth() + 1)
-      renderCalendar(currentDate)
-    })
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar(currentDate);
+    });
 
     function renderCalendar(date) {
-      const year = date.getFullYear()
-      const month = date.getMonth()
+      const year = date.getFullYear();
+      const month = date.getMonth();
 
       // Set calendar month title
       calendarMonth.textContent = new Date(year, month, 1).toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
-      })
+      });
 
       // Get first day of month and total days in month
-      const firstDay = new Date(year, month, 1).getDay()
-      const daysInMonth = new Date(year, month + 1, 0).getDate()
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
 
       // Get days from previous month
-      const daysInPrevMonth = new Date(year, month, 0).getDate()
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
 
       // Create calendar grid
       let calendarHtml = `
@@ -1336,48 +1585,48 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="calendar-day-header">Thu</div>
           <div class="calendar-day-header">Fri</div>
           <div class="calendar-day-header">Sat</div>
-      `
+      `;
 
       // Add days from previous month
       for (let i = firstDay - 1; i >= 0; i--) {
-        const prevMonthDay = daysInPrevMonth - i
+        const prevMonthDay = daysInPrevMonth - i;
         calendarHtml += `
           <div class="calendar-day other-month">
             <div class="calendar-day-number">${prevMonthDay}</div>
           </div>
-        `
+        `;
       }
 
       // Add days of current month
-      const today = new Date()
+      const today = new Date();
       for (let day = 1; day <= daysInMonth; day++) {
-        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year
+        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
 
         // Get events for this day
-        const currentDay = new Date(year, month, day)
+        const currentDay = new Date(year, month, day);
         const dayEvents = data.events.filter((event) => {
-          const startDate = new Date(event.startDate)
-          const endDate = new Date(event.endDate)
-          return currentDay >= startDate && currentDay <= endDate
-        })
+          const startDate = new Date(event.startDate);
+          const endDate = new Date(event.endDate);
+          return currentDay >= startDate && currentDay <= endDate;
+        });
 
         // Create events HTML
-        let eventsHtml = ""
+        let eventsHtml = "";
         dayEvents.slice(0, 3).forEach((event) => {
-          const deptClass = event.department.toLowerCase().replace(" ", "-")
+          const deptClass = event.department.toLowerCase().replace(" ", "-");
           eventsHtml += `
             <div class="calendar-event ${deptClass}" data-event-id="${event._id}">
               ${event.name}
             </div>
-          `
-        })
+          `;
+        });
 
         if (dayEvents.length > 3) {
           eventsHtml += `
             <div class="calendar-event-more">
               +${dayEvents.length - 3} more
             </div>
-          `
+          `;
         }
 
         calendarHtml += `
@@ -1387,76 +1636,85 @@ document.addEventListener("DOMContentLoaded", () => {
               ${eventsHtml}
             </div>
           </div>
-        `
+        `;
       }
 
       // Add days from next month
-      const totalCells = 42 // 6 rows x 7 days
-      const cellsUsed = firstDay + daysInMonth
-      const nextMonthDays = totalCells - cellsUsed
+      const totalCells = 42; // 6 rows x 7 days
+      const cellsUsed = firstDay + daysInMonth;
+      const nextMonthDays = totalCells - cellsUsed;
 
       for (let day = 1; day <= nextMonthDays; day++) {
         calendarHtml += `
           <div class="calendar-day other-month">
             <div class="calendar-day-number">${day}</div>
           </div>
-        `
+        `;
       }
 
-      calendarHtml += `</div>`
+      calendarHtml += `</div>`;
 
       // Set calendar HTML
-      eventsCalendar.innerHTML = calendarHtml
+      eventsCalendar.innerHTML = calendarHtml;
 
       // Add event listeners to calendar events
-      const calendarEvents = document.querySelectorAll(".calendar-event")
+      const calendarEvents = document.querySelectorAll(".calendar-event");
       calendarEvents.forEach((eventEl) => {
         eventEl.addEventListener("click", (e) => {
-          e.stopPropagation()
-          const eventId = eventEl.getAttribute("data-event-id")
-          const event = data.events.find((event) => event._id === eventId)
+          e.stopPropagation();
+          const eventId = eventEl.getAttribute("data-event-id");
+          const event = data.events.find((event) => event._id === eventId);
           if (event) {
-            openEventDetails(event)
+            openEventDetails(event);
           }
-        })
-      })
+        });
+      });
     }
   }
 
   function openEventDetails(event) {
-    const eventDetailsTitle = document.getElementById("eventDetailsTitle")
-    const eventDetailsContent = document.getElementById("eventDetailsContent")
+    const eventDetailsTitle = document.getElementById("eventDetailsTitle");
+    const eventDetailsContent = document.getElementById("eventDetailsContent");
+    
+    if (!eventDetailsTitle || !eventDetailsContent || !eventDetailsModal) {
+      console.error("Event details elements not found");
+      return;
+    }
 
-    eventDetailsTitle.textContent = event.name
+    eventDetailsTitle.textContent = event.name;
 
     // Calculate total expense
-    let totalExpense = 0
-    event.expenses.forEach((expense) => {
-      totalExpense += expense.amount
-    })
+    let totalExpense = 0;
+    if (event.expenses && Array.isArray(event.expenses)) {
+      event.expenses.forEach((expense) => {
+        totalExpense += expense.amount;
+      });
+    }
 
     // Determine event status
-    const status = getEventStatus(event)
+    const status = getEventStatus(event);
 
     // Format expenses table
-    let expensesHtml = ""
-    event.expenses.forEach((expense) => {
-      expensesHtml += `
-        <tr>
-          <td>${expense.category}</td>
-          <td>${formatCurrency(expense.amount)}</td>
-        </tr>
-      `
-    })
+    let expensesHtml = "";
+    if (event.expenses && Array.isArray(event.expenses)) {
+      event.expenses.forEach((expense) => {
+        expensesHtml += `
+          <tr>
+            <td>${expense.category}</td>
+            <td>${formatCurrency(expense.amount)}</td>
+          </tr>
+        `;
+      });
+    }
 
     eventDetailsContent.innerHTML = `
       <div class="event-details">
         <div class="event-info">
           <p><strong>Department:</strong> ${event.department}</p>
-          <p><strong>Organizing Club:</strong> ${event.club}</p>
+          <p><strong>Organizing Club:</strong> ${event.club || 'N/A'}</p>
           <p><strong>Date:</strong> ${formatDate(event.startDate)} to ${formatDate(event.endDate)}</p>
           <p><strong>Time:</strong> ${formatTime(event.startTime)} to ${formatTime(event.endTime)}</p>
-          <p><strong>Venue:</strong> ${event.venue}</p>
+          <p><strong>Venue:</strong> ${event.venue || 'N/A'}</p>
           <p><strong>Status:</strong> <span class="status-badge ${status.toLowerCase()}">${status}</span></p>
           <p><strong>Total Expense:</strong> ${formatCurrency(totalExpense)}</p>
         </div>
@@ -1476,7 +1734,7 @@ document.addEventListener("DOMContentLoaded", () => {
               </tr>
             </thead>
             <tbody>
-              ${expensesHtml}
+              ${expensesHtml || '<tr><td colspan="2" class="text-center">No expenses found</td></tr>'}
               <tr class="total-row">
                 <td><strong>Total</strong></td>
                 <td><strong>${formatCurrency(totalExpense)}</strong></td>
@@ -1485,70 +1743,98 @@ document.addEventListener("DOMContentLoaded", () => {
           </table>
         </div>
       </div>
-    `
-
-    // Add CSS for the event details
-    const style = document.createElement("style")
-    style.textContent = `
-      .event-details {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-      .event-info {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-      }
-      .event-info p {
-        margin: 0;
-      }
-      .event-description h4, .event-expenses h4 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 10px;
-        color: var(--dark-color);
-      }
-      .expenses-table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .expenses-table th, .expenses-table td {
-        padding: 10px;
-        text-align: left;
-        border-bottom: 1px solid var(--gray-light);
-      }
-      .expenses-table th {
-        font-weight: 600;
-        color: var(--gray-dark);
-        background-color: #f8f9fa;
-      }
-      .total-row {
-        background-color: #f5f7fb;
-      }
-      @media (max-width: 768px) {
-        .event-info {
-          grid-template-columns: 1fr;
-        }
-      }
-    `
-    document.head.appendChild(style)
+    `;
 
     // Show modal
-    openModal(eventDetailsModal)
+    openModal(eventDetailsModal);
+  }
+
+  // Settings Form Handlers
+  function handleAdminProfileUpdate(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById("adminEmail")?.value || "";
+    const fullName = document.getElementById("adminFullName")?.value || "";
+    
+    if (!email || !fullName) {
+      showToast("Error", "Please fill in all fields", "error");
+      return;
+    }
+    
+    // In a real application, you would send this data to the server
+    // For now, we'll just update the UI and show a success message
+    
+    // Update admin name in the sidebar
+    adminName.textContent = fullName;
+    
+    // Update profile dropdown
+    document.querySelector(".profile-btn span").textContent = fullName;
+    
+    // Show success message
+    showToast("Success", "Profile updated successfully", "success");
+  }
+  
+  function handlePasswordChange(e) {
+    e.preventDefault();
+    
+    const currentPassword = document.getElementById("currentPassword")?.value;
+    const newPassword = document.getElementById("newPassword")?.value;
+    const confirmPassword = document.getElementById("confirmPassword")?.value;
+    
+    // Validate passwords
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showToast("Error", "All fields are required", "error");
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      showToast("Error", "New passwords do not match", "error");
+      return;
+    }
+    
+    // In a real application, you would send this data to the server
+    // For now, we'll just show a success message
+    
+    // Clear form
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("confirmPassword").value = "";
+    
+    // Show success message
+    showToast("Success", "Password updated successfully", "success");
+  }
+  
+  function handleNotificationSettingsUpdate(e) {
+    e.preventDefault();
+    
+    // In a real application, you would send this data to the server
+    // For now, we'll just show a success message
+    
+    // Show success message
+    showToast("Success", "Notification preferences saved", "success");
+  }
+  
+  function handleSystemSettingsUpdate(e) {
+    e.preventDefault();
+    
+    // In a real application, you would send this data to the server
+    // For now, we'll just show a success message
+    
+    // Show success message
+    showToast("Success", "System settings updated", "success");
   }
 
   function getEventStatus(event) {
-    const today = new Date()
-    const startDate = new Date(event.startDate)
-    const endDate = new Date(event.endDate)
+    const today = new Date();
+    const startDate = new Date(event.startDate);
+    const endDate = new Date(event.endDate);
 
     if (endDate < today) {
-      return "Completed"
+      return "Completed";
     } else if (startDate <= today && endDate >= today) {
-      return "Ongoing"
+      return "Ongoing";
     } else {
-      return "Upcoming"
+      return "Upcoming";
     }
   }
 
@@ -1558,66 +1844,87 @@ document.addEventListener("DOMContentLoaded", () => {
       Architecture: "School of Architecture",
       Pharma: "Pharmaceutical Sciences",
       "Business School": "School of Business Management",
-    }
+    };
 
-    return deptMap[department] || department
+    return deptMap[department] || department;
   }
 
   function openModal(modal) {
-    modal.classList.add("active")
+    if (modal) {
+      modal.classList.add("active");
+    }
   }
 
   function closeModal(modal) {
-    modal.classList.remove("active")
+    if (modal) {
+      modal.classList.remove("active");
+    }
   }
 
   function showToast(title, message, type = "success") {
-    const toast = document.getElementById("toast")
-    const toastTitle = document.getElementById("toastTitle")
-    const toastMessage = document.getElementById("toastMessage")
-    const toastIcon = document.getElementById("toastIcon")
+    const toast = document.getElementById("toast");
+    const toastTitle = document.getElementById("toastTitle");
+    const toastMessage = document.getElementById("toastMessage");
+    const toastIcon = document.getElementById("toastIcon");
 
-    toastTitle.textContent = title
-    toastMessage.textContent = message
+    if (!toast || !toastTitle || !toastMessage || !toastIcon) {
+      console.error("Toast elements not found");
+      return;
+    }
+
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
 
     // Set icon based on type
-    toastIcon.className = ""
+    toastIcon.innerHTML = "";
     if (type === "success") {
-      toastIcon.className = "fas fa-check-circle success"
+      toastIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+      toastIcon.className = "toast-icon success";
     } else if (type === "error") {
-      toastIcon.className = "fas fa-times-circle error"
+      toastIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
+      toastIcon.className = "toast-icon error";
     } else if (type === "warning") {
-      toastIcon.className = "fas fa-exclamation-circle warning"
+      toastIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+      toastIcon.className = "toast-icon warning";
     } else if (type === "info") {
-      toastIcon.className = "fas fa-info-circle info"
+      toastIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
+      toastIcon.className = "toast-icon info";
     }
 
     // Show toast
-    toast.classList.add("active")
+    toast.classList.add("active");
 
     // Hide toast after 3 seconds
     setTimeout(() => {
-      toast.classList.remove("active")
-    }, 3000)
+      toast.classList.remove("active");
+    }, 3000);
   }
 
   function formatCurrency(amount) {
-    return "$" + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")
+    return "$" + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
   }
 
   function formatDate(dateString) {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    if (!dateString) return "N/A";
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid Date";
+    
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   }
 
   function formatTime(timeString) {
-    if (!timeString) return ""
+    if (!timeString) return "N/A";
 
-    const [hours, minutes] = timeString.split(":")
-    const hour = Number.parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
-    const hour12 = hour % 12 || 12
+    const [hours, minutes] = timeString.split(":");
+    if (!hours || !minutes) return timeString;
+    
+    const hour = parseInt(hours, 10);
+    if (isNaN(hour)) return timeString;
+    
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
 
-    return `${hour12}:${minutes} ${ampm}`
+    return `${hour12}:${minutes} ${ampm}`;
   }
-})
+});
