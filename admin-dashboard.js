@@ -1,1616 +1,1623 @@
+// import { Chart } from "@/components/ui/chart"
 document.addEventListener("DOMContentLoaded", () => {
-    // Check if user is logged in as admin
-    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"))
-    if (!loggedInUser || loggedInUser.type !== "admin") {
-      window.location.href = "login.html"
+  // Check if user is logged in
+  const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"))
+
+  if (!loggedInUser || loggedInUser.type !== "admin") {
+    // Redirect to login page if not logged in as admin
+    window.location.href = "login.html"
+    return
+  }
+
+  // DOM Elements
+  const sidebarToggle = document.getElementById("sidebarToggle")
+  const sidebar = document.querySelector(".sidebar")
+  const mainContent = document.querySelector(".main-content")
+  const navItems = document.querySelectorAll(".nav-item")
+  const tabContents = document.querySelectorAll(".tab-content")
+  const profileDropdownBtn = document.getElementById("profileDropdownBtn")
+  const profileDropdown = document.getElementById("profileDropdown")
+  const logoutBtn = document.getElementById("logoutBtn")
+  const logoutLink = document.getElementById("logoutLink")
+  const currentDate = document.getElementById("currentDate")
+  const viewAllButtons = document.querySelectorAll(".view-all-btn")
+
+  // Event Details Modal Elements
+  const eventDetailsModal = document.getElementById("eventDetailsModal")
+  const closeEventDetailsModal = document.getElementById("closeEventDetailsModal")
+  const closeEventDetailsBtn = document.getElementById("closeEventDetailsBtn")
+
+  // Department Details Modal Elements
+  const departmentDetailsModal = document.getElementById("departmentDetailsModal")
+  const closeDepartmentDetailsModal = document.getElementById("closeDepartmentDetailsModal")
+  const closeDepartmentDetailsBtn = document.getElementById("closeDepartmentDetailsBtn")
+
+  // Toast Elements
+  const toast = document.getElementById("toast")
+  const toastClose = document.querySelector(".toast-close")
+
+  // Set current date
+  const now = new Date()
+  currentDate.textContent = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+
+  // Toggle sidebar
+  sidebarToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("collapsed")
+    mainContent.classList.toggle("expanded")
+  })
+
+  // Tab navigation
+  navItems.forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault()
+
+      const tabId = this.getAttribute("data-tab")
+
+      // Remove active class from all nav items and tab contents
+      navItems.forEach((navItem) => navItem.classList.remove("active"))
+      tabContents.forEach((content) => content.classList.remove("active"))
+
+      // Add active class to clicked nav item and corresponding tab content
+      this.classList.add("active")
+      document.getElementById(tabId).classList.add("active")
+
+      // If expenses tab is selected, update charts
+      if (tabId === "expenses") {
+        updateExpensesData()
+      }
+
+      // If events tab is selected, update events table
+      if (tabId === "events") {
+        updateEventsTable()
+      }
+
+      // If departments tab is selected, update departments grid
+      if (tabId === "departments") {
+        updateDepartmentsGrid()
+      }
+    })
+  })
+
+  // View All buttons
+  viewAllButtons.forEach((button) => {
+    button.addEventListener("click", function () {
+      const tabId = this.getAttribute("data-tab")
+
+      // Find the nav item with the corresponding data-tab attribute
+      const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`)
+
+      if (navItem) {
+        navItem.click()
+      }
+    })
+  })
+
+  // Profile dropdown
+  profileDropdownBtn.addEventListener("click", () => {
+    profileDropdown.classList.toggle("active")
+  })
+
+  // Close profile dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!profileDropdownBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+      profileDropdown.classList.remove("active")
+    }
+  })
+
+  // Logout functionality
+  logoutBtn.addEventListener("click", logout)
+  logoutLink.addEventListener("click", (e) => {
+    e.preventDefault()
+    logout()
+  })
+
+  function logout() {
+    localStorage.removeItem("loggedInUser")
+    window.location.href = "login.html"
+  }
+
+  // Close Event Details Modal
+  closeEventDetailsModal.addEventListener("click", () => {
+    closeModal(eventDetailsModal)
+  })
+
+  closeEventDetailsBtn.addEventListener("click", () => {
+    closeModal(eventDetailsModal)
+  })
+
+  // Close Department Details Modal
+  closeDepartmentDetailsModal.addEventListener("click", () => {
+    closeModal(departmentDetailsModal)
+  })
+
+  closeDepartmentDetailsBtn.addEventListener("click", () => {
+    closeModal(departmentDetailsModal)
+  })
+
+  // Close Toast
+  toastClose.addEventListener("click", () => {
+    toast.classList.remove("active")
+  })
+
+  // Initialize Dashboard
+  initializeDashboard()
+
+  // Functions
+  function initializeDashboard() {
+    // Fetch all departments data
+    fetchAllDepartmentsData()
+      .then((data) => {
+        // Update overview stats
+        updateOverviewStats(data)
+
+        // Initialize charts
+        initializeCharts(data)
+
+        // Update recent events table
+        updateRecentEventsTable(data)
+
+        // Update departments grid
+        updateDepartmentsGrid(data)
+
+        // Update events table
+        updateEventsTable(data)
+
+        // Update expenses data
+        updateExpensesData(data)
+
+        // Initialize calendar
+        initializeCalendar(data)
+      })
+      .catch((error) => {
+        console.error("Error initializing dashboard:", error)
+        showToast("Error", "Failed to initialize dashboard", "error")
+      })
+  }
+
+  async function fetchAllDepartmentsData() {
+    try {
+      const departments = ["CSE", "Architecture", "Pharma", "Business School"]
+      const allData = {
+        departments: departments,
+        events: [],
+        expenses: [],
+      }
+
+      // Fetch events for each department
+      for (const department of departments) {
+        const response = await fetch(
+          `http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch events for ${department}`)
+        }
+
+        const data = await response.json()
+
+        if (data.success) {
+          // Add department name to each event
+          const eventsWithDept = data.events.map((event) => ({
+            ...event,
+            department: department,
+          }))
+
+          allData.events = [...allData.events, ...eventsWithDept]
+
+          // Extract expenses from events
+          eventsWithDept.forEach((event) => {
+            event.expenses.forEach((expense) => {
+              allData.expenses.push({
+                eventId: event._id,
+                eventName: event.name,
+                department: department,
+                category: expense.category,
+                amount: expense.amount,
+                date: event.startDate,
+              })
+            })
+          })
+        }
+      }
+
+      return allData
+    } catch (error) {
+      console.error("Error fetching departments data:", error)
+      throw error
+    }
+  }
+
+  function updateOverviewStats(data) {
+    const totalDepartments = document.getElementById("totalDepartments")
+    const totalEvents = document.getElementById("totalEvents")
+    const totalExpenses = document.getElementById("totalExpenses")
+    const upcomingEvents = document.getElementById("upcomingEvents")
+
+    // Set total departments
+    totalDepartments.textContent = data.departments.length
+
+    // Set total events
+    totalEvents.textContent = data.events.length
+
+    // Calculate total expenses
+    let expensesSum = 0
+    data.expenses.forEach((expense) => {
+      expensesSum += expense.amount
+    })
+    totalExpenses.textContent = formatCurrency(expensesSum)
+
+    // Calculate upcoming events
+    const today = new Date()
+    const upcomingCount = data.events.filter((event) => {
+      const endDate = new Date(event.endDate)
+      return endDate >= today
+    }).length
+    upcomingEvents.textContent = upcomingCount
+  }
+
+  function initializeCharts(data) {
+    // Department Expenses Chart
+    const deptExpensesCtx = document.getElementById("departmentExpensesChart").getContext("2d")
+    const deptExpensesData = calculateExpensesByDepartment(data)
+
+    window.deptExpensesChart = new Chart(deptExpensesCtx, {
+      type: "bar",
+      data: {
+        labels: deptExpensesData.departments,
+        datasets: [
+          {
+            label: "Total Expenses",
+            data: deptExpensesData.amounts,
+            backgroundColor: [
+              "rgba(67, 97, 238, 0.7)",
+              "rgba(76, 201, 240, 0.7)",
+              "rgba(114, 9, 183, 0.7)",
+              "rgba(243, 114, 44, 0.7)",
+            ],
+            borderColor: [
+              "rgba(67, 97, 238, 1)",
+              "rgba(76, 201, 240, 1)",
+              "rgba(114, 9, 183, 1)",
+              "rgba(243, 114, 44, 1)",
+            ],
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => "$" + value,
+            },
+          },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                return "Total: " + formatCurrency(context.raw)
+              },
+            },
+          },
+        },
+      },
+    })
+
+    // Expense Categories Chart
+    const expenseCategoriesCtx = document.getElementById("expenseCategoriesChart").getContext("2d")
+    const expenseCategoriesData = calculateExpensesByCategory(data)
+
+    window.expenseCategoriesChart = new Chart(expenseCategoriesCtx, {
+      type: "doughnut",
+      data: {
+        labels: expenseCategoriesData.categories,
+        datasets: [
+          {
+            data: expenseCategoriesData.amounts,
+            backgroundColor: [
+              "rgba(67, 97, 238, 0.7)",
+              "rgba(76, 201, 240, 0.7)",
+              "rgba(114, 9, 183, 0.7)",
+              "rgba(243, 114, 44, 0.7)",
+              "rgba(247, 37, 133, 0.7)",
+              "rgba(58, 134, 255, 0.7)",
+            ],
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "right",
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.label || ""
+                const value = context.raw || 0
+                const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                const percentage = Math.round((value / total) * 100)
+                return `${label}: ${formatCurrency(value)} (${percentage}%)`
+              },
+            },
+          },
+        },
+      },
+    })
+
+    // Monthly Expenses Chart
+    const monthlyExpensesCtx = document.getElementById("monthlyExpensesChart").getContext("2d")
+    const monthlyExpensesData = calculateExpensesByMonth(data)
+
+    window.monthlyExpensesChart = new Chart(monthlyExpensesCtx, {
+      type: "line",
+      data: {
+        labels: monthlyExpensesData.months,
+        datasets: [
+          {
+            label: "Total Expenses",
+            data: monthlyExpensesData.amounts,
+            backgroundColor: "rgba(67, 97, 238, 0.2)",
+            borderColor: "rgba(67, 97, 238, 1)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => "$" + value,
+            },
+          },
+        },
+      },
+    })
+
+    // Expense Distribution Chart
+    const expenseDistributionCtx = document.getElementById("expenseDistributionChart").getContext("2d")
+    const expenseDistributionData = calculateExpensesByCategory(data)
+
+    window.expenseDistributionChart = new Chart(expenseDistributionCtx, {
+      type: "pie",
+      data: {
+        labels: expenseDistributionData.categories,
+        datasets: [
+          {
+            data: expenseDistributionData.amounts,
+            backgroundColor: [
+              "rgba(67, 97, 238, 0.7)",
+              "rgba(76, 201, 240, 0.7)",
+              "rgba(114, 9, 183, 0.7)",
+              "rgba(243, 114, 44, 0.7)",
+              "rgba(247, 37, 133, 0.7)",
+              "rgba(58, 134, 255, 0.7)",
+            ],
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "right",
+          },
+        },
+      },
+    })
+
+    // Department Comparison Chart
+    const departmentComparisonCtx = document.getElementById("departmentComparisonChart").getContext("2d")
+    const departmentComparisonData = calculateDepartmentComparison(data)
+
+    window.departmentComparisonChart = new Chart(departmentComparisonCtx, {
+      type: "bar",
+      data: {
+        labels: departmentComparisonData.departments,
+        datasets: departmentComparisonData.datasets,
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true,
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => "$" + value,
+            },
+          },
+        },
+      },
+    })
+
+    // Update charts when filters change
+    document.getElementById("deptExpenseChartYear").addEventListener("change", function () {
+      updateDepartmentExpensesChart(data, this.value)
+    })
+
+    document.getElementById("expenseCategoryChartYear").addEventListener("change", function () {
+      updateExpenseCategoriesChart(data, this.value)
+    })
+
+    document.getElementById("expenseComparisonCategory").addEventListener("change", function () {
+      updateDepartmentComparisonChart(data, this.value)
+    })
+
+    document.getElementById("expenseTimeFilter").addEventListener("change", function () {
+      updateExpensesData(data, this.value)
+    })
+
+    document.getElementById("expenseDeptFilter").addEventListener("change", function () {
+      const timeFilter = document.getElementById("expenseTimeFilter").value
+      updateExpensesData(data, timeFilter, this.value)
+    })
+
+    document.getElementById("resetExpenseFilters").addEventListener("click", () => {
+      document.getElementById("expenseTimeFilter").value = "thisYear"
+      document.getElementById("expenseDeptFilter").value = "all"
+      updateExpensesData(data, "thisYear", "all")
+    })
+  }
+
+  function calculateExpensesByDepartment(data, year = new Date().getFullYear()) {
+    const departments = {}
+
+    data.expenses.forEach((expense) => {
+      const expenseDate = new Date(expense.date)
+      if (expenseDate.getFullYear() === Number(year)) {
+        if (departments[expense.department]) {
+          departments[expense.department] += expense.amount
+        } else {
+          departments[expense.department] = expense.amount
+        }
+      }
+    })
+
+    return {
+      departments: Object.keys(departments),
+      amounts: Object.values(departments),
+    }
+  }
+
+  function calculateExpensesByCategory(data, year = new Date().getFullYear(), department = "all") {
+    const categories = {}
+
+    data.expenses.forEach((expense) => {
+      const expenseDate = new Date(expense.date)
+      if (expenseDate.getFullYear() === Number(year) && (department === "all" || expense.department === department)) {
+        if (categories[expense.category]) {
+          categories[expense.category] += expense.amount
+        } else {
+          categories[expense.category] = expense.amount
+        }
+      }
+    })
+
+    // Sort categories by amount (descending)
+    const sortedCategories = Object.entries(categories)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6) // Limit to top 6 categories
+
+    return {
+      categories: sortedCategories.map((item) => item[0]),
+      amounts: sortedCategories.map((item) => item[1]),
+    }
+  }
+
+  function calculateExpensesByMonth(data, year = new Date().getFullYear(), department = "all") {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const amounts = Array(12).fill(0)
+
+    data.expenses.forEach((expense) => {
+      const expenseDate = new Date(expense.date)
+      if (expenseDate.getFullYear() === Number(year) && (department === "all" || expense.department === department)) {
+        const month = expenseDate.getMonth()
+        amounts[month] += expense.amount
+      }
+    })
+
+    return {
+      months: months,
+      amounts: amounts,
+    }
+  }
+
+  function calculateDepartmentComparison(data, year = new Date().getFullYear(), selectedCategory = "all") {
+    const departments = [...new Set(data.expenses.map((expense) => expense.department))]
+    const categories = [...new Set(data.expenses.map((expense) => expense.category))]
+
+    // Filter categories if a specific one is selected
+    const filteredCategories = selectedCategory === "all" ? categories : [selectedCategory]
+
+    // Create datasets for each category
+    const datasets = filteredCategories.map((category, index) => {
+      const colors = [
+        "rgba(67, 97, 238, 0.7)",
+        "rgba(76, 201, 240, 0.7)",
+        "rgba(114, 9, 183, 0.7)",
+        "rgba(243, 114, 44, 0.7)",
+        "rgba(247, 37, 133, 0.7)",
+        "rgba(58, 134, 255, 0.7)",
+      ]
+
+      const departmentAmounts = departments.map((dept) => {
+        const filteredExpenses = data.expenses.filter((expense) => {
+          const expenseDate = new Date(expense.date)
+          return (
+            expenseDate.getFullYear() === Number(year) && expense.department === dept && expense.category === category
+          )
+        })
+
+        return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0)
+      })
+
+      return {
+        label: category,
+        data: departmentAmounts,
+        backgroundColor: colors[index % colors.length],
+        borderWidth: 1,
+      }
+    })
+
+    return {
+      departments: departments,
+      datasets: datasets,
+    }
+  }
+
+  function updateDepartmentExpensesChart(data, year) {
+    const deptExpensesData = calculateExpensesByDepartment(data, year)
+
+    window.deptExpensesChart.data.labels = deptExpensesData.departments
+    window.deptExpensesChart.data.datasets[0].data = deptExpensesData.amounts
+    window.deptExpensesChart.update()
+  }
+
+  function updateExpenseCategoriesChart(data, year) {
+    const expenseCategoriesData = calculateExpensesByCategory(data, year)
+
+    window.expenseCategoriesChart.data.labels = expenseCategoriesData.categories
+    window.expenseCategoriesChart.data.datasets[0].data = expenseCategoriesData.amounts
+    window.expenseCategoriesChart.update()
+  }
+
+  function updateDepartmentComparisonChart(data, category) {
+    const departmentComparisonData = calculateDepartmentComparison(data, new Date().getFullYear(), category)
+
+    window.departmentComparisonChart.data.labels = departmentComparisonData.departments
+    window.departmentComparisonChart.data.datasets = departmentComparisonData.datasets
+    window.departmentComparisonChart.update()
+  }
+
+  function updateRecentEventsTable(data) {
+    const recentEventsTable = document.getElementById("recentEventsTable").querySelector("tbody")
+    recentEventsTable.innerHTML = ""
+
+    // Sort events by date (most recent first)
+    const sortedEvents = [...data.events].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5) // Get only the 5 most recent events
+
+    if (sortedEvents.length === 0) {
+      const row = document.createElement("tr")
+      row.innerHTML = `<td colspan="5" class="text-center">No events found</td>`
+      recentEventsTable.appendChild(row)
       return
     }
-  
-    // Set admin username
-    document.getElementById("adminUsername").textContent = loggedInUser.username
-  
-    // Set current date
-    const now = new Date()
-    document.getElementById("currentDate").textContent = now.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  
-    // DOM Elements
-    const sidebarToggle = document.getElementById("sidebarToggle")
-    const sidebar = document.querySelector(".sidebar")
-    const mainContent = document.querySelector(".main-content")
-    const navItems = document.querySelectorAll(".nav-item")
-    const pages = document.querySelectorAll(".page")
-    const pageTitle = document.getElementById("pageTitle")
-    const logoutBtn = document.getElementById("logoutBtn")
-    const themeToggle = document.getElementById("themeToggle")
-  
-    // Theme toggle
-    themeToggle.addEventListener("change", function () {
-      if (this.checked) {
-        document.body.classList.add("dark-theme")
-        localStorage.setItem("theme", "dark")
-      } else {
-        document.body.classList.remove("dark-theme")
-        localStorage.setItem("theme", "light")
-      }
-    })
-  
-    // Check saved theme
-    const savedTheme = localStorage.getItem("theme")
-    if (savedTheme === "dark") {
-      document.body.classList.add("dark-theme")
-      themeToggle.checked = true
-    }
-  
-    // Toggle sidebar
-    sidebarToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed")
-      mainContent.classList.toggle("expanded")
-    })
-  
-    // Navigation
-    navItems.forEach((item) => {
-      item.addEventListener("click", function () {
-        // Remove active class from all nav items and pages
-        navItems.forEach((navItem) => navItem.classList.remove("active"))
-        pages.forEach((page) => page.classList.remove("active"))
-  
-        // Add active class to clicked nav item and corresponding page
-        this.classList.add("active")
-        const pageId = this.getAttribute("data-page")
-        document.getElementById(pageId).classList.add("active")
-  
-        // Update page title
-        pageTitle.textContent = this.querySelector("span").textContent
-  
-        // Load page-specific data
-        loadPageData(pageId)
-      })
-    })
-  
-    // Logout
-    logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem("loggedInUser")
-      window.location.href = "login.html"
-    })
-  
-    // Initialize dashboard
-    initializeDashboard()
-  
-    // Settings navigation
-    const settingsNavItems = document.querySelectorAll(".settings-nav-item")
-    const settingsPanels = document.querySelectorAll(".settings-panel")
-  
-    settingsNavItems.forEach((item) => {
-      item.addEventListener("click", function () {
-        // Remove active class from all nav items and panels
-        settingsNavItems.forEach((navItem) => navItem.classList.remove("active"))
-        settingsPanels.forEach((panel) => panel.classList.remove("active"))
-  
-        // Add active class to clicked nav item and corresponding panel
-        this.classList.add("active")
-        const settingsId = this.getAttribute("data-settings")
-        document.getElementById(settingsId + "Settings").classList.add("active")
-      })
-    })
-  
-    // Users tab navigation
-    const usersTabs = document.querySelectorAll(".tab-btn")
-    const usersTabContents = document.querySelectorAll(".users-tab-content")
-  
-    usersTabs.forEach((tab) => {
-      tab.addEventListener("click", function () {
-        // Remove active class from all tabs and contents
-        usersTabs.forEach((t) => t.classList.remove("active"))
-        usersTabContents.forEach((c) => c.classList.remove("active"))
-  
-        // Add active class to clicked tab and corresponding content
-        this.classList.add("active")
-        const tabId = this.getAttribute("data-tab")
-        document.getElementById(tabId).classList.add("active")
-      })
-    })
-  
-    // User form type change
-    const userType = document.getElementById("userType")
-    const departmentField = document.querySelector(".department-field")
-  
-    userType.addEventListener("change", function () {
-      if (this.value === "department") {
-        departmentField.style.display = "block"
-      } else {
-        departmentField.style.display = "none"
-      }
-    })
-  
-    // Backup file selection
-    const backupFile = document.getElementById("backupFile")
-    const selectedBackupFile = document.getElementById("selectedBackupFile")
-    const restoreBackupBtn = document.getElementById("restoreBackupBtn")
-  
-    backupFile.addEventListener("change", function () {
-      if (this.files.length > 0) {
-        selectedBackupFile.textContent = this.files[0].name
-        restoreBackupBtn.disabled = false
-      } else {
-        selectedBackupFile.textContent = "No file selected"
-        restoreBackupBtn.disabled = true
-      }
-    })
-  
-    // Functions
-    function initializeDashboard() {
-      // Fetch all departments
-      fetchDepartments()
-  
-      // Fetch all events
-      fetchEvents()
-  
-      // Initialize charts
-      initializeCharts()
-  
-      // Load dashboard data
-      loadDashboardData()
-    }
-  
-    function loadPageData(pageId) {
-      switch (pageId) {
-        case "dashboard":
-          loadDashboardData()
-          break
-        case "departments":
-          loadDepartmentsData()
-          break
-        case "expenses":
-          loadExpensesData()
-          break
-        case "events":
-          loadEventsData()
-          break
-        case "users":
-          loadUsersData()
-          break
-      }
-    }
-  
-    function fetchDepartments() {
-      // In a real application, this would fetch from the server
-      // For now, we'll use hardcoded departments
-      const departments = [
-        { id: 1, name: "CSE", fullName: "Computer Science & Engineering", budget: 50000 },
-        { id: 2, name: "Architecture", fullName: "School of Architecture", budget: 45000 },
-        { id: 3, name: "Pharma", fullName: "Pharmaceutical Sciences", budget: 60000 },
-        { id: 4, name: "Business School", fullName: "School of Business Management", budget: 55000 },
-      ]
-  
-      // Store departments in localStorage for use across the application
-      localStorage.setItem("departments", JSON.stringify(departments))
-  
-      return departments
-    }
-  
-    function fetchEvents() {
-      // Fetch all events from all departments
-      fetch("http://localhost:5000/api/get-all-events")
-        .then((response) => {
-          if (!response.ok) {
-            // If the endpoint doesn't exist, we'll fetch events for each department separately
-            return fetchEventsByDepartment()
-          }
-          return response.json()
-        })
-        .then((data) => {
-          if (data && data.success) {
-            localStorage.setItem("allEvents", JSON.stringify(data.events))
-            updateDashboardWithEvents(data.events)
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching events:", error)
-          // If there's an error, try fetching by department
-          fetchEventsByDepartment()
-        })
-    }
-  
-    function fetchEventsByDepartment() {
-      const departments = JSON.parse(localStorage.getItem("departments")) || []
-      const allEvents = []
-      let completedRequests = 0
-  
-      departments.forEach((dept) => {
-        fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(dept.name)}`)
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              // Add department name to each event for easier filtering
-              const eventsWithDept = data.events.map((event) => ({
-                ...event,
-                departmentName: dept.name,
-                departmentFullName: dept.fullName,
-              }))
-  
-              allEvents.push(...eventsWithDept)
-            }
-  
-            completedRequests++
-            if (completedRequests === departments.length) {
-              // All requests completed
-              localStorage.setItem("allEvents", JSON.stringify(allEvents))
-              updateDashboardWithEvents(allEvents)
-            }
-          })
-          .catch((error) => {
-            console.error(`Error fetching events for ${dept.name}:`, error)
-            completedRequests++
-            if (completedRequests === departments.length) {
-              // All requests completed
-              localStorage.setItem("allEvents", JSON.stringify(allEvents))
-              updateDashboardWithEvents(allEvents)
-            }
-          })
-      })
-  
-      return allEvents
-    }
-  
-    function updateDashboardWithEvents(events) {
-      // Update dashboard stats
-      document.getElementById("totalEvents").textContent = events.length
-  
-      // Calculate total expenses
-      let totalExpenses = 0
-      events.forEach((event) => {
-        event.expenses.forEach((expense) => {
-          totalExpenses += expense.amount
-        })
-      })
-  
-      document.getElementById("totalExpenses").textContent = formatCurrency(totalExpenses)
-  
-      // Update departments count
-      const departments = JSON.parse(localStorage.getItem("departments")) || []
-      document.getElementById("totalDepartments").textContent = departments.length
-  
-      // Calculate budget alerts
-      const departmentExpenses = {}
-      const departmentBudgets = {}
-  
-      departments.forEach((dept) => {
-        departmentBudgets[dept.name] = dept.budget
-        departmentExpenses[dept.name] = 0
-      })
-  
-      events.forEach((event) => {
-        if (departmentExpenses[event.department]) {
-          event.expenses.forEach((expense) => {
-            departmentExpenses[event.department] += expense.amount
-          })
-        }
-      })
-  
-      let alertCount = 0
-      for (const dept in departmentExpenses) {
-        if (departmentExpenses[dept] > departmentBudgets[dept] * 0.9) {
-          alertCount++
-        }
-      }
-  
-      document.getElementById("budgetAlerts").textContent = alertCount
-  
-      // Update recent events table
-      updateRecentEventsTable(events)
-  
-      // Update department spending table
-      updateDepartmentSpendingTable(departmentExpenses, departmentBudgets)
-  
-      // Update charts
-      updateDashboardCharts(events, departmentExpenses)
-    }
-  
-    function updateRecentEventsTable(events) {
-      const recentEventsTable = document.getElementById("recentEventsTable").querySelector("tbody")
-      recentEventsTable.innerHTML = ""
-  
-      // Sort events by date (most recent first) and take top 5
-      const recentEvents = [...events].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).slice(0, 5)
-  
-      if (recentEvents.length === 0) {
-        const row = document.createElement("tr")
-        row.innerHTML = '<td colspan="5" class="text-center">No events found</td>'
-        recentEventsTable.appendChild(row)
-        return
-      }
-  
-      recentEvents.forEach((event) => {
-        const row = document.createElement("tr")
-  
-        // Calculate total expense for the event
-        let totalExpense = 0
-        event.expenses.forEach((expense) => {
-          totalExpense += expense.amount
-        })
-  
-        // Determine event status
-        const status = getEventStatus(event)
-  
-        row.innerHTML = `
-          <td>${event.department}</td>
-          <td>${event.name}</td>
-          <td>${formatDate(event.startDate)}</td>
-          <td>${formatCurrency(totalExpense)}</td>
-          <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
-        `
-  
-        recentEventsTable.appendChild(row)
-      })
-    }
-  
-    function updateDepartmentSpendingTable(departmentExpenses, departmentBudgets) {
-      const departmentSpendingTable = document.getElementById("departmentSpendingTable").querySelector("tbody")
-      departmentSpendingTable.innerHTML = ""
-  
-      const departments = JSON.parse(localStorage.getItem("departments")) || []
-  
-      if (departments.length === 0) {
-        const row = document.createElement("tr")
-        row.innerHTML = '<td colspan="5" class="text-center">No departments found</td>'
-        departmentSpendingTable.appendChild(row)
-        return
-      }
-  
-      departments.forEach((dept) => {
-        const row = document.createElement("tr")
-  
-        const spent = departmentExpenses[dept.name] || 0
-        const budget = departmentBudgets[dept.name] || 0
-        const remaining = budget - spent
-        const percentage = budget > 0 ? (spent / budget) * 100 : 0
-  
-        let status = "Normal"
-        let statusClass = "normal"
-  
-        if (percentage > 90) {
-          status = "Overspending"
-          statusClass = "overspending"
-        } else if (percentage < 30) {
-          status = "Underspending"
-          statusClass = "underspending"
-        }
-  
-        row.innerHTML = `
-          <td>${dept.fullName}</td>
-          <td>${formatCurrency(budget)}</td>
-          <td>${formatCurrency(spent)}</td>
-          <td>${formatCurrency(remaining)}</td>
-          <td><span class="status-badge ${statusClass}">${status}</span></td>
-        `
-  
-        departmentSpendingTable.appendChild(row)
-      })
-    }
-  
-    function initializeCharts() {
-      // Small charts for stat cards
-      initializeStatCharts()
-  
-      // Create empty charts that will be populated with data later
-      createEmptyDepartmentExpensesChart()
-      createEmptyCategoryDistributionChart()
-    }
-  
-    function initializeStatCharts() {
-      // Departments trend chart
-      const deptsCtx = document.getElementById("departmentsChart").getContext("2d")
-      drawLineChart(deptsCtx, [4, 4, 4, 4, 4, 4, 4], "#4361ee")
-  
-      // Events trend chart
-      const eventsCtx = document.getElementById("eventsChart").getContext("2d")
-      drawLineChart(eventsCtx, [5, 8, 12, 15, 20, 25, 30], "#2ecc71")
-  
-      // Expenses trend chart
-      const expensesCtx = document.getElementById("expensesChart").getContext("2d")
-      drawLineChart(expensesCtx, [10000, 15000, 25000, 30000, 40000, 50000, 60000], "#f39c12")
-  
-      // Alerts trend chart
-      const alertsCtx = document.getElementById("alertsChart").getContext("2d")
-      drawLineChart(alertsCtx, [0, 1, 2, 1, 3, 2, 1], "#e74c3c")
-    }
-  
-    function drawLineChart(ctx, data, color) {
-      ctx.strokeStyle = color
-      ctx.lineWidth = 2
-  
-      const width = ctx.canvas.width
-      const height = ctx.canvas.height
-      const dataLength = data.length
-      const maxValue = Math.max(...data)
-  
-      ctx.beginPath()
-  
-      for (let i = 0; i < dataLength; i++) {
-        const x = (i / (dataLength - 1)) * width
-        const y = height - (data[i] / maxValue) * height
-  
-        if (i === 0) {
-          ctx.moveTo(x, y)
-        } else {
-          ctx.lineTo(x, y)
-        }
-      }
-  
-      ctx.stroke()
-    }
-  
-    function createEmptyDepartmentExpensesChart() {
-      const ctx = document.getElementById("departmentExpensesChart").getContext("2d")
-      drawBarChart(ctx, [], [], "Department Expenses")
-    }
-  
-    function createEmptyCategoryDistributionChart() {
-      const ctx = document.getElementById("categoryDistributionChart").getContext("2d")
-      drawPieChart(ctx, [], [], "Expense Categories")
-    }
-  
-    function updateDashboardCharts(events, departmentExpenses) {
-      // Update department expenses chart
-      updateDepartmentExpensesChart(departmentExpenses)
-  
-      // Update category distribution chart
-      updateCategoryDistributionChart(events)
-    }
-  
-    function updateDepartmentExpensesChart(departmentExpenses) {
-      const ctx = document.getElementById("departmentExpensesChart").getContext("2d")
-      const departments = JSON.parse(localStorage.getItem("departments")) || []
-  
-      const labels = departments.map((dept) => dept.name)
-      const data = departments.map((dept) => departmentExpenses[dept.name] || 0)
-  
-      // Clear canvas
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-  
-      // Draw new chart
-      drawBarChart(ctx, labels, data, "Department Expenses")
-    }
-  
-    function updateCategoryDistributionChart(events) {
-      const ctx = document.getElementById("categoryDistributionChart").getContext("2d")
-  
-      // Calculate expenses by category
-      const categoryExpenses = {}
-  
-      events.forEach((event) => {
-        event.expenses.forEach((expense) => {
-          if (categoryExpenses[expense.category]) {
-            categoryExpenses[expense.category] += expense.amount
-          } else {
-            categoryExpenses[expense.category] = expense.amount
-          }
-        })
-      })
-  
-      const labels = Object.keys(categoryExpenses)
-      const data = Object.values(categoryExpenses)
-  
-      // Clear canvas
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-  
-      // Draw new chart
-      drawPieChart(ctx, labels, data, "Expense Categories")
-    }
-  
-    function drawBarChart(ctx, labels, data, title) {
-      const width = ctx.canvas.width
-      const height = ctx.canvas.height
-      const barCount = labels.length
-      const maxValue = Math.max(...data, 1) // Avoid division by zero
-      const barWidth = width / (barCount * 2)
-      const colors = ["#4361ee", "#3a0ca3", "#7209b7", "#f72585", "#4cc9f0", "#4895ef", "#560bad", "#b5179e"]
-  
-      // Draw title
-      ctx.fillStyle = "#343a40"
-      ctx.font = "14px Arial"
-      ctx.textAlign = "center"
-      ctx.fillText(title, width / 2, 20)
-  
-      // Draw bars
-      for (let i = 0; i < barCount; i++) {
-        const x = i * barWidth * 2 + barWidth / 2
-        const barHeight = (data[i] / maxValue) * (height - 60)
-        const y = height - barHeight - 30
-  
-        // Draw bar
-        ctx.fillStyle = colors[i % colors.length]
-        ctx.fillRect(x, y, barWidth, barHeight)
-  
-        // Draw label
-        ctx.fillStyle = "#343a40"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText(labels[i], x + barWidth / 2, height - 10)
-  
-        // Draw value
-        ctx.fillStyle = "#343a40"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText(formatCurrency(data[i]), x + barWidth / 2, y - 5)
-      }
-    }
-  
-    function drawPieChart(ctx, labels, data, title) {
-      const width = ctx.canvas.width
-      const height = ctx.canvas.height
-      const radius = Math.min(width, height) / 2 - 40
-      const centerX = width / 2
-      const centerY = height / 2
-      const total = data.reduce((sum, value) => sum + value, 0) || 1 // Avoid division by zero
-      const colors = ["#4361ee", "#3a0ca3", "#7209b7", "#f72585", "#4cc9f0", "#4895ef", "#560bad", "#b5179e"]
-  
-      // Draw title
-      ctx.fillStyle = "#343a40"
-      ctx.font = "14px Arial"
-      ctx.textAlign = "center"
-      ctx.fillText(title, centerX, 20)
-  
-      // Draw pie
-      let startAngle = 0
-  
-      for (let i = 0; i < data.length; i++) {
-        const sliceAngle = (data[i] / total) * 2 * Math.PI
-        const endAngle = startAngle + sliceAngle
-  
-        // Draw slice
-        ctx.beginPath()
-        ctx.moveTo(centerX, centerY)
-        ctx.arc(centerX, centerY, radius, startAngle, endAngle)
-        ctx.closePath()
-  
-        ctx.fillStyle = colors[i % colors.length]
-        ctx.fill()
-  
-        // Calculate label position
-        const labelAngle = startAngle + sliceAngle / 2
-        const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7)
-        const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7)
-  
-        // Draw label if slice is big enough
-        if (sliceAngle > 0.2) {
-          ctx.fillStyle = "#fff"
-          ctx.font = "12px Arial"
-          ctx.textAlign = "center"
-          ctx.textBaseline = "middle"
-          ctx.fillText(labels[i], labelX, labelY)
-        }
-  
-        startAngle = endAngle
-      }
-  
-      // Draw legend
-      const legendX = width - 100
-      const legendY = 50
-  
-      for (let i = 0; i < labels.length; i++) {
-        const y = legendY + i * 20
-  
-        // Draw color box
-        ctx.fillStyle = colors[i % colors.length]
-        ctx.fillRect(legendX, y, 15, 15)
-  
-        // Draw label
-        ctx.fillStyle = "#343a40"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "left"
-        ctx.textBaseline = "middle"
-        ctx.fillText(`${labels[i]} (${Math.round((data[i] / total) * 100)}%)`, legendX + 20, y + 7)
-      }
-    }
-  
-    function loadDashboardData() {
-      // This function is called when the dashboard page is loaded
-      // Most of the data is already loaded in initializeDashboard
-    }
-  
-    function loadDepartmentsData() {
-      const departments = JSON.parse(localStorage.getItem("departments")) || []
-      const departmentsGrid = document.querySelector(".departments-grid")
-      departmentsGrid.innerHTML = ""
-  
-      if (departments.length === 0) {
-        departmentsGrid.innerHTML = '<div class="empty-state">No departments found</div>'
-        return
-      }
-  
-      // Get all events
-      const allEvents = JSON.parse(localStorage.getItem("allEvents")) || []
-  
-      // Calculate department stats
-      const departmentStats = {}
-  
-      departments.forEach((dept) => {
-        departmentStats[dept.name] = {
-          totalEvents: 0,
-          totalExpenses: 0,
-          lastEvent: null,
-        }
-      })
-  
-      allEvents.forEach((event) => {
-        if (departmentStats[event.department]) {
-          departmentStats[event.department].totalEvents++
-  
-          // Calculate total expenses
-          let eventExpense = 0
-          event.expenses.forEach((expense) => {
-            eventExpense += expense.amount
-          })
-  
-          departmentStats[event.department].totalExpenses += eventExpense
-  
-          // Check if this is the most recent event
-          if (
-            !departmentStats[event.department].lastEvent ||
-            new Date(event.startDate) > new Date(departmentStats[event.department].lastEvent.startDate)
-          ) {
-            departmentStats[event.department].lastEvent = event
-          }
-        }
-      })
-  
-      // Create department cards
-      departments.forEach((dept) => {
-        const stats = departmentStats[dept.name]
-        const card = document.createElement("div")
-        card.className = "department-card"
-        card.setAttribute("data-department", dept.name)
-  
-        // Determine department color
-        let color
-        switch (dept.name) {
-          case "CSE":
-            color = "#4361ee"
-            break
-          case "Architecture":
-            color = "#3a0ca3"
-            break
-          case "Pharma":
-            color = "#7209b7"
-            break
-          case "Business School":
-            color = "#f72585"
-            break
-          default:
-            color = "#4cc9f0"
-        }
-  
-        card.innerHTML = `
-          <div class="department-icon" style="background-color: ${color}20; color: ${color};">
-            <i class="fas fa-building"></i>
-          </div>
-          <h3>${dept.fullName}</h3>
-          <p>${dept.name}</p>
-          <div class="department-stats">
-            <div class="department-stat">
-              <span>Events</span>
-              <strong>${stats.totalEvents}</strong>
-            </div>
-            <div class="department-stat">
-              <span>Expenses</span>
-              <strong>${formatCurrency(stats.totalExpenses)}</strong>
-            </div>
-            <div class="department-stat">
-              <span>Budget</span>
-              <strong>${formatCurrency(dept.budget)}</strong>
-            </div>
-          </div>
-        `
-  
-        card.addEventListener("click", function () {
-          // Remove active class from all cards
-          document.querySelectorAll(".department-card").forEach((c) => c.classList.remove("active"))
-  
-          // Add active class to clicked card
-          this.classList.add("active")
-  
-          // Show department details
-          showDepartmentDetails(dept, stats)
-        })
-  
-        departmentsGrid.appendChild(card)
-      })
-    }
-  
-    function showDepartmentDetails(department, stats) {
-      // Update department name
-      document.getElementById("selectedDepartmentName").textContent = department.fullName
-  
-      // Enable buttons
-      document.getElementById("editDepartmentBtn").disabled = false
-      document.getElementById("deleteDepartmentBtn").disabled = false
-  
-      // Update department info
-      document.getElementById("deptTotalEvents").textContent = stats.totalEvents
-      document.getElementById("deptTotalExpenses").textContent = formatCurrency(stats.totalExpenses)
-  
-      // Calculate budget status
-      const percentage = department.budget > 0 ? (stats.totalExpenses / department.budget) * 100 : 0
-      let status = "Normal"
-      let statusClass = "normal"
-  
-      if (percentage > 90) {
-        status = "Overspending"
-        statusClass = "overspending"
-      } else if (percentage < 30) {
-        status = "Underspending"
-        statusClass = "underspending"
-      }
-  
-      document.getElementById("deptBudgetStatus").innerHTML =
-        `<span class="status-badge ${statusClass}">${status}</span> (${Math.round(percentage)}%)`
-  
-      // Update last event
-      if (stats.lastEvent) {
-        document.getElementById("deptLastEvent").textContent =
-          `${stats.lastEvent.name} (${formatDate(stats.lastEvent.startDate)})`
-      } else {
-        document.getElementById("deptLastEvent").textContent = "No events"
-      }
-  
-      // Update department events table
-      updateDepartmentEventsTable(department.name)
-  
-      // Update expense breakdown chart
-      updateDepartmentExpenseBreakdown(department.name)
-  
-      // Update monthly spending chart
-      updateDepartmentMonthlySpending(department.name)
-    }
-  
-    function updateDepartmentEventsTable(departmentName) {
-      const departmentEventsTable = document.getElementById("departmentEventsTable").querySelector("tbody")
-      departmentEventsTable.innerHTML = ""
-  
-      // Get all events for this department
-      const allEvents = JSON.parse(localStorage.getItem("allEvents")) || []
-      const departmentEvents = allEvents.filter((event) => event.department === departmentName)
-  
-      // Sort events by date (most recent first)
-      departmentEvents.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
-  
-      if (departmentEvents.length === 0) {
-        const row = document.createElement("tr")
-        row.innerHTML = '<td colspan="5" class="text-center">No events found</td>'
-        departmentEventsTable.appendChild(row)
-        return
-      }
-  
-      // Display up to 5 most recent events
-      const recentEvents = departmentEvents.slice(0, 5)
-  
-      recentEvents.forEach((event) => {
-        const row = document.createElement("tr")
-  
-        // Calculate total expense for the event
-        let totalExpense = 0
-        event.expenses.forEach((expense) => {
-          totalExpense += expense.amount
-        })
-  
-        // Determine event status
-        const status = getEventStatus(event)
-  
-        row.innerHTML = `
-          <td>${event.name}</td>
-          <td>${formatDate(event.startDate)}</td>
-          <td>${event.venue}</td>
-          <td>${formatCurrency(totalExpense)}</td>
-          <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
-        `
-  
-        departmentEventsTable.appendChild(row)
-      })
-    }
-  
-    function updateDepartmentExpenseBreakdown(departmentName) {
-      const ctx = document.getElementById("deptExpenseBreakdownChart").getContext("2d")
-  
-      // Get all events for this department
-      const allEvents = JSON.parse(localStorage.getItem("allEvents")) || []
-      const departmentEvents = allEvents.filter((event) => event.department === departmentName)
-  
-      // Calculate expenses by category
-      const categoryExpenses = {}
-  
-      departmentEvents.forEach((event) => {
-        event.expenses.forEach((expense) => {
-          if (categoryExpenses[expense.category]) {
-            categoryExpenses[expense.category] += expense.amount
-          } else {
-            categoryExpenses[expense.category] = expense.amount
-          }
-        })
-      })
-  
-      const labels = Object.keys(categoryExpenses)
-      const data = Object.values(categoryExpenses)
-  
-      // Clear canvas
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-  
-      // Draw new chart
-      drawPieChart(ctx, labels, data, "Expense Categories")
-    }
-  
-    function updateDepartmentMonthlySpending(departmentName) {
-      const ctx = document.getElementById("deptMonthlySpendingChart").getContext("2d")
-  
-      // Get all events for this department
-      const allEvents = JSON.parse(localStorage.getItem("allEvents")) || []
-      const departmentEvents = allEvents.filter((event) => event.department === departmentName)
-  
-      // Calculate monthly expenses for the current year
-      const currentYear = new Date().getFullYear()
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-      const monthlyExpenses = Array(12).fill(0)
-  
-      departmentEvents.forEach((event) => {
-        const eventDate = new Date(event.startDate)
-        if (eventDate.getFullYear() === currentYear) {
-          const month = eventDate.getMonth()
-  
-          event.expenses.forEach((expense) => {
-            monthlyExpenses[month] += expense.amount
-          })
-        }
-      })
-  
-      // Clear canvas
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-  
-      // Draw new chart
-      drawBarChart(ctx, months, monthlyExpenses, "Monthly Spending")
-    }
-  
-    function loadExpensesData() {
-      // Get all events
-      const allEvents = JSON.parse(localStorage.getItem("allEvents")) || []
-  
-      // Calculate total expenses
-      let totalExpenses = 0
-      const categoryExpenses = {}
-      const departmentExpenses = {}
-      const monthlyExpenses = Array(12).fill(0)
-  
-      allEvents.forEach((event) => {
-        const eventDate = new Date(event.startDate)
-        const month = eventDate.getMonth()
-  
-        event.expenses.forEach((expense) => {
-          totalExpenses += expense.amount
-  
-          // Category expenses
-          if (categoryExpenses[expense.category]) {
-            categoryExpenses[expense.category] += expense.amount
-          } else {
-            categoryExpenses[expense.category] = expense.amount
-          }
-  
-          // Department expenses
-          if (departmentExpenses[event.department]) {
-            departmentExpenses[event.department] += expense.amount
-          } else {
-            departmentExpenses[event.department] = expense.amount
-          }
-  
-          // Monthly expenses
-          monthlyExpenses[month] += expense.amount
-        })
-      })
-  
-      // Update expense summary
-      document.getElementById("expAnalysisTotalAmount").textContent = formatCurrency(totalExpenses)
-  
-      // Find highest category
-      let highestCategory = ""
-      let highestCategoryAmount = 0
-  
-      for (const category in categoryExpenses) {
-        if (categoryExpenses[category] > highestCategoryAmount) {
-          highestCategory = category
-          highestCategoryAmount = categoryExpenses[category]
-        }
-      }
-  
-      document.getElementById("expAnalysisHighestCategory").textContent =
-        `${highestCategory} (${formatCurrency(highestCategoryAmount)})`
-  
-      // Find highest department
-      let highestDept = ""
-      let highestDeptAmount = 0
-  
-      for (const dept in departmentExpenses) {
-        if (departmentExpenses[dept] > highestDeptAmount) {
-          highestDept = dept
-          highestDeptAmount = departmentExpenses[dept]
-        }
-      }
-  
-      document.getElementById("expAnalysisHighestDept").textContent =
-        `${highestDept} (${formatCurrency(highestDeptAmount)})`
-  
-      // Calculate monthly average
-      const monthlyAvg = totalExpenses / 12
-      document.getElementById("expAnalysisMonthlyAvg").textContent = formatCurrency(monthlyAvg)
-  
-      // Update expense charts
-      updateExpenseAnalysisCharts(categoryExpenses, departmentExpenses, monthlyExpenses)
-  
-      // Update expense transactions table
-      updateExpenseTransactionsTable(allEvents)
-    }
-  
-    function updateExpenseAnalysisCharts(categoryExpenses, departmentExpenses, monthlyExpenses) {
-      // Monthly expense trends chart
-      const monthlyCtx = document.getElementById("monthlyExpenseTrendsChart").getContext("2d")
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-  
-      // Clear canvas
-      monthlyCtx.clearRect(0, 0, monthlyCtx.canvas.width, monthlyCtx.canvas.height)
-  
-      // Draw new chart
-      drawLineChartWithLabels(monthlyCtx, months, monthlyExpenses, "Monthly Expense Trends", "#4361ee")
-  
-      // Expense categories chart
-      const categoriesCtx = document.getElementById("expenseCategoriesChart").getContext("2d")
-      const categoryLabels = Object.keys(categoryExpenses)
-      const categoryData = Object.values(categoryExpenses)
-  
-      // Clear canvas
-      categoriesCtx.clearRect(0, 0, categoriesCtx.canvas.width, categoriesCtx.canvas.height)
-  
-      // Draw new chart
-      drawPieChart(categoriesCtx, categoryLabels, categoryData, "Expense Categories")
-  
-      // Department comparison chart
-      const deptCtx = document.getElementById("expenseDeptComparisonChart").getContext("2d")
-      const deptLabels = Object.keys(departmentExpenses)
-      const deptData = Object.values(departmentExpenses)
-  
-      // Clear canvas
-      deptCtx.clearRect(0, 0, deptCtx.canvas.width, deptCtx.canvas.height)
-  
-      // Draw new chart
-      drawBarChart(deptCtx, deptLabels, deptData, "Department Expenses")
-    }
-  
-    function drawLineChartWithLabels(ctx, labels, data, title, color) {
-      const width = ctx.canvas.width
-      const height = ctx.canvas.height
-      const dataLength = data.length
-      const maxValue = Math.max(...data, 1) // Avoid division by zero
-      const padding = 40
-  
-      // Draw title
-      ctx.fillStyle = "#343a40"
-      ctx.font = "14px Arial"
-      ctx.textAlign = "center"
-      ctx.fillText(title, width / 2, 20)
-  
-      // Draw y-axis
-      ctx.beginPath()
-      ctx.moveTo(padding, padding)
-      ctx.lineTo(padding, height - padding)
-      ctx.strokeStyle = "#ced4da"
-      ctx.stroke()
-  
-      // Draw x-axis
-      ctx.beginPath()
-      ctx.moveTo(padding, height - padding)
-      ctx.lineTo(width - padding, height - padding)
-      ctx.strokeStyle = "#ced4da"
-      ctx.stroke()
-  
-      // Draw y-axis labels
-      const yStep = maxValue / 5
-      for (let i = 0; i <= 5; i++) {
-        const y = height - padding - (i / 5) * (height - 2 * padding)
-        const value = Math.round(i * yStep)
-  
-        ctx.fillStyle = "#6c757d"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "right"
-        ctx.textBaseline = "middle"
-        ctx.fillText(formatCurrency(value), padding - 10, y)
-  
-        // Draw grid line
-        ctx.beginPath()
-        ctx.moveTo(padding, y)
-        ctx.lineTo(width - padding, y)
-        ctx.strokeStyle = "#e9ecef"
-        ctx.stroke()
-      }
-  
-      // Draw x-axis labels
-      const xStep = (width - 2 * padding) / (dataLength - 1)
-      for (let i = 0; i < dataLength; i++) {
-        const x = padding + i * xStep
-  
-        ctx.fillStyle = "#6c757d"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "top"
-        ctx.fillText(labels[i], x, height - padding + 10)
-      }
-  
-      // Draw line
-      ctx.beginPath()
-  
-      for (let i = 0; i < dataLength; i++) {
-        const x = padding + i * xStep
-        const y = height - padding - (data[i] / maxValue) * (height - 2 * padding)
-  
-        if (i === 0) {
-          ctx.moveTo(x, y)
-        } else {
-          ctx.lineTo(x, y)
-        }
-      }
-  
-      ctx.strokeStyle = color
-      ctx.lineWidth = 3
-      ctx.stroke()
-  
-      // Draw points
-      for (let i = 0; i < dataLength; i++) {
-        const x = padding + i * xStep
-        const y = height - padding - (data[i] / maxValue) * (height - 2 * padding)
-  
-        ctx.beginPath()
-        ctx.arc(x, y, 5, 0, 2 * Math.PI)
-        ctx.fillStyle = color
-        ctx.fill()
-  
-        // Draw value
-        ctx.fillStyle = "#343a40"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "bottom"
-        ctx.fillText(formatCurrency(data[i]), x, y - 10)
-      }
-    }
-  
-    function updateExpenseTransactionsTable(events) {
-      const expenseTransactionsTable = document.getElementById("expenseTransactionsTable").querySelector("tbody")
-      expenseTransactionsTable.innerHTML = ""
-  
-      // Flatten events into expense transactions
-      const transactions = []
-  
-      events.forEach((event) => {
-        event.expenses.forEach((expense) => {
-          transactions.push({
-            department: event.department,
-            event: event.name,
-            category: expense.category,
-            amount: expense.amount,
-            date: event.startDate,
-            status: getEventStatus(event),
-          })
-        })
-      })
-  
-      // Sort transactions by date (most recent first)
-      transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
-  
-      if (transactions.length === 0) {
-        const row = document.createElement("tr")
-        row.innerHTML = '<td colspan="6" class="text-center">No transactions found</td>'
-        expenseTransactionsTable.appendChild(row)
-        return
-      }
-  
-      // Display up to 10 transactions
-      const recentTransactions = transactions.slice(0, 10)
-  
-      recentTransactions.forEach((transaction) => {
-        const row = document.createElement("tr")
-  
-        row.innerHTML = `
-          <td>${transaction.department}</td>
-          <td>${transaction.event}</td>
-          <td>${transaction.category}</td>
-          <td>${formatCurrency(transaction.amount)}</td>
-          <td>${formatDate(transaction.date)}</td>
-          <td><span class="status-badge ${transaction.status.toLowerCase()}">${transaction.status}</span></td>
-        `
-  
-        expenseTransactionsTable.appendChild(row)
-      })
-    }
-  
-    function loadEventsData() {
-      // Get all events
-      const allEvents = JSON.parse(localStorage.getItem("allEvents")) || []
-  
-      // Update events table
-      updateEventsTable(allEvents)
-  
-      // Initialize events calendar
-      initializeEventsCalendar(allEvents)
-    }
-  
-    function updateEventsTable(events) {
-      const eventsTable = document.getElementById("eventsTable").querySelector("tbody")
-      eventsTable.innerHTML = ""
-  
-      // Apply filters
-      const statusFilter = document.getElementById("eventStatusFilter").value
-      const departmentFilter = document.getElementById("eventDepartmentFilter").value
-      const monthFilter = document.getElementById("eventMonthFilter").value
-      const searchFilter = document.getElementById("eventSearch").value.toLowerCase()
-  
-      let filteredEvents = [...events]
-  
-      // Apply status filter
-      if (statusFilter !== "all") {
-        filteredEvents = filteredEvents.filter((event) => {
-          const status = getEventStatus(event).toLowerCase()
-          return status === statusFilter
-        })
-      }
-  
-      // Apply department filter
-      if (departmentFilter !== "all") {
-        filteredEvents = filteredEvents.filter((event) => event.department === departmentFilter)
-      }
-  
-      // Apply month filter
-      if (monthFilter) {
-        const [year, month] = monthFilter.split("-").map(Number)
-        filteredEvents = filteredEvents.filter((event) => {
-          const eventDate = new Date(event.startDate)
-          return eventDate.getFullYear() === year && eventDate.getMonth() === month - 1
-        })
-      }
-  
-      // Apply search filter
-      if (searchFilter) {
-        filteredEvents = filteredEvents.filter((event) => {
-          return (
-            event.name.toLowerCase().includes(searchFilter) ||
-            event.department.toLowerCase().includes(searchFilter) ||
-            event.venue.toLowerCase().includes(searchFilter)
-          )
-        })
-      }
-  
-      // Sort events by date (most recent first)
-      filteredEvents.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
-  
-      if (filteredEvents.length === 0) {
-        const row = document.createElement("tr")
-        row.innerHTML = '<td colspan="8" class="text-center">No events found</td>'
-        eventsTable.appendChild(row)
-        return
-      }
-  
-      // Display events
-      filteredEvents.forEach((event) => {
-        const row = document.createElement("tr")
-  
-        // Calculate total expense for the event
-        let totalExpense = 0
-        event.expenses.forEach((expense) => {
-          totalExpense += expense.amount
-        })
-  
-        // Determine event status
-        const status = getEventStatus(event)
-  
-        row.innerHTML = `
-          <td>${event.department}</td>
-          <td>${event.name}</td>
-          <td>${formatDate(event.startDate)}</td>
-          <td>${formatDate(event.endDate)}</td>
-          <td>${event.venue}</td>
-          <td>${formatCurrency(totalExpense)}</td>
-          <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
-          <td>
-            <button class="action-btn view-btn" data-event-id="${event._id}">
-              <i class="fas fa-eye"></i>
-            </button>
-          </td>
-        `
-  
-        eventsTable.appendChild(row)
-      })
-  
-      // Add event listeners to view buttons
-      const viewButtons = document.querySelectorAll(".view-btn")
-      viewButtons.forEach((button) => {
-        button.addEventListener("click", function () {
-          const eventId = this.getAttribute("data-event-id")
-          showEventDetails(eventId)
-        })
-      })
-    }
-  
-    function initializeEventsCalendar(events) {
-      const calendar = document.getElementById("eventsCalendar")
-      calendar.innerHTML = ""
-  
-      // Get current date
-      const now = new Date()
-      const currentYear = now.getFullYear()
-      const currentMonth = now.getMonth()
-  
-      // Update calendar header
-      document.getElementById("calendarMonthYear").textContent = new Date(currentYear, currentMonth).toLocaleDateString(
-        "en-US",
-        { month: "long", year: "numeric" },
-      )
-  
-      // Add day headers
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-      days.forEach((day) => {
-        const dayHeader = document.createElement("div")
-        dayHeader.className = "calendar-day-header"
-        dayHeader.textContent = day
-        calendar.appendChild(dayHeader)
-      })
-  
-      // Get first day of month and number of days in month
-      const firstDay = new Date(currentYear, currentMonth, 1).getDay()
-      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
-  
-      // Add empty cells for days before first day of month
-      for (let i = 0; i < firstDay; i++) {
-        const emptyDay = document.createElement("div")
-        emptyDay.className = "calendar-day"
-        calendar.appendChild(emptyDay)
-      }
-  
-      // Add days of month
-      for (let i = 1; i <= daysInMonth; i++) {
-        const day = document.createElement("div")
-        day.className = "calendar-day"
-  
-        // Create date element
-        const dateElement = document.createElement("div")
-        dateElement.className = "calendar-date"
-        if (i === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear()) {
-          dateElement.className += " today"
-        }
-        dateElement.textContent = i
-        day.appendChild(dateElement)
-  
-        // Add events for this day
-        const dayEvents = events.filter((event) => {
-          const eventDate = new Date(event.startDate)
-          return (
-            eventDate.getDate() === i && eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear
-          )
-        })
-  
-        dayEvents.forEach((event) => {
-          const eventElement = document.createElement("div")
-          eventElement.className = "calendar-event"
-          eventElement.textContent = event.name
-          eventElement.setAttribute("data-event-id", event._id)
-          day.appendChild(eventElement)
-  
-          // Add click event
-          eventElement.addEventListener("click", function () {
-            const eventId = this.getAttribute("data-event-id")
-            showEventDetails(eventId)
-          })
-        })
-  
-        calendar.appendChild(day)
-      }
-    }
-  
-    function showEventDetails(eventId) {
-      const allEvents = JSON.parse(localStorage.getItem("allEvents")) || []
-      const event = allEvents.find((e) => e._id === eventId)
-  
-      if (!event) {
-        showToast("Error", "Event not found", "error")
-        return
-      }
-  
-      const modal = document.getElementById("eventDetailsModal")
-      const modalTitle = document.getElementById("eventDetailsTitle")
-      const modalContent = document.getElementById("eventDetailsContent")
-  
-      modalTitle.textContent = event.name
-  
-      // Calculate total expense
+
+    sortedEvents.forEach((event) => {
+      const row = document.createElement("tr")
+
+      // Calculate total expense for the event
       let totalExpense = 0
       event.expenses.forEach((expense) => {
         totalExpense += expense.amount
       })
-  
-      // Format expenses table
-      let expensesHtml = ""
-      event.expenses.forEach((expense) => {
-        expensesHtml += `
-          <tr>
-            <td>${expense.category}</td>
-            <td>${formatCurrency(expense.amount)}</td>
-          </tr>
-        `
+
+      // Determine event status
+      const status = getEventStatus(event)
+
+      row.innerHTML = `
+        <td>${event.name}</td>
+        <td>${event.department}</td>
+        <td>${formatDate(event.startDate)}</td>
+        <td>${formatCurrency(totalExpense)}</td>
+        <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
+      `
+
+      row.addEventListener("click", () => {
+        openEventDetails(event)
       })
-  
-      modalContent.innerHTML = `
-        <div class="event-details">
-          <div class="event-info">
-            <p><strong>Department:</strong> ${event.department}</p>
-            <p><strong>Club:</strong> ${event.club}</p>
-            <p><strong>Date:</strong> ${formatDate(event.startDate)} to ${formatDate(event.endDate)}</p>
-            <p><strong>Time:</strong> ${event.startTime} to ${event.endTime}</p>
-            <p><strong>Venue:</strong> ${event.venue}</p>
-            <p><strong>Status:</strong> <span class="status-badge ${getEventStatus(event).toLowerCase()}">${getEventStatus(event)}</span></p>
-            <p><strong>Total Expense:</strong> ${formatCurrency(totalExpense)}</p>
+
+      recentEventsTable.appendChild(row)
+    })
+  }
+
+  function updateDepartmentsGrid(data) {
+    const departmentGrid = document.getElementById("departmentGrid")
+    departmentGrid.innerHTML = ""
+
+    // Group events by department
+    const departmentEvents = {}
+    data.departments.forEach((dept) => {
+      departmentEvents[dept] = data.events.filter((event) => event.department === dept)
+    })
+
+    data.departments.forEach((dept) => {
+      const events = departmentEvents[dept]
+
+      // Calculate total expenses for the department
+      let totalExpenses = 0
+      events.forEach((event) => {
+        event.expenses.forEach((expense) => {
+          totalExpenses += expense.amount
+        })
+      })
+
+      // Calculate upcoming events
+      const today = new Date()
+      const upcomingEvents = events.filter((event) => {
+        const endDate = new Date(event.endDate)
+        return endDate >= today
+      }).length
+
+      // Create department card
+      const departmentCard = document.createElement("div")
+      departmentCard.className = "department-card"
+      departmentCard.setAttribute("data-department", dept)
+
+      departmentCard.innerHTML = `
+        <div class="department-header">
+          <h3>${dept}</h3>
+          <p>${getDepartmentFullName(dept)}</p>
+        </div>
+        <div class="department-body">
+          <div class="department-stats">
+            <div class="department-stat">
+              <h4>${events.length}</h4>
+              <p>Events</p>
+            </div>
+            <div class="department-stat">
+              <h4>${formatCurrency(totalExpenses)}</h4>
+              <p>Expenses</p>
+            </div>
           </div>
-          
-          <div class="event-description">
-            <h4>Description</h4>
-            <p>${event.description || "No description provided."}</p>
+          <div class="department-footer">
+            <p>${upcomingEvents} upcoming events</p>
+            <a href="#" class="view-btn">View Details</a>
           </div>
-          
-          <div class="event-expenses">
-            <h4>Expenses</h4>
-            <table class="expenses-table">
+        </div>
+      `
+
+      departmentCard.addEventListener("click", () => {
+        showDepartmentDetails(dept, events)
+      })
+
+      departmentGrid.appendChild(departmentCard)
+    })
+
+    // Add event listener to refresh button
+    document.getElementById("refreshDepartmentsBtn").addEventListener("click", () => {
+      fetchAllDepartmentsData()
+        .then((data) => {
+          updateDepartmentsGrid(data)
+          showToast("Success", "Departments data refreshed", "success")
+        })
+        .catch((error) => {
+          console.error("Error refreshing departments:", error)
+          showToast("Error", "Failed to refresh departments data", "error")
+        })
+    })
+  }
+
+  function showDepartmentDetails(department, events) {
+    const selectedDepartmentName = document.getElementById("selectedDepartmentName")
+    const departmentContent = document.getElementById("departmentContent")
+
+    selectedDepartmentName.textContent = getDepartmentFullName(department)
+
+    // Calculate total expenses
+    let totalExpenses = 0
+    events.forEach((event) => {
+      event.expenses.forEach((expense) => {
+        totalExpenses += expense.amount
+      })
+    })
+
+    // Calculate expense categories
+    const categories = {}
+    events.forEach((event) => {
+      event.expenses.forEach((expense) => {
+        if (categories[expense.category]) {
+          categories[expense.category] += expense.amount
+        } else {
+          categories[expense.category] = expense.amount
+        }
+      })
+    })
+
+    // Sort categories by amount
+    const sortedCategories = Object.entries(categories).sort((a, b) => b[1] - a[1])
+
+    // Create categories HTML
+    let categoriesHtml = ""
+    sortedCategories.forEach(([category, amount]) => {
+      const percentage = Math.round((amount / totalExpenses) * 100)
+      categoriesHtml += `
+        <div class="expense-category-item">
+          <div class="category-info">
+            <span>${category}</span>
+            <span>${formatCurrency(amount)} (${percentage}%)</span>
+          </div>
+          <div class="category-bar">
+            <div class="category-progress" style="width: ${percentage}%"></div>
+          </div>
+        </div>
+      `
+    })
+
+    // Create events HTML
+    let eventsHtml = ""
+    const sortedEvents = [...events].sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+
+    sortedEvents.forEach((event) => {
+      let eventExpenses = 0
+      event.expenses.forEach((expense) => {
+        eventExpenses += expense.amount
+      })
+
+      const status = getEventStatus(event)
+
+      eventsHtml += `
+        <tr>
+          <td>${event.name}</td>
+          <td>${formatDate(event.startDate)}</td>
+          <td>${event.venue}</td>
+          <td>${formatCurrency(eventExpenses)}</td>
+          <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
+        </tr>
+      `
+    })
+
+    departmentContent.innerHTML = `
+      <div class="department-details-content">
+        <div class="department-summary">
+          <div class="summary-card">
+            <div class="summary-icon blue">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="summary-info">
+              <h4>Total Events</h4>
+              <p>${events.length}</p>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon purple">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="summary-info">
+              <h4>Total Expenses</h4>
+              <p>${formatCurrency(totalExpenses)}</p>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon green">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="summary-info">
+              <h4>Avg. per Event</h4>
+              <p>${formatCurrency(events.length > 0 ? totalExpenses / events.length : 0)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="department-expense-categories">
+          <h4>Expense Categories</h4>
+          <div class="expense-categories-list">
+            ${categoriesHtml || '<p class="no-data">No expense data available</p>'}
+          </div>
+        </div>
+
+        <div class="department-events">
+          <h4>Recent Events</h4>
+          <div class="table-responsive">
+            <table class="data-table">
               <thead>
                 <tr>
-                  <th>Category</th>
-                  <th>Amount</th>
+                  <th>Event Name</th>
+                  <th>Date</th>
+                  <th>Venue</th>
+                  <th>Expenses</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                ${expensesHtml}
-                <tr class="total-row">
-                  <td><strong>Total</strong></td>
-                  <td><strong>${formatCurrency(totalExpense)}</strong></td>
-                </tr>
+                ${eventsHtml || '<tr><td colspan="5" class="text-center">No events found</td></tr>'}
               </tbody>
             </table>
           </div>
         </div>
+      </div>
+    `
+
+    // Add CSS for the department details content
+    const style = document.createElement("style")
+    style.textContent = `
+      .department-details-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .department-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+      }
+      .summary-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .summary-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-right: 15px;
+        color: white;
+      }
+      .summary-icon.blue {
+        background-color: var(--blue);
+      }
+      .summary-icon.purple {
+        background-color: var(--purple);
+      }
+      .summary-icon.green {
+        background-color: var(--green);
+      }
+      .summary-info h4 {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--gray-color);
+        margin-bottom: 5px;
+      }
+      .summary-info p {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--dark-color);
+      }
+      .department-expense-categories, .department-events {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .department-expense-categories h4, .department-events h4 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: var(--dark-color);
+      }
+      .expense-categories-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .expense-category-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .category-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+      }
+      .category-bar {
+        height: 8px;
+        background-color: #f5f7fb;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .category-progress {
+        height: 100%;
+        background-color: var(--primary-color);
+        border-radius: 4px;
+      }
+      .no-data {
+        color: var(--gray-color);
+        text-align: center;
+        padding: 20px;
+      }
+      @media (max-width: 768px) {
+        .department-summary {
+          grid-template-columns: 1fr;
+        }
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  function updateEventsTable(data) {
+    const eventsTable = document.getElementById("eventsTable").querySelector("tbody")
+    eventsTable.innerHTML = ""
+
+    // Get filter values
+    const searchTerm = document.getElementById("eventSearchInput").value.toLowerCase()
+    const statusFilter = document.getElementById("eventStatusFilter").value
+    const deptFilter = document.getElementById("eventDeptFilter").value
+
+    // Filter events
+    let filteredEvents = [...data.events]
+
+    // Apply search filter
+    if (searchTerm) {
+      filteredEvents = filteredEvents.filter(
+        (event) =>
+          event.name.toLowerCase().includes(searchTerm) ||
+          event.club.toLowerCase().includes(searchTerm) ||
+          event.venue.toLowerCase().includes(searchTerm),
+      )
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      const today = new Date()
+
+      if (statusFilter === "upcoming") {
+        filteredEvents = filteredEvents.filter((event) => {
+          const startDate = new Date(event.startDate)
+          return startDate > today
+        })
+      } else if (statusFilter === "ongoing") {
+        filteredEvents = filteredEvents.filter((event) => {
+          const startDate = new Date(event.startDate)
+          const endDate = new Date(event.endDate)
+          return startDate <= today && endDate >= today
+        })
+      } else if (statusFilter === "completed") {
+        filteredEvents = filteredEvents.filter((event) => {
+          const endDate = new Date(event.endDate)
+          return endDate < today
+        })
+      }
+    }
+
+    // Apply department filter
+    if (deptFilter !== "all") {
+      filteredEvents = filteredEvents.filter((event) => event.department === deptFilter)
+    }
+
+    // Sort events by date (most recent first)
+    filteredEvents.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+
+    if (filteredEvents.length === 0) {
+      const row = document.createElement("tr")
+      row.innerHTML = `<td colspan="9" class="text-center">No events found</td>`
+      eventsTable.appendChild(row)
+      return
+    }
+
+    filteredEvents.forEach((event) => {
+      const row = document.createElement("tr")
+
+      // Calculate total expense for the event
+      let totalExpense = 0
+      event.expenses.forEach((expense) => {
+        totalExpense += expense.amount
+      })
+
+      // Determine event status
+      const status = getEventStatus(event)
+
+      row.innerHTML = `
+        <td>${event.name}</td>
+        <td>${event.department}</td>
+        <td>${event.club}</td>
+        <td>${formatDate(event.startDate)}</td>
+        <td>${formatDate(event.endDate)}</td>
+        <td>${event.venue}</td>
+        <td>${formatCurrency(totalExpense)}</td>
+        <td><span class="status-badge ${status.toLowerCase()}">${status}</span></td>
+        <td>
+          <button class="action-btn view-btn" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+        </td>
       `
-  
-      // Show modal
-      modal.classList.add("active")
-  
-      // Add close event
-      const closeBtn = document.getElementById("closeEventDetailsModal")
-      closeBtn.addEventListener("click", () => {
-        modal.classList.remove("active")
+
+      // Add event listener to view button
+      const viewBtn = row.querySelector(".view-btn")
+      viewBtn.addEventListener("click", () => {
+        openEventDetails(event)
+      })
+
+      eventsTable.appendChild(row)
+    })
+
+    // Add event listeners to filter controls
+    document.getElementById("eventSearchInput").addEventListener("input", () => {
+      updateEventsTable(data)
+    })
+
+    document.getElementById("eventStatusFilter").addEventListener("change", () => {
+      updateEventsTable(data)
+    })
+
+    document.getElementById("eventDeptFilter").addEventListener("change", () => {
+      updateEventsTable(data)
+    })
+
+    document.getElementById("resetEventFilters").addEventListener("click", () => {
+      document.getElementById("eventSearchInput").value = ""
+      document.getElementById("eventStatusFilter").value = "all"
+      document.getElementById("eventDeptFilter").value = "all"
+      updateEventsTable(data)
+    })
+  }
+
+  function updateExpensesData(data, timeFilter = "thisYear", deptFilter = "all") {
+    // Filter expenses based on time period
+    const today = new Date()
+    const currentYear = today.getFullYear()
+    const currentMonth = today.getMonth()
+
+    let filteredExpenses = [...data.expenses]
+
+    if (timeFilter === "thisMonth") {
+      filteredExpenses = filteredExpenses.filter((expense) => {
+        const expenseDate = new Date(expense.date)
+        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear
+      })
+    } else if (timeFilter === "lastMonth") {
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear
+
+      filteredExpenses = filteredExpenses.filter((expense) => {
+        const expenseDate = new Date(expense.date)
+        return expenseDate.getMonth() === lastMonth && expenseDate.getFullYear() === lastMonthYear
+      })
+    } else if (timeFilter === "thisYear") {
+      filteredExpenses = filteredExpenses.filter((expense) => {
+        const expenseDate = new Date(expense.date)
+        return expenseDate.getFullYear() === currentYear
+      })
+    } else if (timeFilter === "lastYear") {
+      filteredExpenses = filteredExpenses.filter((expense) => {
+        const expenseDate = new Date(expense.date)
+        return expenseDate.getFullYear() === currentYear - 1
       })
     }
-  
-    function loadUsersData() {
-      // Fetch admin users
-      fetchAdminUsers()
-  
-      // Fetch department users
-      fetchDepartmentUsers()
+
+    // Filter by department if specified
+    if (deptFilter !== "all") {
+      filteredExpenses = filteredExpenses.filter((expense) => expense.department === deptFilter)
     }
-  
-    function fetchAdminUsers() {
-      // In a real application, this would fetch from the server
-      // For now, we'll use hardcoded data
-      const adminUsers = [
-        { id: 1, username: "admin", email: "admin@university.edu", lastLogin: "2023-05-15T10:30:00", status: "Active" },
-        {
-          id: 2,
-          username: "superadmin",
-          email: "superadmin@university.edu",
-          lastLogin: "2023-05-14T14:45:00",
-          status: "Active",
-        },
-      ]
-  
-      updateAdminUsersTable(adminUsers)
-    }
-  
-    function fetchDepartmentUsers() {
-      // In a real application, this would fetch from the server
-      // For now, we'll use hardcoded data
-      const departmentUsers = [
-        {
-          id: 1,
-          department: "CSE",
-          userId: "cse001",
-          username: "cse001",
-          email: "cse001@university.edu",
-          status: "Active",
-        },
-        {
-          id: 2,
-          department: "CSE",
-          userId: "cse002",
-          username: "cse002",
-          email: "cse002@university.edu",
-          status: "Active",
-        },
-        {
-          id: 3,
-          department: "Architecture",
-          userId: "arch001",
-          username: "arch001",
-          email: "arch001@university.edu",
-          status: "Active",
-        },
-        {
-          id: 4,
-          department: "Architecture",
-          userId: "arch002",
-          username: "arch002",
-          email: "arch002@university.edu",
-          status: "Active",
-        },
-        {
-          id: 5,
-          department: "Pharma",
-          userId: "pharma001",
-          username: "pharma001",
-          email: "pharma001@university.edu",
-          status: "Active",
-        },
-        {
-          id: 6,
-          department: "Pharma",
-          userId: "pharma002",
-          username: "pharma002",
-          email: "pharma002@university.edu",
-          status: "Active",
-        },
-        {
-          id: 7,
-          department: "Business School",
-          userId: "biz001",
-          username: "biz001",
-          email: "biz001@university.edu",
-          status: "Active",
-        },
-        {
-          id: 8,
-          department: "Business School",
-          userId: "biz002",
-          username: "biz002",
-          email: "biz002@university.edu",
-          status: "Active",
-        },
-      ]
-  
-      updateDepartmentUsersTable(departmentUsers)
-    }
-  
-    function updateAdminUsersTable(users) {
-      const adminUsersTable = document.getElementById("adminUsersTable").querySelector("tbody")
-      adminUsersTable.innerHTML = ""
-  
-      if (users.length === 0) {
-        const row = document.createElement("tr")
-        row.innerHTML = '<td colspan="5" class="text-center">No admin users found</td>'
-        adminUsersTable.appendChild(row)
-        return
-      }
-  
-      users.forEach((user) => {
-        const row = document.createElement("tr")
-  
-        row.innerHTML = `
-          <td>${user.username}</td>
-          <td>${user.email}</td>
-          <td>${formatDate(user.lastLogin)}</td>
-          <td><span class="status-badge ${user.status.toLowerCase()}">${user.status}</span></td>
-          <td>
-            <button class="action-btn edit-btn" data-user-id="${user.id}">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="action-btn delete-btn" data-user-id="${user.id}">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        `
-  
-        adminUsersTable.appendChild(row)
-      })
-    }
-  
-    function updateDepartmentUsersTable(users) {
-      const departmentUsersTable = document.getElementById("departmentUsersTable").querySelector("tbody")
-      departmentUsersTable.innerHTML = ""
-  
-      if (users.length === 0) {
-        const row = document.createElement("tr")
-        row.innerHTML = '<td colspan="6" class="text-center">No department users found</td>'
-        departmentUsersTable.appendChild(row)
-        return
-      }
-  
-      users.forEach((user) => {
-        const row = document.createElement("tr")
-  
-        row.innerHTML = `
-          <td>${user.department}</td>
-          <td>${user.userId}</td>
-          <td>${user.username}</td>
-          <td>${user.email}</td>
-          <td><span class="status-badge ${user.status.toLowerCase()}">${user.status}</span></td>
-          <td>
-            <button class="action-btn edit-btn" data-user-id="${user.id}">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="action-btn delete-btn" data-user-id="${user.id}">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        `
-  
-        departmentUsersTable.appendChild(row)
-      })
-    }
-  
-    // Helper Functions
-    function getEventStatus(event) {
-      const now = new Date()
-      const startDate = new Date(event.startDate)
-      const endDate = new Date(event.endDate)
-  
-      if (endDate < now) {
-        return "Completed"
-      } else if (startDate <= now && endDate >= now) {
-        return "Ongoing"
+
+    // Update expense summary cards
+    updateExpenseSummaryCards(filteredExpenses)
+
+    // Update expense charts
+    updateExpenseCharts(filteredExpenses)
+
+    // Update expenses table
+    updateExpensesTable(filteredExpenses)
+  }
+
+  function updateExpenseSummaryCards(expenses) {
+    const expenseTotal = document.getElementById("expenseTotal")
+    const expenseAverage = document.getElementById("expenseAverage")
+    const expenseLowest = document.getElementById("expenseLowest")
+    const expenseHighest = document.getElementById("expenseHighest")
+
+    // Calculate total
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0)
+    expenseTotal.textContent = formatCurrency(total)
+
+    // Group expenses by event
+    const eventExpenses = {}
+    expenses.forEach((expense) => {
+      if (eventExpenses[expense.eventId]) {
+        eventExpenses[expense.eventId] += expense.amount
       } else {
-        return "Upcoming"
+        eventExpenses[expense.eventId] = expense.amount
       }
-    }
-  
-    function formatCurrency(amount) {
-      return "$" + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")
-    }
-  
-    function formatDate(dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    }
-  
-    function showToast(title, message, type) {
-      const toast = document.getElementById("toast")
-      const toastTitle = document.getElementById("toastTitle")
-      const toastMessage = document.getElementById("toastMessage")
-      const toastIcon = document.getElementById("toastIcon")
-  
-      toastTitle.textContent = title
-      toastMessage.textContent = message
-  
-      // Set icon based on type
-      toastIcon.className = ""
-      if (type === "success") {
-        toastIcon.className = "fas fa-check-circle success"
-      } else if (type === "error") {
-        toastIcon.className = "fas fa-times-circle error"
-      } else if (type === "warning") {
-        toastIcon.className = "fas fa-exclamation-circle warning"
-      } else if (type === "info") {
-        toastIcon.className = "fas fa-info-circle info"
+    })
+
+    const eventAmounts = Object.values(eventExpenses)
+
+    // Calculate average per event
+    const average = eventAmounts.length > 0 ? total / eventAmounts.length : 0
+    expenseAverage.textContent = formatCurrency(average)
+
+    // Calculate lowest expense
+    const lowest = eventAmounts.length > 0 ? Math.min(...eventAmounts) : 0
+    expenseLowest.textContent = formatCurrency(lowest)
+
+    // Calculate highest expense
+    const highest = eventAmounts.length > 0 ? Math.max(...eventAmounts) : 0
+    expenseHighest.textContent = formatCurrency(highest)
+  }
+
+  function updateExpenseCharts(expenses) {
+    // Group expenses by category
+    const categoriesMap = {}
+    expenses.forEach((expense) => {
+      if (categoriesMap[expense.category]) {
+        categoriesMap[expense.category] += expense.amount
+      } else {
+        categoriesMap[expense.category] = expense.amount
       }
-  
-      // Show toast
-      toast.classList.add("active")
-  
-      // Hide toast after 3 seconds
-      setTimeout(() => {
-        toast.classList.remove("active")
-      }, 3000)
+    })
+
+    const sortedCategories = Object.entries(categoriesMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+
+    const categories = sortedCategories.map((item) => item[0])
+    const amounts = sortedCategories.map((item) => item[1])
+
+    // Update expense distribution chart
+    window.expenseDistributionChart.data.labels = categories
+    window.expenseDistributionChart.data.datasets[0].data = amounts
+    window.expenseDistributionChart.update()
+
+    // Group expenses by event and month
+    const eventsByMonth = {}
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    expenses.forEach((expense) => {
+      const date = new Date(expense.date)
+      const month = date.getMonth()
+
+      if (!eventsByMonth[month]) {
+        eventsByMonth[month] = {}
+      }
+
+      if (!eventsByMonth[month][expense.eventId]) {
+        eventsByMonth[month][expense.eventId] = 0
+      }
+
+      eventsByMonth[month][expense.eventId] += expense.amount
+    })
+
+    // Calculate total expenses per month
+    const monthlyAmounts = months.map((_, index) => {
+      if (!eventsByMonth[index]) return 0
+
+      return Object.values(eventsByMonth[index]).reduce((sum, amount) => sum + amount, 0)
+    })
+
+    // Update monthly expenses chart
+    window.monthlyExpensesChart.data.labels = months
+    window.monthlyExpensesChart.data.datasets[0].data = monthlyAmounts
+    window.monthlyExpensesChart.update()
+  }
+
+  function updateExpensesTable(expenses) {
+    const expensesTable = document.getElementById("expensesTable").querySelector("tbody")
+    expensesTable.innerHTML = ""
+
+    // Get filter values
+    const searchTerm = document.getElementById("expenseSearchInput")?.value?.toLowerCase() || ""
+    const categoryFilter = document.getElementById("expenseCategoryFilter")?.value || "all"
+
+    // Filter expenses
+    let filteredExpenses = [...expenses]
+
+    // Apply search filter
+    if (searchTerm) {
+      filteredExpenses = filteredExpenses.filter(
+        (expense) =>
+          expense.eventName.toLowerCase().includes(searchTerm) ||
+          expense.category.toLowerCase().includes(searchTerm) ||
+          expense.department.toLowerCase().includes(searchTerm),
+      )
     }
-  })
-  
-  
+
+    // Apply category filter
+    if (categoryFilter !== "all") {
+      filteredExpenses = filteredExpenses.filter((expense) => expense.category === categoryFilter)
+    }
+
+    // Sort expenses by date (most recent first)
+    filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date))
+
+    if (filteredExpenses.length === 0) {
+      const row = document.createElement("tr")
+      row.innerHTML = `<td colspan="5" class="text-center">No expenses found</td>`
+      expensesTable.appendChild(row)
+      return
+    }
+
+    filteredExpenses.forEach((expense) => {
+      const row = document.createElement("tr")
+
+      row.innerHTML = `
+        <td>${expense.department}</td>
+        <td>${expense.eventName}</td>
+        <td>${expense.category}</td>
+        <td>${formatCurrency(expense.amount)}</td>
+        <td>${formatDate(expense.date)}</td>
+      `
+
+      expensesTable.appendChild(row)
+    })
+
+    // Add event listeners to filter controls
+    document.getElementById("expenseSearchInput")?.addEventListener("input", () => {
+      updateExpensesTable(expenses)
+    })
+
+    document.getElementById("expenseCategoryFilter")?.addEventListener("change", () => {
+      updateExpensesTable(expenses)
+    })
+  }
+
+  function initializeCalendar(data) {
+    const calendarMonth = document.getElementById("calendarMonth")
+    const eventsCalendar = document.getElementById("eventsCalendar")
+    const prevMonthBtn = document.getElementById("prevMonth")
+    const nextMonthBtn = document.getElementById("nextMonth")
+
+    const currentDate = new Date()
+
+    // Render calendar for current month
+    renderCalendar(currentDate)
+
+    // Add event listeners to navigation buttons
+    prevMonthBtn.addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() - 1)
+      renderCalendar(currentDate)
+    })
+
+    nextMonthBtn.addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() + 1)
+      renderCalendar(currentDate)
+    })
+
+    function renderCalendar(date) {
+      const year = date.getFullYear()
+      const month = date.getMonth()
+
+      // Set calendar month title
+      calendarMonth.textContent = new Date(year, month, 1).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+
+      // Get first day of month and total days in month
+      const firstDay = new Date(year, month, 1).getDay()
+      const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+      // Get days from previous month
+      const daysInPrevMonth = new Date(year, month, 0).getDate()
+
+      // Create calendar grid
+      let calendarHtml = `
+        <div class="calendar-grid">
+          <div class="calendar-day-header">Sun</div>
+          <div class="calendar-day-header">Mon</div>
+          <div class="calendar-day-header">Tue</div>
+          <div class="calendar-day-header">Wed</div>
+          <div class="calendar-day-header">Thu</div>
+          <div class="calendar-day-header">Fri</div>
+          <div class="calendar-day-header">Sat</div>
+      `
+
+      // Add days from previous month
+      for (let i = firstDay - 1; i >= 0; i--) {
+        const prevMonthDay = daysInPrevMonth - i
+        calendarHtml += `
+          <div class="calendar-day other-month">
+            <div class="calendar-day-number">${prevMonthDay}</div>
+          </div>
+        `
+      }
+
+      // Add days of current month
+      const today = new Date()
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year
+
+        // Get events for this day
+        const currentDay = new Date(year, month, day)
+        const dayEvents = data.events.filter((event) => {
+          const startDate = new Date(event.startDate)
+          const endDate = new Date(event.endDate)
+          return currentDay >= startDate && currentDay <= endDate
+        })
+
+        // Create events HTML
+        let eventsHtml = ""
+        dayEvents.slice(0, 3).forEach((event) => {
+          const deptClass = event.department.toLowerCase().replace(" ", "-")
+          eventsHtml += `
+            <div class="calendar-event ${deptClass}" data-event-id="${event._id}">
+              ${event.name}
+            </div>
+          `
+        })
+
+        if (dayEvents.length > 3) {
+          eventsHtml += `
+            <div class="calendar-event-more">
+              +${dayEvents.length - 3} more
+            </div>
+          `
+        }
+
+        calendarHtml += `
+          <div class="calendar-day ${isToday ? "today" : ""}">
+            <div class="calendar-day-number">${day}</div>
+            <div class="calendar-events">
+              ${eventsHtml}
+            </div>
+          </div>
+        `
+      }
+
+      // Add days from next month
+      const totalCells = 42 // 6 rows x 7 days
+      const cellsUsed = firstDay + daysInMonth
+      const nextMonthDays = totalCells - cellsUsed
+
+      for (let day = 1; day <= nextMonthDays; day++) {
+        calendarHtml += `
+          <div class="calendar-day other-month">
+            <div class="calendar-day-number">${day}</div>
+          </div>
+        `
+      }
+
+      calendarHtml += `</div>`
+
+      // Set calendar HTML
+      eventsCalendar.innerHTML = calendarHtml
+
+      // Add event listeners to calendar events
+      const calendarEvents = document.querySelectorAll(".calendar-event")
+      calendarEvents.forEach((eventEl) => {
+        eventEl.addEventListener("click", (e) => {
+          e.stopPropagation()
+          const eventId = eventEl.getAttribute("data-event-id")
+          const event = data.events.find((event) => event._id === eventId)
+          if (event) {
+            openEventDetails(event)
+          }
+        })
+      })
+    }
+  }
+
+  function openEventDetails(event) {
+    const eventDetailsTitle = document.getElementById("eventDetailsTitle")
+    const eventDetailsContent = document.getElementById("eventDetailsContent")
+
+    eventDetailsTitle.textContent = event.name
+
+    // Calculate total expense
+    let totalExpense = 0
+    event.expenses.forEach((expense) => {
+      totalExpense += expense.amount
+    })
+
+    // Determine event status
+    const status = getEventStatus(event)
+
+    // Format expenses table
+    let expensesHtml = ""
+    event.expenses.forEach((expense) => {
+      expensesHtml += `
+        <tr>
+          <td>${expense.category}</td>
+          <td>${formatCurrency(expense.amount)}</td>
+        </tr>
+      `
+    })
+
+    eventDetailsContent.innerHTML = `
+      <div class="event-details">
+        <div class="event-info">
+          <p><strong>Department:</strong> ${event.department}</p>
+          <p><strong>Organizing Club:</strong> ${event.club}</p>
+          <p><strong>Date:</strong> ${formatDate(event.startDate)} to ${formatDate(event.endDate)}</p>
+          <p><strong>Time:</strong> ${formatTime(event.startTime)} to ${formatTime(event.endTime)}</p>
+          <p><strong>Venue:</strong> ${event.venue}</p>
+          <p><strong>Status:</strong> <span class="status-badge ${status.toLowerCase()}">${status}</span></p>
+          <p><strong>Total Expense:</strong> ${formatCurrency(totalExpense)}</p>
+        </div>
+        
+        <div class="event-description">
+          <h4>Description</h4>
+          <p>${event.description || "No description provided."}</p>
+        </div>
+        
+        <div class="event-expenses">
+          <h4>Expenses</h4>
+          <table class="expenses-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${expensesHtml}
+              <tr class="total-row">
+                <td><strong>Total</strong></td>
+                <td><strong>${formatCurrency(totalExpense)}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `
+
+    // Add CSS for the event details
+    const style = document.createElement("style")
+    style.textContent = `
+      .event-details {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .event-info {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .event-info p {
+        margin: 0;
+      }
+      .event-description h4, .event-expenses h4 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--dark-color);
+      }
+      .expenses-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .expenses-table th, .expenses-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--gray-light);
+      }
+      .expenses-table th {
+        font-weight: 600;
+        color: var(--gray-dark);
+        background-color: #f8f9fa;
+      }
+      .total-row {
+        background-color: #f5f7fb;
+      }
+      @media (max-width: 768px) {
+        .event-info {
+          grid-template-columns: 1fr;
+        }
+      }
+    `
+    document.head.appendChild(style)
+
+    // Show modal
+    openModal(eventDetailsModal)
+  }
+
+  function getEventStatus(event) {
+    const today = new Date()
+    const startDate = new Date(event.startDate)
+    const endDate = new Date(event.endDate)
+
+    if (endDate < today) {
+      return "Completed"
+    } else if (startDate <= today && endDate >= today) {
+      return "Ongoing"
+    } else {
+      return "Upcoming"
+    }
+  }
+
+  function getDepartmentFullName(department) {
+    const deptMap = {
+      CSE: "Computer Science & Engineering",
+      Architecture: "School of Architecture",
+      Pharma: "Pharmaceutical Sciences",
+      "Business School": "School of Business Management",
+    }
+
+    return deptMap[department] || department
+  }
+
+  function openModal(modal) {
+    modal.classList.add("active")
+  }
+
+  function closeModal(modal) {
+    modal.classList.remove("active")
+  }
+
+  function showToast(title, message, type = "success") {
+    const toast = document.getElementById("toast")
+    const toastTitle = document.getElementById("toastTitle")
+    const toastMessage = document.getElementById("toastMessage")
+    const toastIcon = document.getElementById("toastIcon")
+
+    toastTitle.textContent = title
+    toastMessage.textContent = message
+
+    // Set icon based on type
+    toastIcon.className = ""
+    if (type === "success") {
+      toastIcon.className = "fas fa-check-circle success"
+    } else if (type === "error") {
+      toastIcon.className = "fas fa-times-circle error"
+    } else if (type === "warning") {
+      toastIcon.className = "fas fa-exclamation-circle warning"
+    } else if (type === "info") {
+      toastIcon.className = "fas fa-info-circle info"
+    }
+
+    // Show toast
+    toast.classList.add("active")
+
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+      toast.classList.remove("active")
+    }, 3000)
+  }
+
+  function formatCurrency(amount) {
+    return "$" + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")
+  }
+
+  function formatDate(dateString) {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
+
+  function formatTime(timeString) {
+    if (!timeString) return ""
+
+    const [hours, minutes] = timeString.split(":")
+    const hour = Number.parseInt(hours)
+    const ampm = hour >= 12 ? "PM" : "AM"
+    const hour12 = hour % 12 || 12
+
+    return `${hour12}:${minutes} ${ampm}`
+  }
+})
