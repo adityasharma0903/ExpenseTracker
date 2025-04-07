@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>College Club Management</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="login-page" class="page active">
+    <div class="login-container">
+      <div class="login-header">
+        <div class="logo-container">
+          <div class="logo">CM</div>
+        </div>
+        <h1>Club Manager</h1>
+        <p>Manage your club events and activities</p>
+      </div>
+      <div class="login-form">
+        <div class="input-group">
+          <label for="club-id">Club ID</label>
+          <div class="input-with-icon">
+            <i class="fas fa-id-card"></i>
+            <input type="text" id="club-id" placeholder="Enter your club ID">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <div class="input-with-icon">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" placeholder="Enter your password">
+          </div>
+        </div>
+        <button id="login-btn" class="btn-primary">
+          <span>Login</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+        <div id="login-error" class="error-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Page -->
+  <div id="dashboard-page" class="page">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <div class="logo">CM</div>
+        </div>
+        <h2 id="club-name">Club Name</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li data-page="dashboard" class="active"><i class="fas fa-chart-line"></i> Dashboard</li>
+          <li data-page="events"><i class="fas fa-calendar-alt"></i> Events</li>
+          <li data-page="budget"><i class="fas fa-wallet"></i> Budget</li>
+          <li data-page="profile"><i class="fas fa-user"></i> Profile</li>
+          <li id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="hamburger-menu">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+        <div class="search-bar">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search...">
+        </div>
+        <div class="user-profile">
+          <div class="notification">
+            <i class="fas fa-bell"></i>
+            <span class="badge">3</span>
+          </div>
+          <div class="profile-pic">
+            <i class="fas fa-user"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div id="dashboard-content" class="content active">
+        <div class="content-header">
+          <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
+          <p class="date-display" id="current-date"></p>
+        </div>
+        
+        <div class="stats-container">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-info">
+              <h3>Total Events</h3>
+              <p id="total-events">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+            <div class="stat-info">
+              <h3>Total Budget</h3>
+              <p id="total-budget">₹0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+              <h3>Total Registrations</h3>
+              <p id="total-registrations">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+              <h3>Upcoming Events</h3>
+              <p id="upcoming-events">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fas fa-chart-pie"></i> Budget Allocation</h3>
+              <div class="chart-actions">
+                <button class="chart-action-btn" id="refresh-budget-chart">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="budget-chart"></canvas>
+              <div id="budget-chart-legend" class="chart-legend"></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fas fa-chart-line"></i> Event Timeline</h3>
+              <div class="chart-actions">
+                <button class="chart-action-btn" id="refresh-timeline-chart">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="timeline-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="recent-events-section">
+          <div class="section-header">
+            <h3><i class="fas fa-calendar-check"></i> Upcoming Events</h3>
+            <a href="#" class="view-all" id="view-all-events">View All <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div id="upcoming-events-list" class="events-list">
+            <!-- Events will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Events Content -->
+      <div id="events-content" class="content">
+        <div class="content-header">
+          <h1><i class="fas fa-calendar-alt"></i> Events</h1>
+          <button id="create-event-btn" class="btn-primary">
+            <i class="fas fa-plus"></i> Create Event
+          </button>
+        </div>
+        
+        <div class="events-filter">
+          <div class="filter-group">
+            <label for="event-filter"><i class="fas fa-filter"></i> Filter:</label>
+            <select id="event-filter">
+              <option value="all">All Events</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="past">Past</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="event-sort"><i class="fas fa-sort"></i> Sort By:</label>
+            <select id="event-sort">
+              <option value="date-desc">Date (Newest)</option>
+              <option value="date-asc">Date (Oldest)</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="events-list" class="events-grid">
+          <!-- Events will be populated here -->
+        </div>
+      </div>
+
+      <!-- Budget Content -->
+      <div id="budget-content" class="content">
+        <div class="content-header">
+          <h1><i class="fas fa-wallet"></i> Budget & Expenses</h1>
+          <button id="add-expense-btn-main" class="btn-primary">
+            <i class="fas fa-plus"></i> Add Expense
+          </button>
+        </div>
+        
+        <div class="budget-overview">
+          <div class="budget-card">
+            <div class="budget-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+            <div class="budget-info">
+              <h3>Total Budget</h3>
+              <p id="budget-total">₹0</p>
+            </div>
+          </div>
+          <div class="budget-card">
+            <div class="budget-icon">
+              <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <div class="budget-info">
+              <h3>Total Expenses</h3>
+              <p id="expenses-total">₹0</p>
+            </div>
+          </div>
+          <div class="budget-card">
+            <div class="budget-icon">
+              <i class="fas fa-coins"></i>
+            </div>
+            <div class="budget-info">
+              <h3>Remaining</h3>
+              <p id="budget-remaining">₹0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fas fa-chart-pie"></i> Expenses by Category</h3>
+              <div class="chart-actions">
+                <button class="chart-action-btn" id="refresh-category-chart">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="expenses-category-chart"></canvas>
+              <div id="category-chart-legend" class="chart-legend"></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fas fa-chart-bar"></i> Expenses by Event</h3>
+              <div class="chart-actions">
+                <button class="chart-action-btn" id="refresh-event-chart">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="expenses-event-chart"></canvas>
+              <div id="event-chart-legend" class="chart-legend"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="budget-details">
+          <div class="section-header">
+            <h3><i class="fas fa-list"></i> Expense Details</h3>
+            <div class="expense-filter">
+              <label for="expense-filter"><i class="fas fa-filter"></i> Filter:</label>
+              <select id="expense-filter">
+                <option value="all">All Categories</option>
+                <option value="venue">Venue</option>
+                <option value="refreshments">Refreshments</option>
+                <option value="prizes">Prizes</option>
+                <option value="equipment">Equipment</option>
+                <option value="marketing">Marketing</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="expense-table">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="expense-table-body">
+                <!-- Expenses will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Content -->
+      <div id="profile-content" class="content">
+        <div class="content-header">
+          <h1><i class="fas fa-user"></i> Club Profile</h1>
+        </div>
+        
+        <div class="profile-container">
+          <div class="profile-header">
+            <div class="profile-pic large">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="profile-info">
+              <h2 id="profile-club-name">Club Name</h2>
+              <p id="profile-club-id">Club ID: </p>
+            </div>
+          </div>
+
+          <div class="profile-details">
+            <div class="detail-group">
+              <h3><i class="fas fa-info-circle"></i> Club Information</h3>
+              <div class="detail-item">
+                <label>Club Name:</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-building"></i>
+                  <input type="text" id="profile-name" disabled>
+                </div>
+              </div>
+              <div class="detail-item">
+                <label>Club ID:</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-id-card"></i>
+                  <input type="text" id="profile-id" disabled>
+                </div>
+              </div>
+              <div class="detail-item">
+                <label>Email:</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-envelope"></i>
+                  <input type="email" id="profile-email" value="club@example.com">
+                </div>
+              </div>
+              <div class="detail-item">
+                <label>Contact:</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-phone"></i>
+                  <input type="tel" id="profile-contact" value="+91 9876543210">
+                </div>
+              </div>
+              <div class="detail-item">
+                <label>Description:</label>
+                <textarea id="profile-description">Club description goes here.</textarea>
+              </div>
+            </div>
+
+            <div class="detail-group">
+              <h3><i class="fas fa-lock"></i> Change Password</h3>
+              <div class="detail-item">
+                <label>Current Password:</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-lock"></i>
+                  <input type="password" id="current-password">
+                </div>
+              </div>
+              <div class="detail-item">
+                <label>New Password:</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-key"></i>
+                  <input type="password" id="new-password">
+                </div>
+              </div>
+              <div class="detail-item">
+                <label>Confirm Password:</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-check-circle"></i>
+                  <input type="password" id="confirm-password">
+                </div>
+              </div>
+              <button id="change-password-btn" class="btn-primary">
+                <i class="fas fa-save"></i> Change Password
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-actions">
+            <button id="save-profile-btn" class="btn-primary">
+              <i class="fas fa-save"></i> Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Event Modal -->
+  <div id="create-event-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-calendar-plus"></i> Create New Event</h2>
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tabs">
+          <div class="tab active" data-tab="event-details">
+            <i class="fas fa-info-circle"></i> Event Details
+          </div>
+          <div class="tab" data-tab="event-budget">
+            <i class="fas fa-wallet"></i> Budget Details
+          </div>
+        </div>
+
+        <div id="event-details-tab" class="tab-content active">
+          <div class="form-group">
+            <label for="event-name">Event Name</label>
+            <div class="input-with-icon">
+              <i class="fas fa-signature"></i>
+              <input type="text" id="event-name" placeholder="Enter event name">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="event-description">Event Description</label>
+            <textarea id="event-description" placeholder="Enter event description"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="event-start-date">Start Date</label>
+              <div class="input-with-icon">
+                <i class="fas fa-calendar"></i>
+                <input type="date" id="event-start-date">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="event-end-date">End Date</label>
+              <div class="input-with-icon">
+                <i class="fas fa-calendar"></i>
+                <input type="date" id="event-end-date">
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="event-start-time">Start Time</label>
+              <div class="input-with-icon">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="event-start-time">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="event-end-time">End Time</label>
+              <div class="input-with-icon">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="event-end-time">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="event-venue">Venue</label>
+            <div class="input-with-icon">
+              <i class="fas fa-map-marker-alt"></i>
+              <input type="text" id="event-venue" placeholder="Enter venue">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="event-dl">Registration Deadline</label>
+            <select id="event-dl">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+          <div id="dl-options" class="form-group hidden">
+            <label for="dl-type">Deadline Type</label>
+            <select id="dl-type">
+              <option value="full-day">Full Day</option>
+              <option value="specific-hours">Specific Hours</option>
+            </select>
+          </div>
+          <div id="dl-hours" class="form-row hidden">
+            <div class="form-group">
+              <label for="dl-start-time">Start Time</label>
+              <div class="input-with-icon">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="dl-start-time">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="dl-end-time">End Time</label>
+              <div class="input-with-icon">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="dl-end-time">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="event-poster">Event Poster</label>
+            <div class="file-input-container">
+              <input type="file" id="event-poster" accept="image/*">
+              <label for="event-poster" class="file-input-label">
+                <i class="fas fa-upload"></i> Choose Image
+              </label>
+              <span class="file-name">No file chosen</span>
+            </div>
+            <div id="poster-preview" class="poster-preview">
+              <i class="fas fa-image"></i>
+              <span>No image selected</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="event-budget-tab" class="tab-content">
+          <div class="form-group">
+            <label for="event-teams">Number of Teams</label>
+            <div class="input-with-icon">
+              <i class="fas fa-users"></i>
+              <input type="number" id="event-teams" min="1" value="1">
+            </div>
+          </div>
+          
+          <h3><i class="fas fa-money-bill-wave"></i> Expenses</h3>
+          <div id="expenses-container">
+            <div class="expense-item">
+              <div class="form-group">
+                <label for="expense-category-1">Category</label>
+                <select id="expense-category-1" class="expense-category">
+                  <option value="venue">Venue</option>
+                  <option value="refreshments">Refreshments</option>
+                  <option value="prizes">Prizes</option>
+                  <option value="equipment">Equipment</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="expense-description-1">Description</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-align-left"></i>
+                  <input type="text" id="expense-description-1" class="expense-description" placeholder="Enter description">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="expense-amount-1">Amount (₹)</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-rupee-sign"></i>
+                  <input type="number" id="expense-amount-1" class="expense-amount" min="0" value="0">
+                </div>
+              </div>
+              <button class="remove-expense" data-id="1"><i class="fas fa-trash-alt"></i></button>
+            </div>
+          </div>
+          <button id="add-expense-btn" class="btn-secondary">
+            <i class="fas fa-plus"></i> Add Expense
+          </button>
+          <div class="total-budget">
+            <h3>Total Budget: <span id="event-total-budget">₹0</span></h3>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="prev-tab-btn" class="btn-secondary hidden">
+          <i class="fas fa-arrow-left"></i> Previous
+        </button>
+        <button id="next-tab-btn" class="btn-primary">
+          Next <i class="fas fa-arrow-right"></i>
+        </button>
+        <button id="create-event-submit" class="btn-primary hidden">
+          <i class="fas fa-check"></i> Create Event
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Event Modal -->
+  <div id="view-event-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="view-event-title">Event Title</h2>
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+      </div>
+      <div class="modal-body">
+        <div class="event-details">
+          <div class="event-poster">
+            <img id="view-event-poster" src="/placeholder.svg" alt="Event Poster">
+          </div>
+          <div class="event-info">
+            <p id="view-event-description"></p>
+            <div class="event-meta">
+              <div class="meta-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span id="view-event-date"></span>
+              </div>
+              <div class="meta-item">
+                <i class="fas fa-clock"></i>
+                <span id="view-event-time"></span>
+              </div>
+              <div class="meta-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span id="view-event-venue"></span>
+              </div>
+              <div class="meta-item">
+                <i class="fas fa-users"></i>
+                <span id="view-event-teams"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="event-tabs">
+          <div class="tab active" data-tab="registrations">
+            <i class="fas fa-users"></i> Registrations
+          </div>
+          <div class="tab" data-tab="budget">
+            <i class="fas fa-wallet"></i> Budget
+          </div>
+        </div>
+
+        <div id="registrations-tab" class="tab-content active">
+          <div class="registrations-header">
+            <h3><i class="fas fa-users"></i> Team Registrations</h3>
+            <div class="filter-group">
+              <label for="registration-status"><i class="fas fa-filter"></i> Status:</label>
+              <select id="registration-status">
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+          <div id="event-registrations" class="registrations-list">
+            <!-- Registrations will be populated here -->
+          </div>
+        </div>
+
+        <div id="budget-tab" class="tab-content">
+          <div class="budget-overview">
+            <div class="budget-card">
+              <div class="budget-icon">
+                <i class="fas fa-wallet"></i>
+              </div>
+              <div class="budget-info">
+                <h3>Total Budget</h3>
+                <p id="view-event-budget">₹0</p>
+              </div>
+            </div>
+          </div>
+          <div class="expense-details">
+            <h3><i class="fas fa-list"></i> Expense Details</h3>
+            <div class="table-container">
+              <table class="expense-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="view-expense-table">
+                  <!-- Expenses will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Team Modal -->
+  <div id="view-team-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="view-team-title">Team Details</h2>
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+      </div>
+      <div class="modal-body">
+        <div class="team-info">
+          <div class="info-group">
+            <h3><i class="fas fa-info-circle"></i> Team Information</h3>
+            <div class="info-item">
+              <label>Team Name:</label>
+              <p id="view-team-name"></p>
+            </div>
+            <div class="info-item">
+              <label>Event:</label>
+              <p id="view-team-event"></p>
+            </div>
+            <div class="info-item">
+              <label>Registration Date:</label>
+              <p id="view-team-date"></p>
+            </div>
+            <div class="info-item">
+              <label>Status:</label>
+              <p id="view-team-status"></p>
+            </div>
+          </div>
+
+          <div class="info-group">
+            <h3><i class="fas fa-users"></i> Team Members</h3>
+            <div id="team-members-list" class="team-members">
+              <!-- Team members will be populated here -->
+            </div>
+          </div>
+        </div>
+
+        <div class="team-actions">
+          <button id="approve-team-btn" class="btn-success">
+            <i class="fas fa-check"></i> Approve Team
+          </button>
+          <button id="reject-team-btn" class="btn-danger">
+            <i class="fas fa-times"></i> Reject Team
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Expense Modal -->
+  <div id="add-expense-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-plus"></i> Add Expense</h2>
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="expense-event">Event</label>
+          <select id="expense-event">
+            <!-- Events will be populated here -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="expense-category">Category</label>
+          <select id="expense-category">
+            <option value="venue">Venue</option>
+            <option value="refreshments">Refreshments</option>
+            <option value="prizes">Prizes</option>
+            <option value="equipment">Equipment</option>
+            <option value="marketing">Marketing</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="expense-description">Description</label>
+          <div class="input-with-icon">
+            <i class="fas fa-align-left"></i>
+            <input type="text" id="expense-description" placeholder="Enter description">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="expense-amount">Amount (₹)</label>
+          <div class="input-with-icon">
+            <i class="fas fa-rupee-sign"></i>
+            <input type="number" id="expense-amount" min="0" value="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="add-expense-submit" class="btn-primary">
+          <i class="fas fa-plus"></i> Add Expense
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
