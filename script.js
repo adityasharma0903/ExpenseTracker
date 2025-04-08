@@ -63,6 +63,394 @@ document.addEventListener('DOMContentLoaded', function() {
       localStorage.setItem('expenses', JSON.stringify([]));
     }
   }
+  function setupEnhancedEventListeners() {
+    // Tab navigation
+    const tabs = document.querySelectorAll(".modal-tabs .tab");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", function () {
+        const tabId = this.getAttribute("data-tab");
+        switchTab(tabId, this.parentElement);
+      });
+    });
+  
+    // Next and Previous buttons
+    document.getElementById("next-tab-btn").addEventListener("click", goToNextTab);
+    document.getElementById("prev-tab-btn").addEventListener("click", goToPrevTab);
+  
+    // Add "What to Expect" item
+    document.getElementById("add-expect-item").addEventListener("click", addExpectItem);
+  
+    // Add Eligibility item
+    document.getElementById("add-eligibility-item").addEventListener("click", addEligibilityItem);
+  
+    // Add Special Award
+    document.getElementById("add-special-award").addEventListener("click", addSpecialAward);
+  
+    // Add Participant Perk
+    document.getElementById("add-participant-perk").addEventListener("click", addParticipantPerk);
+  
+    // Add Sponsor
+    document.getElementById("add-sponsor").addEventListener("click", addSponsor);
+  
+    // Add Schedule Day
+    document.getElementById("add-schedule-day").addEventListener("click", addScheduleDay);
+  
+    // Add Schedule Item for initial day
+    document.querySelector(".add-schedule-item").addEventListener("click", function() {
+      const dayElement = this.closest(".schedule-day");
+      const dayNumber = dayElement.getAttribute("data-day");
+      addScheduleItem(dayElement, dayNumber);
+    });
+  
+    // Add FAQ Item
+    document.getElementById("add-faq-item").addEventListener("click", addFaqItem);
+  
+    // Setup remove buttons for initial items
+    setupRemoveButtons();
+  }
+
+  function addExpectItem() {
+    const container = document.getElementById("expect-items-container");
+    const newItem = document.createElement("div");
+    newItem.className = "expect-item";
+    newItem.innerHTML = `
+      <div class="input-with-icon">
+        <i class="fas fa-star"></i>
+        <input type="text" class="expect-input" placeholder="Enter an expectation item">
+      </div>
+      <button class="remove-expect-item"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(newItem);
+    
+    // Add event listener to remove button
+    newItem.querySelector(".remove-expect-item").addEventListener("click", function() {
+      newItem.remove();
+    });
+    
+    // Animate the new item
+    animateNewElement(newItem);
+  }
+
+  function addEligibilityItem() {
+    const container = document.getElementById("eligibility-items-container");
+    const newItem = document.createElement("div");
+    newItem.className = "eligibility-item";
+    newItem.innerHTML = `
+      <div class="input-with-icon">
+        <i class="fas fa-check-circle"></i>
+        <input type="text" class="eligibility-input" placeholder="Enter eligibility criteria">
+      </div>
+      <button class="remove-eligibility-item"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(newItem);
+    
+    // Add event listener to remove button
+    newItem.querySelector(".remove-eligibility-item").addEventListener("click", function() {
+      newItem.remove();
+    });
+    
+    // Animate the new item
+    animateNewElement(newItem);
+  }
+
+  function addSpecialAward() {
+    const container = document.getElementById("special-awards-container");
+    const awardCount = container.children.length + 1;
+    const newAward = document.createElement("div");
+    newAward.className = "special-award";
+    newAward.innerHTML = `
+      <div class="prize-header">
+        <h4><i class="fas fa-star" style="color: #f59e0b;"></i> Special Award ${awardCount}</h4>
+      </div>
+      <div class="form-group">
+        <label>Award Name</label>
+        <div class="input-with-icon">
+          <i class="fas fa-trophy"></i>
+          <input type="text" class="award-name" placeholder="Enter award name (e.g., Innovation Award)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Amount (₹)</label>
+          <div class="input-with-icon">
+            <i class="fas fa-rupee-sign"></i>
+            <input type="number" class="award-amount" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea class="award-description" placeholder="Describe the special award"></textarea>
+        </div>
+      </div>
+      <button class="remove-special-award"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(newAward);
+    
+    // Add event listener to remove button
+    newAward.querySelector(".remove-special-award").addEventListener("click", function() {
+      newAward.remove();
+    });
+    
+    // Animate the new award
+    animateNewElement(newAward);
+  }
+  
+  // Add Participant Perk
+  function addParticipantPerk() {
+    const container = document.getElementById("participant-perks-container");
+    const newPerk = document.createElement("div");
+    newPerk.className = "participant-perk";
+    newPerk.innerHTML = `
+      <div class="input-with-icon">
+        <i class="fas fa-gift"></i>
+        <input type="text" class="perk-input" placeholder="Enter perk (e.g., T-shirts, Certificates)">
+      </div>
+      <button class="remove-perk"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(newPerk);
+    
+    // Add event listener to remove button
+    newPerk.querySelector(".remove-perk").addEventListener("click", function() {
+      newPerk.remove();
+    });
+    
+    // Animate the new perk
+    animateNewElement(newPerk);
+  }
+  
+  // Add Sponsor
+  function addSponsor() {
+    const container = document.getElementById("sponsors-container");
+    const sponsorCount = container.children.length + 1;
+    const newSponsor = document.createElement("div");
+    newSponsor.className = "sponsor-item";
+    newSponsor.innerHTML = `
+      <div class="input-with-icon">
+        <i class="fas fa-building"></i>
+        <input type="text" class="sponsor-name" placeholder="Sponsor name">
+      </div>
+      <div class="file-input-container">
+        <input type="file" id="sponsor-logo-${sponsorCount}" class="sponsor-logo" accept="image/*">
+        <label for="sponsor-logo-${sponsorCount}" class="file-input-label">
+          <i class="fas fa-upload"></i> Upload Logo
+        </label>
+      </div>
+      <button class="remove-sponsor"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(newSponsor);
+    
+    // Add event listener to remove button
+    newSponsor.querySelector(".remove-sponsor").addEventListener("click", function() {
+      newSponsor.remove();
+    });
+    
+    // Animate the new sponsor
+    animateNewElement(newSponsor);
+  }
+  
+  // Add Schedule Day
+  function addScheduleDay() {
+    const container = document.getElementById("schedule-days-container");
+    const dayCount = container.children.length + 1;
+    const newDay = document.createElement("div");
+    newDay.className = "schedule-day";
+    newDay.setAttribute("data-day", dayCount);
+    newDay.innerHTML = `
+      <div class="day-header">
+        <h3>Day ${dayCount}</h3>
+        <div class="input-with-icon">
+          <i class="fas fa-calendar"></i>
+          <input type="date" class="day-date">
+        </div>
+      </div>
+      <div class="schedule-items-container">
+        <!-- Schedule items will be added here -->
+      </div>
+      <button class="add-schedule-item btn-secondary">
+        <i class="fas fa-plus"></i> Add Schedule Item
+      </button>
+    `;
+    container.appendChild(newDay);
+    
+    // Add event listener to add schedule item button
+    newDay.querySelector(".add-schedule-item").addEventListener("click", function() {
+      addScheduleItem(newDay, dayCount);
+    });
+    
+    // Animate the new day
+    animateNewElement(newDay);
+  }
+  
+  // Add Schedule Item
+  function addScheduleItem(dayElement, dayNumber) {
+    const container = dayElement.querySelector(".schedule-items-container");
+    const newItem = document.createElement("div");
+    newItem.className = "schedule-item";
+    newItem.innerHTML = `
+      <div class="schedule-time">
+        <div class="input-with-icon">
+          <i class="fas fa-clock"></i>
+          <input type="time" class="item-time" placeholder="Time">
+        </div>
+      </div>
+      <div class="schedule-details">
+        <div class="input-with-icon">
+          <i class="fas fa-heading"></i>
+          <input type="text" class="item-title" placeholder="Event title (e.g., Registration, Workshop)">
+        </div>
+        <textarea class="item-description" placeholder="Additional details (e.g., location, speaker)"></textarea>
+      </div>
+      <button class="remove-schedule"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(newItem);
+    
+    // Add event listener to remove button
+    newItem.querySelector(".remove-schedule").addEventListener("click", function() {
+      newItem.remove();
+    });
+    
+    // Animate the new item
+    animateNewElement(newItem);
+  }
+  
+  // Add FAQ Item
+  function addFaqItem() {
+    const container = document.getElementById("faq-items-container");
+    const newItem = document.createElement("div");
+    newItem.className = "faq-item";
+    newItem.innerHTML = `
+      <div class="form-group">
+        <label>Question</label>
+        <div class="input-with-icon">
+          <i class="fas fa-question-circle"></i>
+          <input type="text" class="faq-question" placeholder="Enter a frequently asked question">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Answer</label>
+        <textarea class="faq-answer" placeholder="Enter the answer to the question"></textarea>
+      </div>
+      <button class="remove-faq"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(newItem);
+    
+    // Add event listener to remove button
+    newItem.querySelector(".remove-faq").addEventListener("click", function() {
+      newItem.remove();
+    });
+    
+    // Animate the new item
+    animateNewElement(newItem);
+  }
+
+  function setupRemoveButtons() {
+    // Setup remove buttons for expect items
+    document.querySelectorAll(".remove-expect-item").forEach(button => {
+      button.addEventListener("click", function() {
+        this.closest(".expect-item").remove();
+      });
+    });
+    
+    // Setup remove buttons for eligibility items
+    document.querySelectorAll(".remove-eligibility-item").forEach(button => {
+      button.addEventListener("click", function() {
+        this.closest(".eligibility-item").remove();
+      });
+    });
+    
+    // Setup remove buttons for special awards
+    document.querySelectorAll(".remove-special-award").forEach(button => {
+      button.addEventListener("click", function() {
+        this.closest(".special-award").remove();
+      });
+    });
+    
+    // Setup remove buttons for participant perks
+    document.querySelectorAll(".remove-perk").forEach(button => {
+      button.addEventListener("click", function() {
+        this.closest(".participant-perk").remove();
+      });
+    });
+    
+    // Setup remove buttons for sponsors
+    document.querySelectorAll(".remove-sponsor").forEach(button => {
+      button.addEventListener("click", function() {
+        this.closest(".sponsor-item").remove();
+      });
+    });
+    
+    // Setup remove buttons for schedule items
+    document.querySelectorAll(".remove-schedule").forEach(button => {
+      button.addEventListener("click", function() {
+        this.closest(".schedule-item").remove();
+      });
+    });
+    
+    // Setup remove buttons for FAQs
+    document.querySelectorAll(".remove-faq").forEach(button => {
+      button.addEventListener("click", function() {
+        this.closest(".faq-item").remove();
+      });
+    });
+  }
+  
+  // Animate new element
+  function animateNewElement(element) {
+    element.style.opacity = "0";
+    element.style.transform = "translateY(20px)";
+    setTimeout(() => {
+      element.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      element.style.opacity = "1";
+      element.style.transform = "translateY(0)";
+    }, 10);
+  }
+  
+  // Go to next tab
+  function goToNextTab() {
+    const activeTab = document.querySelector(".modal-tabs .tab.active");
+    const tabs = Array.from(document.querySelectorAll(".modal-tabs .tab"));
+    const currentIndex = tabs.indexOf(activeTab);
+    
+    if (currentIndex < tabs.length - 1) {
+      const nextTab = tabs[currentIndex + 1];
+      const tabId = nextTab.getAttribute("data-tab");
+      switchTab(tabId, document.querySelector(".modal-tabs"));
+      
+      // Show/hide prev/next/submit buttons
+      document.getElementById("prev-tab-btn").classList.remove("hidden");
+      
+      if (currentIndex + 1 === tabs.length - 1) {
+        document.getElementById("next-tab-btn").classList.add("hidden");
+        document.getElementById("create-event-submit").classList.remove("hidden");
+      } else {
+        document.getElementById("next-tab-btn").classList.remove("hidden");
+        document.getElementById("create-event-submit").classList.add("hidden");
+      }
+    }
+  }
+  
+  // Go to previous tab
+  function goToPrevTab() {
+    const activeTab = document.querySelector(".modal-tabs .tab.active");
+    const tabs = Array.from(document.querySelectorAll(".modal-tabs .tab"));
+    const currentIndex = tabs.indexOf(activeTab);
+    
+    if (currentIndex > 0) {
+      const prevTab = tabs[currentIndex - 1];
+      const tabId = prevTab.getAttribute("data-tab");
+      switchTab(tabId, document.querySelector(".modal-tabs"));
+      
+      // Show/hide prev/next/submit buttons
+      document.getElementById("next-tab-btn").classList.remove("hidden");
+      document.getElementById("create-event-submit").classList.add("hidden");
+      
+      if (currentIndex - 1 === 0) {
+        document.getElementById("prev-tab-btn").classList.add("hidden");
+      } else {
+        document.getElementById("prev-tab-btn").classList.remove("hidden");
+      }
+    }
+  }  
   
   // Setup all event listeners
   function setupEventListeners() {
@@ -672,52 +1060,157 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Create event
   function createEvent() {
-    const loggedInClub = JSON.parse(localStorage.getItem('loggedInClub'));
+    const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
+  
+    // Get basic event details
+    const name = document.getElementById("event-name").value.trim();
+    const description = document.getElementById("event-description").value.trim();
+    const startDate = document.getElementById("event-start-date").value;
+    const endDate = document.getElementById("event-end-date").value;
+    const startTime = document.getElementById("event-start-time").value;
+    const endTime = document.getElementById("event-end-time").value;
+    const venue = document.getElementById("event-venue").value.trim();
+    const teamMin = parseInt(document.getElementById("event-team-min").value) || 1;
+    const teamMax = parseInt(document.getElementById("event-team-max").value) || 5;
+    const hasDL = document.getElementById("event-dl").value === "yes";
+    const dlType = hasDL ? document.getElementById("dl-type").value : null;
+    const dlStartTime = hasDL && dlType === "specific-hours" ? document.getElementById("dl-start-time").value : null;
+    const dlEndTime = hasDL && dlType === "specific-hours" ? document.getElementById("dl-end-time").value : null;
+    const posterInput = document.getElementById("event-poster");
+    const poster =
+      posterInput.files.length > 0 ? document.getElementById("poster-preview").style.backgroundImage.slice(5, -2) : null;
+    const teams = Number.parseInt(document.getElementById("event-teams").value) || 1;
+  
+    // Get overview details
+    const about = document.getElementById("event-about").value.trim();
+    const theme = document.getElementById("event-theme").value.trim();
     
-    // Get event details
-    const name = document.getElementById('event-name').value.trim();
-    const description = document.getElementById('event-description').value.trim();
-    const startDate = document.getElementById('event-start-date').value;
-    const endDate = document.getElementById('event-end-date').value;
-    const startTime = document.getElementById('event-start-time').value;
-    const endTime = document.getElementById('event-end-time').value;
-    const venue = document.getElementById('event-venue').value.trim();
-    const hasDL = document.getElementById('event-dl').value === 'yes';
-    const dlType = hasDL ? document.getElementById('dl-type').value : null;
-    const dlStartTime = hasDL && dlType === 'specific-hours' ? document.getElementById('dl-start-time').value : null;
-    const dlEndTime = hasDL && dlType === 'specific-hours' ? document.getElementById('dl-end-time').value : null;
-    const posterInput = document.getElementById('event-poster');
-    const poster = posterInput.files.length > 0 ? document.getElementById('poster-preview').style.backgroundImage.slice(5, -2) : null;
-    const teams = parseInt(document.getElementById('event-teams').value) || 1;
+    // Get what to expect items
+    const expectItems = [];
+    document.querySelectorAll(".expect-input").forEach(input => {
+      if (input.value.trim()) {
+        expectItems.push(input.value.trim());
+      }
+    });
     
-    // Validate required fields
-    if (!name || !description || !startDate || !endDate || !startTime || !endTime || !venue) {
-      showToast('Error', 'Please fill in all required fields', 'error');
-      return;
-    }
+    // Get eligibility criteria
+    const eligibilityCriteria = [];
+    document.querySelectorAll(".eligibility-input").forEach(input => {
+      if (input.value.trim()) {
+        eligibilityCriteria.push(input.value.trim());
+      }
+    });
+    
+    // Get duty leave details
+    const dutyLeaveAvailable = document.getElementById("event-duty-leave").checked;
+    const dutyLeaveDays = parseInt(document.getElementById("event-duty-leave-days").value) || 0;
+    
+    // Get prize details
+    const prizePool = parseInt(document.getElementById("event-prize-pool").value) || 0;
+    
+    // Get main prizes
+    const firstPrize = {
+      amount: parseInt(document.getElementById("first-prize-amount").value) || 0,
+      description: document.getElementById("first-prize-description").value.trim()
+    };
+    
+    const secondPrize = {
+      amount: parseInt(document.getElementById("second-prize-amount").value) || 0,
+      description: document.getElementById("second-prize-description").value.trim()
+    };
+    
+    const thirdPrize = {
+      amount: parseInt(document.getElementById("third-prize-amount").value) || 0,
+      description: document.getElementById("third-prize-description").value.trim()
+    };
+    
+    // Get special awards
+    const specialAwards = [];
+    document.querySelectorAll(".special-award").forEach(award => {
+      const name = award.querySelector(".award-name").value.trim();
+      const amount = parseInt(award.querySelector(".award-amount").value) || 0;
+      const description = award.querySelector(".award-description").value.trim();
+      
+      if (name) {
+        specialAwards.push({ name, amount, description });
+      }
+    });
+    
+    // Get participant perks
+    const participantPerks = [];
+    document.querySelectorAll(".perk-input").forEach(input => {
+      if (input.value.trim()) {
+        participantPerks.push(input.value.trim());
+      }
+    });
+    
+    // Get sponsors
+    const sponsors = [];
+    document.querySelectorAll(".sponsor-item").forEach(sponsor => {
+      const name = sponsor.querySelector(".sponsor-name").value.trim();
+      const logoInput = sponsor.querySelector(".sponsor-logo");
+      let logo = null;
+      
+      if (logoInput.files.length > 0) {
+        // In a real implementation, you would upload the logo and get a URL
+        // For now, we'll just note that a logo was selected
+        logo = "logo_placeholder.png";
+      }
+      
+      if (name) {
+        sponsors.push({ name, logo });
+      }
+    });
+    
+    // Get schedule
+    const schedule = [];
+    document.querySelectorAll(".schedule-day").forEach(day => {
+      const dayNumber = parseInt(day.getAttribute("data-day"));
+      const date = day.querySelector(".day-date").value;
+      const items = [];
+      
+      day.querySelectorAll(".schedule-item").forEach(item => {
+        const time = item.querySelector(".item-time").value;
+        const title = item.querySelector(".item-title").value.trim();
+        const description = item.querySelector(".item-description").value.trim();
+        
+        if (time && title) {
+          items.push({ time, title, description });
+        }
+      });
+      
+      if (date && items.length > 0) {
+        schedule.push({ dayNumber, date, items });
+      }
+    });
+    
+    // Get FAQs
+    const faqs = [];
+    document.querySelectorAll(".faq-item").forEach(faq => {
+      const question = faq.querySelector(".faq-question").value.trim();
+      const answer = faq.querySelector(".faq-answer").value.trim();
+      
+      if (question && answer) {
+        faqs.push({ question, answer });
+      }
+    });
     
     // Get expenses
-    const expenseItems = document.querySelectorAll('.expense-item');
     const expenses = [];
-    
-    expenseItems.forEach(item => {
-      const category = item.querySelector('.expense-category').value;
-      const description = item.querySelector('.expense-description').value.trim();
-      const amount = parseInt(item.querySelector('.expense-amount').value) || 0;
+    document.querySelectorAll(".expense-item").forEach(item => {
+      const category = item.querySelector(".expense-category").value;
+      const description = item.querySelector(".expense-description").value.trim();
+      const amount = parseInt(item.querySelector(".expense-amount").value) || 0;
       
       if (description && amount > 0) {
-        expenses.push({
-          category,
-          description,
-          amount
-        });
+        expenses.push({ category, description, amount });
       }
     });
     
     // Calculate total budget
     const totalBudget = expenses.reduce((total, expense) => total + expense.amount, 0);
-    
-    // Create event object
+  
+    // Create event object with all the new fields
     const event = {
       id: Date.now().toString(),
       clubId: loggedInClub.id,
@@ -734,19 +1227,40 @@ document.addEventListener('DOMContentLoaded', function() {
       poster,
       teams,
       venue,
+      teamMin,
+      teamMax,
+      about,
+      theme,
+      expectItems,
+      eligibilityCriteria,
+      dutyLeave: {
+        available: dutyLeaveAvailable,
+        days: dutyLeaveDays
+      },
+      prizes: {
+        pool: prizePool,
+        first: firstPrize,
+        second: secondPrize,
+        third: thirdPrize,
+        special: specialAwards,
+        perks: participantPerks
+      },
+      sponsors,
+      schedule,
+      faqs,
       expenses,
       totalBudget,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
-    
+  
     // Save event to localStorage
-    const events = JSON.parse(localStorage.getItem('events')) || [];
+    const events = JSON.parse(localStorage.getItem("events")) || [];
     events.push(event);
-    localStorage.setItem('events', JSON.stringify(events));
-    
+    localStorage.setItem("events", JSON.stringify(events));
+  
     // Save expenses to localStorage
-    const allExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
-    expenses.forEach(expense => {
+    const allExpenses = JSON.parse(localStorage.getItem("expenses")) || [];
+    expenses.forEach((expense) => {
       allExpenses.push({
         id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
         eventId: event.id,
@@ -754,19 +1268,24 @@ document.addEventListener('DOMContentLoaded', function() {
         category: expense.category,
         description: expense.description,
         amount: expense.amount,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
       });
     });
-    localStorage.setItem('expenses', JSON.stringify(allExpenses));
-    
+    localStorage.setItem("expenses", JSON.stringify(allExpenses));
+  
     // Close modal and refresh events
     closeAllModals();
     loadEvents();
     loadDashboardData();
     loadBudgetData();
-    
-    showToast('Event Created', `${name} has been created successfully`, 'success');
+  
+    showToast("Event Created", `${name} has been created successfully`, "success");
   }
+
+  document.getElementById("create-event-btn").addEventListener("click", function() {
+    openCreateEventModal();
+    setupEnhancedEventListeners();
+  });
   
   // Load dashboard data
   function loadDashboardData() {
