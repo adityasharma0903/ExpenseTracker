@@ -2740,250 +2740,300 @@ document.addEventListener('DOMContentLoaded', function() {
     const tableBody = document.getElementById("expense-table-body")
     tableBody.innerHTML = ""
   
-    if (expenses.length === 0) {
-      const row = document.createElement("tr")
-      row.innerHTML = '<td colspan="5">No expenses found</td>'
-      tableBody.appendChild(row)
-      return
-    }
-  
-    // Sort expenses by date (newest first)
-    expenses.sort((a, b) => new Date(b.date) - new Date(a.date))
-  
-    expenses.forEach((expense) => {
-      const event = events.find((e) => e.id === expense.eventId)
-  
-      const row = document.createElement("tr")
-      row.innerHTML = `
-        <td>${event ? event.name : "Unknown Event"}</td>
-        <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
-        <td>${expense.description}</td>
-        <td>₹${expense.amount}</td>
-        <td>${formatDate(new Date(expense.date))}</td>
-      `
-  
-      tableBody.appendChild(row)
-    })
+  if (expenses.length === 0) {
+    const row = document.createElement('tr');
+    row.innerHTML = '<td colspan="5">No expenses found</td>';
+    tableBody.appendChild(row);
+    return;
   }
   
-  // Save profile
-  function saveProfile() {
-    const email = document.getElementById("profile-email").value.trim()
-    const contact = document.getElementById("profile-contact").value.trim()
-    const description = document.getElementById("profile-description").value.trim()
+  // Sort expenses by date (newest first)
+  expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
   
-    // Validate email
-    if (!isValidEmail(email)) {
-      alert("Please enter a valid email address")
-      return
-    }
+  expenses.forEach(expense => {
+    const event = events.find(e => e.id === expense.eventId);
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${event ? event.name : 'Unknown Event'}</td>
+      <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
+      <td>${expense.description}</td>
+      <td>₹${expense.amount}</td>
+      <td>${formatDate(new Date(expense.date))}</td>
+    `;
+    
+    tableBody.appendChild(row);
+  });
+}
+
+// Save profile
+function saveProfile() {
+  const email = document.getElementById('profile-email').value.trim();
+  const contact = document.getElementById('profile-contact').value.trim();
+  const description = document.getElementById('profile-description').value.trim();
   
-    // Save profile data
-    const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
-    loggedInClub.email = email
-    loggedInClub.contact = contact
-    loggedInClub.description = description
-  
-    localStorage.setItem("loggedInClub", JSON.stringify(loggedInClub))
-  
-    alert("Profile saved successfully")
+  // Validate email
+  if (!isValidEmail(email)) {
+    showToast('Error', 'Please enter a valid email address', 'error');
+    return;
   }
   
-  // Change password
-  function changePassword() {
-    const currentPassword = document.getElementById("current-password").value.trim()
-    const newPassword = document.getElementById("new-password").value.trim()
-    const confirmPassword = document.getElementById("confirm-password").value.trim()
+  // Save profile data
+  const loggedInClub = JSON.parse(localStorage.getItem('loggedInClub'));
+  loggedInClub.email = email;
+  loggedInClub.contact = contact;
+  loggedInClub.description = description;
   
-    // Validate inputs
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert("Please fill in all password fields")
-      return
-    }
+  localStorage.setItem('loggedInClub', JSON.stringify(loggedInClub));
   
-    if (newPassword !== confirmPassword) {
-      alert("New password and confirm password do not match")
-      return
-    }
+  showToast('Profile Saved', 'Your profile has been updated successfully', 'success');
+}
+
+// Change password
+function changePassword() {
+  const currentPassword = document.getElementById('current-password').value.trim();
+  const newPassword = document.getElementById('new-password').value.trim();
+  const confirmPassword = document.getElementById('confirm-password').value.trim();
   
-    // Verify current password
-    const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
-    const clubs = JSON.parse(localStorage.getItem("clubs"))
-    const clubIndex = clubs.findIndex((c) => c.id === loggedInClub.id)
-  
-    if (clubs[clubIndex].password !== currentPassword) {
-      alert("Current password is incorrect")
-      return
-    }
-  
-    // Update password
-    clubs[clubIndex].password = newPassword
-    localStorage.setItem("clubs", JSON.stringify(clubs))
-  
-    // Clear password fields
-    document.getElementById("current-password").value = ""
-    document.getElementById("new-password").value = ""
-    document.getElementById("confirm-password").value = ""
-  
-    alert("Password changed successfully")
+  // Validate inputs
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    showToast('Error', 'Please fill in all password fields', 'error');
+    return;
   }
   
-  // Helper function to format date
-  function formatDate(date) {
-    const options = { year: "numeric", month: "short", day: "numeric" }
-    return date.toLocaleDateString("en-US", options)
+  if (newPassword !== confirmPassword) {
+    showToast('Error', 'New password and confirm password do not match', 'error');
+    return;
   }
   
-  // Helper function to validate email
-  function isValidEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return re.test(email)
+  // Verify current password
+  const loggedInClub = JSON.parse(localStorage.getItem('loggedInClub'));
+  const clubs = JSON.parse(localStorage.getItem('clubs'));
+  const clubIndex = clubs.findIndex(c => c.id === loggedInClub.id);
+  
+  if (clubs[clubIndex].password !== currentPassword) {
+    showToast('Error', 'Current password is incorrect', 'error');
+    return;
   }
   
-  // Add some sample data for demonstration
-  function addSampleData() {
-    const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
+  // Update password
+  clubs[clubIndex].password = newPassword;
+  localStorage.setItem('clubs', JSON.stringify(clubs));
   
-    if (!loggedInClub) {
-      return
-    }
+  // Clear password fields
+  document.getElementById('current-password').value = '';
+  document.getElementById('new-password').value = '';
+  document.getElementById('confirm-password').value = '';
   
-    // Sample events
-    const events = JSON.parse(localStorage.getItem("events")) || []
-    const clubEvents = events.filter((event) => event.clubId === loggedInClub.id)
+  showToast('Password Changed', 'Your password has been changed successfully', 'success');
+}
+
+// Show toast notification
+function showToast(title, message, type = 'info') {
+  const toastContainer = document.getElementById('toast-container');
   
-    if (clubEvents.length === 0) {
-      const today = new Date()
-      const nextWeek = new Date()
-      nextWeek.setDate(today.getDate() + 7)
-      const nextMonth = new Date()
-      nextMonth.setDate(today.getDate() + 30)
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
   
-      const sampleEvents = [
-        {
-          id: "event1",
+  let icon = '';
+  switch (type) {
+    case 'success':
+      icon = '<i class="fas fa-check-circle"></i>';
+      break;
+    case 'error':
+      icon = '<i class="fas fa-exclamation-circle"></i>';
+      break;
+    case 'warning':
+      icon = '<i class="fas fa-exclamation-triangle"></i>';
+      break;
+    default:
+      icon = '<i class="fas fa-info-circle"></i>';
+  }
+  
+  toast.innerHTML = `
+    <div class="toast-icon ${type}">${icon}</div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <div class="toast-close"><i class="fas fa-times"></i></div>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Add event listener to close button
+  toast.querySelector('.toast-close').addEventListener('click', () => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  });
+  
+  // Auto close after 5 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 5000);
+}
+
+// Helper function to format date
+function formatDate(date) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+}
+
+// Helper function to validate email
+function isValidEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+// Add some sample data for demonstration
+function addSampleData() {
+  const loggedInClub = JSON.parse(localStorage.getItem('loggedInClub'));
+  
+  if (!loggedInClub) {
+    return;
+  }
+  
+  // Sample events
+  const events = JSON.parse(localStorage.getItem('events')) || [];
+  const clubEvents = events.filter(event => event.clubId === loggedInClub.id);
+  
+  if (clubEvents.length === 0) {
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+    const nextMonth = new Date();
+    nextMonth.setDate(today.getDate() + 30);
+    
+    const sampleEvents = [
+      {
+        id: "event1",
+        clubId: loggedInClub.id,
+        name: "Hackathon 2023",
+        description: "A 24-hour coding competition to build innovative solutions.",
+        startDate: nextWeek.toISOString().split("T")[0],
+        endDate: new Date(nextWeek.getTime() + 86400000).toISOString().split("T")[0],
+        startTime: "09:00",
+        endTime: "09:00",
+        hasDL: true,
+        dlType: "full-day",
+        dlStartTime: null,
+        dlEndTime: null,
+        poster: null,
+        teams: 20,
+        venue: "Main Auditorium",
+        expenses: [
+          { category: "venue", description: "Auditorium Booking", amount: 5000 },
+          { category: "refreshments", description: "Food and Beverages", amount: 15000 },
+          { category: "prizes", description: "Cash Prizes", amount: 25000 },
+          { category: "marketing", description: "Posters and Banners", amount: 3000 },
+        ],
+        totalBudget: 48000,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: "event2",
+        clubId: loggedInClub.id,
+        name: "Workshop on AI",
+        description: "Learn about the latest advancements in Artificial Intelligence.",
+        startDate: nextMonth.toISOString().split("T")[0],
+        endDate: nextMonth.toISOString().split("T")[0],
+        startTime: "10:00",
+        endTime: "16:00",
+        hasDL: false,
+        dlType: null,
+        dlStartTime: null,
+        dlEndTime: null,
+        poster: null,
+        teams: 50,
+        venue: "Seminar Hall",
+        expenses: [
+          { category: "venue", description: "Seminar Hall Booking", amount: 2000 },
+          { category: "refreshments", description: "Snacks and Beverages", amount: 5000 },
+          { category: "equipment", description: "Projector and Sound System", amount: 3000 },
+        ],
+        totalBudget: 10000,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    
+    events.push(...sampleEvents);
+    localStorage.setItem('events', JSON.stringify(events));
+    
+    // Sample expenses
+    const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+    
+    const sampleExpenses = [];
+    sampleEvents.forEach(event => {
+      event.expenses.forEach(expense => {
+        sampleExpenses.push({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          eventId: event.id,
           clubId: loggedInClub.id,
-          name: "Hackathon 2023",
-          description: "A 24-hour coding competition to build innovative solutions.",
-          startDate: nextWeek.toISOString().split("T")[0],
-          endDate: new Date(nextWeek.getTime() + 86400000).toISOString().split("T")[0],
-          startTime: "09:00",
-          endTime: "09:00",
-          hasDL: true,
-          dlType: "full-day",
-          dlStartTime: null,
-          dlEndTime: null,
-          poster: null,
-          teams: 20,
-          venue: "Main Auditorium",
-          expenses: [
-            { category: "venue", description: "Auditorium Booking", amount: 5000 },
-            { category: "refreshments", description: "Food and Beverages", amount: 15000 },
-            { category: "prizes", description: "Cash Prizes", amount: 25000 },
-            { category: "marketing", description: "Posters and Banners", amount: 3000 },
-          ],
-          totalBudget: 48000,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "event2",
-          clubId: loggedInClub.id,
-          name: "Workshop on AI",
-          description: "Learn about the latest advancements in Artificial Intelligence.",
-          startDate: nextMonth.toISOString().split("T")[0],
-          endDate: nextMonth.toISOString().split("T")[0],
-          startTime: "10:00",
-          endTime: "16:00",
-          hasDL: false,
-          dlType: null,
-          dlStartTime: null,
-          dlEndTime: null,
-          poster: null,
-          teams: 50,
-          venue: "Seminar Hall",
-          expenses: [
-            { category: "venue", description: "Seminar Hall Booking", amount: 2000 },
-            { category: "refreshments", description: "Snacks and Beverages", amount: 5000 },
-            { category: "equipment", description: "Projector and Sound System", amount: 3000 },
-          ],
-          totalBudget: 10000,
-          createdAt: new Date().toISOString(),
-        },
-      ]
-  
-      events.push(...sampleEvents)
-      localStorage.setItem("events", JSON.stringify(events))
-  
-      // Sample expenses
-      const expenses = JSON.parse(localStorage.getItem("expenses")) || []
-  
-      const sampleExpenses = []
-      sampleEvents.forEach((event) => {
-        event.expenses.forEach((expense) => {
-          sampleExpenses.push({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-            eventId: event.id,
-            clubId: loggedInClub.id,
-            category: expense.category,
-            description: expense.description,
-            amount: expense.amount,
-            date: new Date().toISOString(),
-          })
-        })
-      })
-  
-      expenses.push(...sampleExpenses)
-      localStorage.setItem("expenses", JSON.stringify(expenses))
-  
-      // Sample teams
-      const teams = JSON.parse(localStorage.getItem("teams")) || []
-  
-      const sampleTeams = [
-        {
-          id: "team1",
-          eventId: "event1",
-          name: "Code Ninjas",
-          members: [
-            { name: "John Doe", email: "john@example.com", phone: "9876543210" },
-            { name: "Jane Smith", email: "jane@example.com", phone: "9876543211" },
-            { name: "Bob Johnson", email: "bob@example.com", phone: "9876543212" },
-          ],
-          status: "approved",
-          registeredAt: new Date().toISOString(),
-        },
-        {
-          id: "team2",
-          eventId: "event1",
-          name: "Tech Wizards",
-          members: [
-            { name: "Alice Brown", email: "alice@example.com", phone: "9876543213" },
-            { name: "Charlie Davis", email: "charlie@example.com", phone: "9876543214" },
-          ],
-          status: "pending",
-          registeredAt: new Date().toISOString(),
-        },
-        {
-          id: "team3",
-          eventId: "event2",
-          name: "AI Enthusiasts",
-          members: [
-            { name: "Eva Green", email: "eva@example.com", phone: "9876543215" },
-            { name: "Frank White", email: "frank@example.com", phone: "9876543216" },
-            { name: "Grace Lee", email: "grace@example.com", phone: "9876543217" },
-          ],
-          status: "pending",
-          registeredAt: new Date().toISOString(),
-        },
-      ]
-  
-      teams.push(...sampleTeams)
-      localStorage.setItem("teams", JSON.stringify(teams))
-    }
+          category: expense.category,
+          description: expense.description,
+          amount: expense.amount,
+          date: new Date().toISOString(),
+        });
+      });
+    });
+    
+    expenses.push(...sampleExpenses);
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+    
+    // Sample teams
+    const teams = JSON.parse(localStorage.getItem('teams')) || [];
+    
+    const sampleTeams = [
+      {
+        id: "team1",
+        eventId: "event1",
+        name: "Code Ninjas",
+        members: [
+          { name: "John Doe", email: "john@example.com", phone: "9876543210" },
+          { name: "Jane Smith", email: "jane@example.com", phone: "9876543211" },
+          { name: "Bob Johnson", email: "bob@example.com", phone: "9876543212" },
+        ],
+        status: "approved",
+        registeredAt: new Date().toISOString(),
+      },
+      {
+        id: "team2",
+        eventId: "event1",
+        name: "Tech Wizards",
+        members: [
+          { name: "Alice Brown", email: "alice@example.com", phone: "9876543213" },
+          { name: "Charlie Davis", email: "charlie@example.com", phone: "9876543214" },
+        ],
+        status: "pending",
+        registeredAt: new Date().toISOString(),
+      },
+      {
+        id: "team3",
+        eventId: "event2",
+        name: "AI Enthusiasts",
+        members: [
+          { name: "Eva Green", email: "eva@example.com", phone: "9876543215" },
+          { name: "Frank White", email: "frank@example.com", phone: "9876543216" },
+          { name: "Grace Lee", email: "grace@example.com", phone: "9876543217" },
+        ],
+        status: "pending",
+        registeredAt: new Date().toISOString(),
+      },
+    ];
+    
+    teams.push(...sampleTeams);
+    localStorage.setItem('teams', JSON.stringify(teams));
   }
-  
-  // Call addSampleData after login
-  document.getElementById("login-btn").addEventListener("click", () => {
-    setTimeout(addSampleData, 1000)
-  })
-  
-  
+}
+
+
+
