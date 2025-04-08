@@ -1355,105 +1355,91 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Render budget chart
-  function renderBudgetChart(expenses) {
-    const canvas = document.getElementById('budget-chart');
-    const ctx = canvas.getContext('2d');
-    
-    // Set canvas dimensions
-    canvas.width = canvas.parentElement.offsetWidth;
-    canvas.height = 300;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Group expenses by category
-    const categories = {};
-    expenses.forEach(expense => {
-      if (!categories[expense.category]) {
-        categories[expense.category] = 0;
-      }
-      categories[expense.category] += expense.amount;
-    });
-    
-    // Define colors for categories
-    const colors = {
-      venue: '#4f46e5',
-      refreshments: '#8b5cf6',
-      prizes: '#ec4899',
-      equipment: '#14b8a6',
-      marketing: '#f59e0b',
-      other: '#6b7280'
-    };
-    
-    // Calculate total
-    const total = Object.values(categories).reduce((sum, amount) => sum + amount, 0);
-    
-    // Draw pie chart
-    if (total > 0) {
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const radius = Math.min(centerX, centerY) - 40;
-      
-      // Clear legend
-      const legendContainer = document.getElementById('budget-chart-legend');
-      legendContainer.innerHTML = '';
-      
-      let startAngle = -0.5 * Math.PI; // Start from top
-      
-      // Draw slices with animation
-      Object.entries(categories).forEach(([category, amount], index) => {
-        const percentage = amount / total;
-        const sliceAngle = percentage * 2 * Math.PI;
-        const endAngle = startAngle + sliceAngle;
-        const middleAngle = startAngle + sliceAngle / 2;
-        const color = colors[category] || '#6b7280';
-        
-        // Draw slice with animation
-        animateSlice(ctx, centerX, centerY, radius, startAngle, endAngle, color, 500 + index * 100);
-        
-        // Add legend item
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        legendItem.innerHTML = `
-          <div class="legend-color" style="background-color: ${color}"></div>
-          <span>${category.charAt(0).toUpperCase() + category.slice(1)}: ₹${amount} (${Math.round(percentage * 100)}%)</span>
-        `;
-        legendContainer.appendChild(legendItem);
-        
-        // Update start angle for next slice
-        startAngle = endAngle;
-      });
-      
-      // Draw center circle (donut chart)
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 0.6, 0, 2 * Math.PI);
-      ctx.fillStyle = 'white';
-      ctx.fill();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-      
-      // Draw total in center
-      ctx.shadowColor = 'transparent';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillStyle = '#1e293b';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`₹${total}`, centerX, centerY - 10);
-      
-      ctx.font = '14px Arial';
-      ctx.fillStyle = '#64748b';
-      ctx.fillText('Total Budget', centerX, centerY + 15);
-    } else {
-      // No data
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#64748b';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('No budget data available', canvas.width / 2, canvas.height / 2);
+function renderBudgetChart(expenses) {
+  const ctx = document.getElementById('budget-chart').getContext('2d');
+
+  // Group expenses by category
+  const categories = {};
+  expenses.forEach(expense => {
+    if (!categories[expense.category]) {
+      categories[expense.category] = 0;
     }
+    categories[expense.category] += expense.amount;
+  });
+
+  // Prepare data for Chart.js
+  const data = {
+    labels: Object.keys(categories),
+    datasets: [{
+      label: 'Budget Allocation',
+      data: Object.values(categories),
+      backgroundColor: [
+        '#4f46e5', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6b7280'
+      ],
+      borderColor: '#ffffff',
+      borderWidth: 2,
+      hoverOffset: 10,
+    }]
+  };
+
+  // Destroy existing chart instance if it exists
+  if (window.budgetChart) {
+    window.budgetChart.destroy();
   }
+
+  // Create new chart instance
+  window.budgetChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: '#333',
+            font: {
+              size: 14,
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          titleFont: {
+            size: 16,
+          },
+          bodyFont: {
+            size: 14,
+          },
+          callbacks: {
+            label: function(tooltipItem) {
+              const value = tooltipItem.raw;
+              const total = tooltipItem.chart._metasets[0].total;
+              const percentage = ((value / total) * 100).toFixed(2);
+              return `${tooltipItem.label}: ₹${value} (${percentage}%)`;
+            }
+          }
+        }
+      },
+      animation: {
+        animateScale: true,
+        animateRotate: true
+      },
+      layout: {
+        padding: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20
+        }
+      }
+    }
+  });
+}
+
+  
   
   // Animate pie chart slice
   function animateSlice(ctx, centerX, centerY, radius, startAngle, endAngle, color, delay) {
@@ -1491,193 +1477,135 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Render timeline chart
-  function renderTimelineChart(events) {
-    const canvas = document.getElementById('timeline-chart');
-    const ctx = canvas.getContext('2d');
-    
-    // Set canvas dimensions
-    canvas.width = canvas.parentElement.offsetWidth;
-    canvas.height = 300;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (events.length === 0) {
-      // No data
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#64748b';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('No events available', canvas.width / 2, canvas.height / 2);
-      return;
-    }
-    
-    // Sort events by start date
-    events.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-    
-    // Get date range
-    const startDate = new Date(events[0].startDate);
-    const endDate = new Date(events[events.length - 1].endDate);
-    
-    // Add padding to date range
-    startDate.setDate(startDate.getDate() - 7);
-    endDate.setDate(endDate.getDate() + 7);
-    
-    // Calculate date range in days
-    const dateRange = (endDate - startDate) / (1000 * 60 * 60 * 24);
-    
-    // Draw chart background
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw grid
-    const padding = 60;
-    const chartWidth = canvas.width - padding * 2;
-    const chartHeight = canvas.height - padding * 2;
-    
-    // Draw horizontal grid lines
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 1;
-    
-    for (let i = 0; i <= 5; i++) {
-      const y = padding + (chartHeight / 5) * i;
-      
-      ctx.beginPath();
-      ctx.moveTo(padding, y);
-      ctx.lineTo(canvas.width - padding, y);
-      ctx.stroke();
-    }
-    
-    // Draw x-axis (timeline)
-    ctx.beginPath();
-    ctx.moveTo(padding, canvas.height - padding);
-    ctx.lineTo(canvas.width - padding, canvas.height - padding);
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
-    // Draw month labels
-    const months = [];
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      months.push(new Date(currentDate));
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    }
-    
-    ctx.font = '12px Arial';
+  // Render timeline chart
+// Render timeline chart
+function renderTimelineChart(events) {
+  const canvas = document.getElementById('timeline-chart');
+  const ctx = canvas.getContext('2d');
+
+  // Set canvas dimensions
+  canvas.width = canvas.parentElement.offsetWidth;
+  canvas.height = 300;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (events.length === 0) {
+    // No data
+    ctx.font = '16px Arial';
     ctx.fillStyle = '#64748b';
     ctx.textAlign = 'center';
-    
-    months.forEach(month => {
-      const daysSinceStart = (month - startDate) / (1000 * 60 * 60 * 24);
-      const x = padding + (daysSinceStart / dateRange) * chartWidth;
-      
-      if (x >= padding && x <= canvas.width - padding) {
-        ctx.beginPath();
-        ctx.moveTo(x, canvas.height - padding);
-        ctx.lineTo(x, canvas.height - padding + 5);
-        ctx.stroke();
-        
-        ctx.fillText(month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), x, canvas.height - padding + 20);
-      }
-    });
-    
-    // Draw events on timeline
-    const barHeight = 30;
-    const gap = 15;
-    const maxBars = Math.floor(chartHeight / (barHeight + gap));
-    const visibleEvents = events.slice(0, maxBars);
-    
-    visibleEvents.forEach((event, index) => {
-      const eventStart = new Date(event.startDate);
-      const eventEnd = new Date(event.endDate);
-      
-      const startX = padding + ((eventStart - startDate) / (1000 * 60 * 60 * 24) / dateRange) * chartWidth;
-      const endX = padding + ((eventEnd - startDate) / (1000 * 60 * 60 * 24) / dateRange) * chartWidth;
-      const width = Math.max(endX - startX, 10); // Minimum width of 10px
-      
-      const y = padding + index * (barHeight + gap);
-      
-      // Draw event bar with animation
-      setTimeout(() => {
-        // Draw event bar background
-        ctx.fillStyle = '#e0e7ff';
-        ctx.beginPath();
-        ctx.roundRect(startX, y, width, barHeight, 5);
-        ctx.fill();
-        
-        // Draw event bar
-        ctx.fillStyle = '#4f46e5';
-        ctx.beginPath();
-        ctx.roundRect(startX, y, 0, barHeight, 5);
-        ctx.fill();
-        
-        // Animate width
-        let currentWidth = 0;
-        const widthIncrement = width / 20;
-        
-        const widthInterval = setInterval(() => {
-          currentWidth += widthIncrement;
-          
-          if (currentWidth >= width) {
-            clearInterval(widthInterval);
-            currentWidth = width;
-          }
-          
-          ctx.clearRect(startX, y, width, barHeight);
-          
-          // Redraw background
-          ctx.fillStyle = '#e0e7ff';
-          ctx.beginPath();
-          ctx.roundRect(startX, y, width, barHeight, 5);
-          ctx.fill();
-          
-          // Draw animated bar
-          ctx.fillStyle = '#4f46e5';
-          ctx.beginPath();
-          ctx.roundRect(startX, y, currentWidth, barHeight, 5);
-          ctx.fill();
-          
-          // Draw event name
-          if (currentWidth > 50) {
-            ctx.font = 'bold 12px Arial';
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            
-            // Truncate text if too long
-            let eventName = event.name;
-            if (ctx.measureText(eventName).width > currentWidth - 20) {
-              let truncated = '';
-              for (let i = 0; i < eventName.length; i++) {
-                if (ctx.measureText(truncated + eventName[i] + '...').width > currentWidth - 20) {
-                  break;
-                }
-                truncated += eventName[i];
-              }
-              eventName = truncated + '...';
-            }
-            
-            ctx.fillText(eventName, startX + 10, y + barHeight / 2);
-          }
-        }, 20);
-        
-        // Draw event name on the left
-        ctx.font = '12px Arial';
-        ctx.fillStyle = '#1e293b';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(event.name, startX - 10, y + barHeight / 2);
-        
-        // Draw date label
-        ctx.font = '10px Arial';
-        ctx.fillStyle = '#64748b';
-        ctx.textAlign = 'center';
-        ctx.fillText(formatDate(eventStart), startX, y + barHeight + 15);
-      }, 300 + index * 100);
-    });
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No events available', canvas.width / 2, canvas.height / 2);
+    return;
   }
-  
+
+  const sortedEvents = events.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+  const labels = sortedEvents.map(event => event.name);
+  const data = sortedEvents.map(event => ({
+    x: new Date(event.startDate),
+    y: event.name
+  }));
+
+  // Find the min and max dates from the events
+  const minDate = new Date(Math.min(...sortedEvents.map(event => new Date(event.startDate))));
+  const maxDate = new Date(Math.max(...sortedEvents.map(event => new Date(event.startDate))));
+
+  // Destroy existing chart instance if it exists
+  if (window.timelineChart) {
+    window.timelineChart.destroy();
+  }
+
+  // Create new chart instance
+  window.timelineChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Event Timeline',
+        data: data,
+        backgroundColor: '#4f46e5',
+        borderColor: '#4f46e5',
+        showLine: true,
+        fill: false,
+        tension: 0.1,
+        pointRadius: 5,
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'month',
+            displayFormats: {
+              month: 'MMM yyyy'
+            }
+          },
+          title: {
+            display: true,
+            text: 'Date'
+          },
+          min: minDate,
+          max: maxDate
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Events'
+          },
+          ticks: {
+            autoSkip: false
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            title: function(tooltipItems) {
+              return tooltipItems[0].label;
+            },
+            label: function(tooltipItem) {
+              return `Date: ${tooltipItem.raw.x.toLocaleDateString()}`;
+            }
+          }
+        }
+      },
+      animation: {
+        animateScale: true,
+        animateRotate: true
+      },
+      layout: {
+        padding: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20
+        }
+      }
+    }
+  });
+}
+
+// Fetch events and update timeline chart
+function loadEvents() {
+  // Fetch events from localStorage or API
+  const events = JSON.parse(localStorage.getItem('events')) || [];
+
+  // Render timeline chart with fetched events
+  renderTimelineChart(events);
+}
+
+// Sample usage with events data
+document.addEventListener('DOMContentLoaded', () => {
+  loadEvents();
+}); 
   // Render upcoming events
   function renderUpcomingEvents(events) {
     const container = document.getElementById('upcoming-events-list');
@@ -2358,142 +2286,283 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Render expense event chart
-  function renderExpenseEventChart(expenses, events) {
-    const canvas = document.getElementById('expenses-event-chart');
-    const ctx = canvas.getContext('2d');
-    
-    // Set canvas dimensions
-    canvas.width = canvas.parentElement.offsetWidth;
-    canvas.height = 300;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Group expenses by event
-    const eventExpenses = {};
-    expenses.forEach(expense => {
-      if (!eventExpenses[expense.eventId]) {
-        eventExpenses[expense.eventId] = 0;
-      }
-      eventExpenses[expense.eventId] += expense.amount;
-    });
-    
-    // Get event names
-    const eventNames = {};
-    events.forEach(event => {
-      eventNames[event.id] = event.name;
-    });
-    
-    // Calculate total
-    const total = Object.values(eventExpenses).reduce((sum, amount) => sum + amount, 0);
-    
-    // Clear legend
-    const legendContainer = document.getElementById('event-chart-legend');
-    legendContainer.innerHTML = '';
-    
-    // Draw horizontal bar chart
-    if (total > 0) {
-      const padding = { top: 30, right: 150, bottom: 30, left: 150 };
-      const chartWidth = canvas.width - padding.left - padding.right;
-      const chartHeight = canvas.height - padding.top - padding.bottom;
-      
-      // Generate colors
-      const colors = [];
-      Object.keys(eventExpenses).forEach((_, index) => {
-        const hue = (index * 137) % 360; // Golden angle approximation for good color distribution
-        colors.push(`hsl(${hue}, 70%, 60%)`);
-      });
-      
-      // Find max value for scaling
-      const maxValue = Math.max(...Object.values(eventExpenses));
-      
-      // Calculate bar height and gap
-      const barHeight = Math.min(30, chartHeight / Object.keys(eventExpenses).length / 1.5);
-      const barGap = barHeight / 2;
-      const totalBarSpace = Object.keys(eventExpenses).length * (barHeight + barGap);
-      const startY = padding.top + (chartHeight - totalBarSpace) / 2;
-      
-      // Draw x-axis
-      ctx.beginPath();
-      ctx.moveTo(padding.left, startY + totalBarSpace + barGap);
-      ctx.lineTo(padding.left + chartWidth, startY + totalBarSpace + barGap);
-      ctx.strokeStyle = '#64748b';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // Draw x-axis labels and grid lines
-      const xSteps = 5;
-      const xStepSize = maxValue / xSteps;
-      
-      for (let i = 0; i <= xSteps; i++) {
-        const value = Math.round(i * xStepSize);
-        const x = padding.left + (i / xSteps) * chartWidth;
-        
-        // Draw grid line
-        ctx.beginPath();
-        ctx.moveTo(x, startY - barGap);
-        ctx.lineTo(x, startY + totalBarSpace + barGap);
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        
-        // Draw label
-        ctx.font = '12px Arial';
-        ctx.fillStyle = '#64748b';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText(`₹${value}`, x, startY + totalBarSpace + barGap + 10);
-      }
-      
-      // Draw bars
-      Object.entries(eventExpenses).forEach(([eventId, amount], index) => {
-        const y = startY + index * (barHeight + barGap);
-        const barWidth = (amount / maxValue) * chartWidth;
-        const color = colors[index % colors.length];
-        
-        // Get event name
-        let eventName = eventNames[eventId] || 'Unknown Event';
-        
-        // Truncate event name if too long
-        ctx.font = '12px Arial';
-        if (ctx.measureText(eventName).width > padding.left - 20) {
-          let truncated = '';
-          for (let i = 0; i < eventName.length; i++) {
-            if (ctx.measureText(truncated + eventName[i] + '...').width > padding.left - 20) {
-              break;
+  // Render expense category chart
+function renderExpenseCategoryChart(expenses) {
+  const ctx = document.getElementById('expenses-category-chart').getContext('2d');
+
+  // Group expenses by category
+  const categories = {};
+  expenses.forEach(expense => {
+    if (!categories[expense.category]) {
+      categories[expense.category] = 0;
+    }
+    categories[expense.category] += expense.amount;
+  });
+
+  // Prepare data for Chart.js
+  const data = {
+    labels: Object.keys(categories),
+    datasets: [{
+      label: 'Expenses by Category',
+      data: Object.values(categories),
+      backgroundColor: [
+        '#4f46e5', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6b7280'
+      ],
+      borderColor: '#ffffff',
+      borderWidth: 2,
+      hoverOffset: 10,
+    }]
+  };
+
+  // Destroy existing chart instance if it exists
+  if (window.expenseCategoryChart) {
+    window.expenseCategoryChart.destroy();
+  }
+
+  // Create new chart instance
+  window.expenseCategoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: '#333',
+            font: {
+              size: 14,
             }
-            truncated += eventName[i];
           }
-          eventName = truncated + '...';
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          titleFont: {
+            size: 16,
+          },
+          bodyFont: {
+            size: 14,
+          },
+          callbacks: {
+            label: function(tooltipItem) {
+              const value = tooltipItem.raw;
+              const total = tooltipItem.chart._metasets[0].total;
+              const percentage = ((value / total) * 100).toFixed(2);
+              return `${tooltipItem.label}: ₹${value} (${percentage}%)`;
+            }
+          }
         }
-        
-        // Draw event name
-        ctx.fillStyle = '#1e293b';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(eventName, padding.left - 10, y + barHeight / 2);
-        
-        // Animate bar width
-        animateHorizontalBar(ctx, padding.left, y, barWidth, barHeight, color, 300 + index * 100, amount);
-        
-        // Add to legend
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        legendItem.innerHTML = `
-          <div class="legend-color" style="background-color: ${color}"></div>
-          <span>${eventNames[eventId] || 'Unknown Event'}: ₹${amount} (${Math.round((amount / total) * 100)}%)</span>
-        `;
-        legendContainer.appendChild(legendItem);
-      });
-    } else {
-      // No data
-      ctx.font = '16px Arial';
+      },
+      animation: {
+        animateScale: true,
+        animateRotate: true
+      },
+      layout: {
+        padding: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20
+        }
+      }
+    }
+  });
+}
+
+// Render expense event chart
+function renderExpenseEventChart(expenses, events) {
+  const canvas = document.getElementById('expenses-event-chart');
+  const ctx = canvas.getContext('2d');
+
+  // Set canvas dimensions
+  canvas.width = canvas.parentElement.offsetWidth;
+  canvas.height = 300;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Group expenses by event
+  const eventExpenses = {};
+  expenses.forEach(expense => {
+    if (!eventExpenses[expense.eventId]) {
+      eventExpenses[expense.eventId] = 0;
+    }
+    eventExpenses[expense.eventId] += expense.amount;
+  });
+
+  // Get event names
+  const eventNames = {};
+  events.forEach(event => {
+    eventNames[event.id] = event.name;
+  });
+
+  // Calculate total
+  const total = Object.values(eventExpenses).reduce((sum, amount) => sum + amount, 0);
+
+  // Clear legend
+  const legendContainer = document.getElementById('event-chart-legend');
+  legendContainer.innerHTML = '';
+
+  // Draw horizontal bar chart
+  if (total > 0) {
+    const padding = { top: 30, right: 150, bottom: 30, left: 150 };
+    const chartWidth = canvas.width - padding.left - padding.right;
+    const chartHeight = canvas.height - padding.top - padding.bottom;
+
+    // Generate colors
+    const colors = [];
+    Object.keys(eventExpenses).forEach((_, index) => {
+      const hue = (index * 137) % 360; // Golden angle approximation for good color distribution
+      colors.push(`hsl(${hue}, 70%, 60%)`);
+    });
+
+    // Find max value for scaling
+    const maxValue = Math.max(...Object.values(eventExpenses));
+
+    // Calculate bar height and gap
+    const barHeight = Math.min(30, chartHeight / Object.keys(eventExpenses).length / 1.5);
+    const barGap = barHeight / 2;
+    const totalBarSpace = Object.keys(eventExpenses).length * (barHeight + barGap);
+    const startY = padding.top + (chartHeight - totalBarSpace) / 2;
+
+    // Draw x-axis
+    ctx.beginPath();
+    ctx.moveTo(padding.left, startY + totalBarSpace + barGap);
+    ctx.lineTo(padding.left + chartWidth, startY + totalBarSpace + barGap);
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw x-axis labels and grid lines
+    const xSteps = 5;
+    const xStepSize = maxValue / xSteps;
+
+    for (let i = 0; i <= xSteps; i++) {
+      const value = Math.round(i * xStepSize);
+      const x = padding.left + (i / xSteps) * chartWidth;
+
+      // Draw grid line
+      ctx.beginPath();
+      ctx.moveTo(x, startY - barGap);
+      ctx.lineTo(x, startY + totalBarSpace + barGap);
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Draw label
+      ctx.font = '12px Arial';
       ctx.fillStyle = '#64748b';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('No expense data available', canvas.width / 2, canvas.height / 2);
+      ctx.textBaseline = 'top';
+      ctx.fillText(`₹${value}`, x, startY + totalBarSpace + barGap + 10);
     }
+
+    // Draw bars
+    Object.entries(eventExpenses).forEach(([eventId, amount], index) => {
+      const y = startY + index * (barHeight + barGap);
+      const barWidth = (amount / maxValue) * chartWidth;
+      const color = colors[index % colors.length];
+
+      // Get event name
+      let eventName = eventNames[eventId] || 'Unknown Event';
+
+      // Truncate event name if too long
+      ctx.font = '12px Arial';
+      if (ctx.measureText(eventName).width > padding.left - 20) {
+        let truncated = '';
+        for (let i = 0; i < eventName.length; i++) {
+          if (ctx.measureText(truncated + eventName[i] + '...').width > padding.left - 20) {
+            break;
+          }
+          truncated += eventName[i];
+        }
+        eventName = truncated + '...';
+      }
+
+      // Draw event name
+      ctx.fillStyle = '#1e293b';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(eventName, padding.left - 10, y + barHeight / 2);
+
+      // Animate bar width
+      animateHorizontalBar(ctx, padding.left, y, barWidth, barHeight, color, 300 + index * 100, amount);
+
+      // Add to legend
+      const legendItem = document.createElement('div');
+      legendItem.className = 'legend-item';
+      legendItem.innerHTML = `
+        <div class="legend-color" style="background-color: ${color}"></div>
+        <span>${eventNames[eventId] || 'Unknown Event'}: ₹${amount} (${Math.round((amount / total) * 100)}%)</span>
+      `;
+      legendContainer.appendChild(legendItem);
+    });
+  } else {
+    // No data
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No expense data available', canvas.width / 2, canvas.height / 2);
   }
+}
+
+// Helper function to animate horizontal bar
+function animateHorizontalBar(ctx, x, y, targetWidth, height, color, delay, amount) {
+  let currentWidth = 0;
+  const widthIncrement = targetWidth / 20; // 20 steps
+
+  setTimeout(() => {
+    const interval = setInterval(() => {
+      // Clear the bar area
+      ctx.clearRect(x - 1, y - 1, targetWidth + 50, height + 2);
+
+      // Draw bar
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(x, y, currentWidth, height, [0, 5, 5, 0]);
+      ctx.fill();
+
+      // Draw amount if bar is wide enough
+      if (currentWidth > 40) {
+        ctx.font = 'bold 12px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`₹${amount}`, x + 10, y + height / 2);
+      }
+
+      currentWidth += widthIncrement;
+
+      if (currentWidth >= targetWidth) {
+        clearInterval(interval);
+
+        // Draw final bar
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(x, y, targetWidth, height, [0, 5, 5, 0]);
+        ctx.fill();
+
+        // Draw amount
+        if (targetWidth > 40) {
+          ctx.font = 'bold 12px Arial';
+          ctx.fillStyle = 'white';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`₹${amount}`, x + 10, y + height / 2);
+        } else {
+          ctx.font = 'bold 12px Arial';
+          ctx.fillStyle = '#1e293b';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`₹${amount}`, x + targetWidth + 5, y + height / 2);
+        }
+      }
+    }, 20);
+  }, delay);
+}
   
   // Animate horizontal bar
   function animateHorizontalBar(ctx, x, y, targetWidth, height, color, delay, amount) {
@@ -2634,107 +2703,191 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Render expense event chart
-  function renderExpenseEventChart(expenses, events) {
-    const canvas = document.getElementById("expenses-event-chart")
-    const ctx = canvas.getContext("2d")
-  
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-  
-    // Group expenses by event
-    const eventExpenses = {}
-    expenses.forEach((expense) => {
-      if (!eventExpenses[expense.eventId]) {
-        eventExpenses[expense.eventId] = 0
-      }
-      eventExpenses[expense.eventId] += expense.amount
-    })
-  
-    // Get event names
-    const eventNames = {}
-    events.forEach((event) => {
-      eventNames[event.id] = event.name
-    })
-  
-    // Calculate total
-    const total = Object.values(eventExpenses).reduce((sum, amount) => sum + amount, 0)
-  
-    // Draw pie chart
-    if (total > 0) {
-      let startAngle = 0
-  
-      // Generate colors
-      const colors = []
-      Object.keys(eventExpenses).forEach((_, index) => {
-        const hue = (index * 137) % 360 // Golden angle approximation for good color distribution
-        colors.push(`hsl(${hue}, 70%, 60%)`)
-      })
-  
-      // Draw pie slices
-      let colorIndex = 0
-      Object.entries(eventExpenses).forEach(([eventId, amount]) => {
-        const sliceAngle = (amount / total) * 2 * Math.PI
-  
-        ctx.beginPath()
-        ctx.moveTo(canvas.width / 2, canvas.height / 2)
-        ctx.arc(
-          canvas.width / 2,
-          canvas.height / 2,
-          Math.min(canvas.width, canvas.height) / 2 - 10,
-          startAngle,
-          startAngle + sliceAngle,
-        )
-        ctx.closePath()
-  
-        ctx.fillStyle = colors[colorIndex++]
-        ctx.fill()
-  
-        startAngle += sliceAngle
-      })
-  
-      // Draw legend
-      const legendX = 20
-      let legendY = 20
-  
-      colorIndex = 0
-      Object.entries(eventExpenses).forEach(([eventId, amount]) => {
-        // Draw color box
-        ctx.fillStyle = colors[colorIndex++]
-        ctx.fillRect(legendX, legendY, 15, 15)
-  
-        // Draw event name and amount
-        ctx.font = "12px Arial"
-        ctx.fillStyle = "#1f2937"
-        ctx.textAlign = "left"
-        ctx.textBaseline = "middle"
-  
-        // Truncate event name if too long
-        let eventName = eventNames[eventId] || "Unknown Event"
-        if (ctx.measureText(eventName).width > 150) {
-          let truncated = ""
-          for (let i = 0; i < eventName.length; i++) {
-            if (ctx.measureText(truncated + eventName[i] + "...").width > 150) {
-              break
-            }
-            truncated += eventName[i]
-          }
-          eventName = truncated + "..."
-        }
-  
-        ctx.fillText(`${eventName}: ₹${amount}`, legendX + 25, legendY + 7.5)
-  
-        legendY += 25
-      })
-    } else {
-      // No data
-      ctx.font = "14px Arial"
-      ctx.fillStyle = "#6b7280"
-      ctx.textAlign = "center"
-      ctx.textBaseline = "middle"
-      ctx.fillText("No expense data available", canvas.width / 2, canvas.height / 2)
+  // Render expense category chart
+function renderExpenseCategoryChart(expenses) {
+  const ctx = document.getElementById('expenses-category-chart').getContext('2d');
+
+  // Group expenses by category
+  const categories = {};
+  expenses.forEach(expense => {
+    if (!categories[expense.category]) {
+      categories[expense.category] = 0;
     }
+    categories[expense.category] += expense.amount;
+  });
+
+  // Prepare data for Chart.js
+  const data = {
+    labels: Object.keys(categories),
+    datasets: [{
+      label: 'Expenses by Category',
+      data: Object.values(categories),
+      backgroundColor: [
+        '#4f46e5', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6b7280'
+      ],
+      borderColor: '#ffffff',
+      borderWidth: 2,
+      hoverOffset: 10,
+    }]
+  };
+
+  // Destroy existing chart instance if it exists
+  if (window.expenseCategoryChart) {
+    window.expenseCategoryChart.destroy();
   }
-  
+
+  // Create new chart instance
+  window.expenseCategoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: '#333',
+            font: {
+              size: 14,
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          titleFont: {
+            size: 16,
+          },
+          bodyFont: {
+            size: 14,
+          },
+          callbacks: {
+            label: function(tooltipItem) {
+              const value = tooltipItem.raw;
+              const total = tooltipItem.chart._metasets[0].total;
+              const percentage = ((value / total) * 100).toFixed(2);
+              return `${tooltipItem.label}: ₹${value} (${percentage}%)`;
+            }
+          }
+        }
+      },
+      animation: {
+        animateScale: true,
+        animateRotate: true
+      },
+      layout: {
+        padding: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20
+        }
+      }
+    }
+  });
+}
+
+// Render expense event chart
+function renderExpenseEventChart(expenses, events) {
+  const canvas = document.getElementById('expenses-event-chart');
+  const ctx = canvas.getContext('2d');
+
+  // Set canvas dimensions
+  canvas.width = canvas.parentElement.offsetWidth;
+  canvas.height = 300;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Group expenses by event
+  const eventExpenses = {};
+  expenses.forEach(expense => {
+    if (!eventExpenses[expense.eventId]) {
+      eventExpenses[expense.eventId] = 0;
+    }
+    eventExpenses[expense.eventId] += expense.amount;
+  });
+
+  // Get event names
+  const eventNames = {};
+  events.forEach(event => {
+    eventNames[event.id] = event.name;
+  });
+
+  // Prepare data for Chart.js
+  const data = {
+    labels: Object.keys(eventExpenses).map(eventId => eventNames[eventId] || 'Unknown Event'),
+    datasets: [{
+      label: 'Expenses by Event',
+      data: Object.values(eventExpenses),
+      backgroundColor: '#4f46e5',
+      borderColor: '#ffffff',
+      borderWidth: 2,
+      hoverOffset: 10,
+    }]
+  };
+
+  // Destroy existing chart instance if it exists
+  if (window.expenseEventChart) {
+    window.expenseEventChart.destroy();
+  }
+
+  // Create new chart instance
+  window.expenseEventChart = new Chart(ctx, {
+    type: 'bar',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Events'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Amount (₹)'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          titleFont: {
+            size: 16,
+          },
+          bodyFont: {
+            size: 14,
+          },
+          callbacks: {
+            label: function(tooltipItem) {
+              return `₹${tooltipItem.raw}`;
+            }
+          }
+        }
+      },
+      animation: {
+        animateScale: true,
+        animateRotate: true
+      },
+      layout: {
+        padding: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20
+        }
+      }
+    }
+  });
+}
   // Render expense table
   function renderExpenseTable(expenses, events) {
     const tableBody = document.getElementById("expense-table-body")
