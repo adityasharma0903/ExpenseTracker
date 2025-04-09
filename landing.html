@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventPro AI - College Event & Budget Management Platform</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <a href="#">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Event<span class="highlight">Pro</span> AI</span>
+                </a>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#roles">For Teams</a></li>
+                    <li><a href="#events">Events</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                </ul>
+            </nav>
+            <div class="header-buttons">
+                <a href="#" class="btn btn-outline">Log In</a>
+                <a href="#" class="btn btn-primary" id="getStartedBtn">Get Started</a>
+
+                
+            </div>
+            <button class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <div class="logo">
+                <a href="#">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Event<span class="highlight">Pro</span> AI</span>
+                </a>
+            </div>
+            <button class="menu-close" id="menuClose">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <nav class="mobile-nav">
+            <ul>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#roles">For Teams</a></li>
+                <li><a href="#events">Events</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+            </ul>
+        </nav>
+        <div class="mobile-buttons">
+            <a href="#" class="btn btn-outline">Log In</a>
+            <a href="#" class="btn btn-primary" id="mobileGetStartedBtn">Get Started</a>
+
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge">
+                    <i class="fa-solid fa-sparkles"></i>
+                    <span>AI-Powered Platform</span>
+                </div>
+                <h1>Transform College Events with Intelligent Management</h1>
+                <p>Streamline planning, automate budgeting, and enhance student engagement with our AI-powered platform designed specifically for higher education.</p>
+                <div class="hero-buttons">
+                    <a href="#" class="btn btn-primary btn-lg">Start Free Trial</a>
+                    <a href="#" class="btn btn-outline btn-lg">Watch Demo <i class="fa-solid fa-play"></i></a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Colleges</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">10,000+</span>
+                        <span class="stat-label">Events Managed</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">98%</span>
+                        <span class="stat-label">Satisfaction</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://placeholder.pics/svg/800x600/EAEAEA/CCCCCC/Dashboard%20Preview" alt="Platform Dashboard">
+                <div class="floating-card card-1">
+                    <div class="card-icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="card-content">
+                        <span>Budget Optimization</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 85%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="floating-card card-2">
+                    <div class="card-icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="card-content">
+                        <span>Attendance Prediction</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 92%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-shape">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+                <path fill="#f8fafc" fill-opacity="1" d="M0,288L48,272C96,256,192,224,288,197.3C384,171,480,149,576,165.3C672,181,768,235,864,250.7C960,267,1056,245,1152,224C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Trusted By Section -->
+    <section class="trusted">
+        <div class="container">
+            <h2>Trusted by Leading Institutions</h2>
+            <div class="logos">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%201" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%202" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%203" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%204" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%205" alt="University Logo">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Powerful Features</span>
+                <h2>Everything You Need to Manage College Events</h2>
+                <p>Our platform combines powerful event management tools with intelligent budget optimization to create seamless experiences.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <h3>AI-Powered Planning</h3>
+                    <p>Leverage artificial intelligence to optimize event schedules, predict attendance, and suggest improvements.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h3>Smart Budget Management</h3>
+                    <p>Automatically track expenses, allocate resources efficiently, and generate detailed financial reports.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <h3>Seamless Registration</h3>
+                    <p>Create custom registration forms, manage attendees, and send automated confirmations and reminders.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h3>Multi-Channel Promotion</h3>
+                    <p>Promote events across social media, email, and campus platforms with integrated marketing tools.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Gain insights from comprehensive dashboards showing attendance, engagement, and financial metrics.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <h3>Mobile Experience</h3>
+                    <p>Provide attendees with a seamless mobile experience for registration, check-in, and event participation.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Simple Process</span>
+                <h2>How EventPro AI Works</h2>
+                <p>Our platform simplifies event management from planning to execution with just a few steps.</p>
+            </div>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Create Your Event</h3>
+                        <p>Set up your event details, create a budget, and define your goals with our intuitive interface.</p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%201" alt="Create Event">
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>AI Optimization</h3>
+                        <p>Our AI analyzes your event and suggests optimizations for budget, scheduling, and resources.</p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%202" alt="AI Optimization">
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Promote & Register</h3>
+                        <p>Launch registration, promote across channels, and track sign-ups in real-time.</p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%203" alt="Promote and Register">
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Execute & Analyze</h3>
+                        <p>Run your event with our tools and get comprehensive analytics to improve future events.</p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%204" alt="Execute and Analyze">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roles Section -->
+    <section id="roles" class="roles">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">For Every Team Member</span>
+                <h2>Tailored Solutions for Different Roles</h2>
+                <p>Our platform provides specialized features for each stakeholder in the event management process.</p>
+            </div>
+            <div class="roles-tabs">
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="students">
+                        <i class="fa-solid fa-user-graduate"></i>
+                        <span>Students</span>
+                    </button>
+                    <button class="tab-btn" data-tab="clubs">
+                        <i class="fa-solid fa-people-group"></i>
+                        <span>Clubs</span>
+                    </button>
+                    <button class="tab-btn" data-tab="faculty">
+                        <i class="fa-solid fa-id-badge"></i>
+                        <span>Faculty/HR</span>
+                    </button>
+                    <button class="tab-btn" data-tab="admin">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>Admins</span>
+                    </button>
+                </div>
+                <div class="tabs-content">
+                    <div class="tab-content active" id="students-tab">
+                        <div class="role-info">
+                            <h3>For Students</h3>
+                            <p>Discover events, register with ease, and track your participation across campus activities.</p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Personalized event recommendations</li>
+                                <li><i class="fa-solid fa-check"></i> One-click registration</li>
+                                <li><i class="fa-solid fa-check"></i> Digital tickets and QR codes</li>
+                                <li><i class="fa-solid fa-check"></i> Participation certificates</li>
+                                <li><i class="fa-solid fa-check"></i> Event reminders and updates</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Student%20Dashboard" alt="Student Dashboard">
+                        </div>
+                    </div>
+                    <div class="tab-content" id="clubs-tab">
+                        <div class="role-info">
+                            <h3>For Clubs & Organizations</h3>
+                            <p>Plan, budget, and execute events with powerful tools designed for student organizations.</p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Collaborative planning tools</li>
+                                <li><i class="fa-solid fa-check"></i> Budget templates and tracking</li>
+                                <li><i class="fa-solid fa-check"></i> Member management</li>
+                                <li><i class="fa-solid fa-check"></i> Approval workflows</li>
+                                <li><i class="fa-solid fa-check"></i> Post-event reporting</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Club%20Dashboard" alt="Club Dashboard">
+                        </div>
+                    </div>
+                    <div class="tab-content" id="faculty-tab">
+                        <div class="role-info">
+                            <h3>For Faculty & HR</h3>
+                            <p>Oversee events, approve budgets, and ensure compliance with institutional policies.</p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Approval dashboards</li>
+                                <li><i class="fa-solid fa-check"></i> Budget oversight</li>
+                                <li><i class="fa-solid fa-check"></i> Resource allocation</li>
+                                <li><i class="fa-solid fa-check"></i> Policy compliance checks</li>
+                                <li><i class="fa-solid fa-check"></i> Department-level reporting</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Faculty%20Dashboard" alt="Faculty Dashboard">
+                        </div>
+                    </div>
+                    <div class="tab-content" id="admin-tab">
+                        <div class="role-info">
+                            <h3>For Administrators</h3>
+                            <p>Gain complete oversight of all campus events, budgets, and activities with powerful admin tools.</p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Institution-wide analytics</li>
+                                <li><i class="fa-solid fa-check"></i> Financial oversight</li>
+                                <li><i class="fa-solid fa-check"></i> User management</li>
+                                <li><i class="fa-solid fa-check"></i> Custom permissions</li>
+                                <li><i class="fa-solid fa-check"></i> Audit trails and compliance</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Admin%20Dashboard" alt="Admin Dashboard">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section id="events" class="events">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Live Showcase</span>
+                <h2>Events Powered by EventPro AI</h2>
+                <p>See how institutions are using our platform to create exceptional campus experiences.</p>
+            </div>
+            <div class="events-slider">
+                <button class="slider-arrow prev" id="sliderPrev">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="slider-container">
+                    <div class="slider-track" id="sliderTrack">
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="https://placeholder.pics/svg/400x250/EAEAEA/CCCCCC/Tech%20Conference" alt="Tech Conference">
+                                <div class="event-badge">Technology</div>
+                            </div>
+                            <div class="event-content">
+                                <h3>Annual Tech Conference</h3>
+                                <p>A showcase of innovation and technology featuring industry speakers and hands-on workshops.</p>
+                                <div class="event-meta">
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span>Oct 15-17, 2023</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        <span>Stanford University</span>
+                                    </div>
+                                </div>
+                                <div class="event-stats">
+                                    <div class="event-stat">
+                                        <span class="stat-number">1,200+</span>
+                                        <span class="stat-label">Attendees</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">45+</span>
+                                        <span class="stat-label">Speakers</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">30+</span>
+                                        <span class="stat-label">Workshops</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="https://placeholder.pics/svg/400x250/EAEAEA/CCCCCC/Cultural%20Festival" alt="Cultural Festival">
+                                <div class="event-badge">Cultural</div>
+                            </div>
+                            <div class="event-content">
+                                <h3>International Cultural Festival</h3>
+                                <p>A celebration of global cultures with performances, food, and interactive exhibits.</p>
+                                <div class="event-meta">
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span>Nov 5-7, 2023</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        <span>NYU Campus</span>
+                                    </div>
+                                </div>
+                                <div class="event-stats">
+                                    <div class="event-stat">
+                                        <span class="stat-number">3,500+</span>
+                                        <span class="stat-label">Attendees</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">25+</span>
+                                        <span class="stat-label">Countries</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">50+</span>
+                                        <span class="stat-label">Performances</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="https://placeholder.pics/svg/400x250/EAEAEA/CCCCCC/Career%20Fair" alt="Career Fair">
+                                <div class="event-badge">Career</div>
+                            </div>
+                            <div class="event-content">
+                                <h3>Spring Career Fair</h3>
+                                <p>Connect students with top employers for internships and full-time opportunities.</p>
+                                <div class="event-meta">
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span>Mar 12, 2023</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        <span>UC Berkeley</span>
+                                    </div>
+                                </div>
+                                <div class="event-stats">
+                                    <div class="event-stat">
+                                        <span class="stat-number">2,000+</span>
+                                        <span class="stat-label">Students</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">150+</span>
+                                        <span class="stat-label">Companies</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">500+</span>
+                                        <span class="stat-label">Interviews</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="slider-arrow next" id="sliderNext">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="slider-dots" id="sliderDots">
+                <span class="dot active" data-index="0"></span>
+                <span class="dot" data-index="1"></span>
+                <span class="dot" data-index="2"></span>
+            </div>
+            <div class="events-cta">
+                <a href="#" class="btn btn-primary btn-lg">Explore All Events</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Success Stories</span>
+                <h2>What Our Users Say</h2>
+                <p>Hear from institutions that have transformed their event management with EventPro AI.</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="quote-icon">
+                        <i class="fa-solid fa-quote-left"></i>
+                    </div>
+                    <p>EventPro AI has revolutionized how we manage student events. The AI-powered budget optimization alone saved us 30% on our annual events budget.</p>
+                    <div class="testimonial-author">
+                        <img src="https://placeholder.pics/svg/60x60/EAEAEA/CCCCCC/Person" alt="Dr. Sarah Johnson">
+                        <div>
+                            <h4>Dr. Sarah Johnson</h4>
+                            <p>Dean of Student Affairs, Stanford University</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="quote-icon">
+                        <i class="fa-solid fa-quote-left"></i>
+                    </div>
+                    <p>As a student club leader, I can now focus on creating amazing experiences instead of drowning in spreadsheets and paperwork. The platform is intuitive and powerful.</p>
+                    <div class="testimonial-author">
+                        <img src="https://placeholder.pics/svg/60x60/EAEAEA/CCCCCC/Person" alt="Michael Chen">
+                        <div>
+                            <h4>Michael Chen</h4>
+                            <p>President, Engineering Society, MIT</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="quote-icon">
+                        <i class="fa-solid fa-quote-left"></i>
+                    </div>
+                    <p>The analytics and reporting features have given us unprecedented insights into student engagement. We've increased attendance by 45% since implementing EventPro AI.</p>
+                    <div class="testimonial-author">
+                        <img src="https://placeholder.pics/svg/60x60/EAEAEA/CCCCCC/Person" alt="Jennifer Martinez">
+                        <div>
+                            <h4>Jennifer Martinez</h4>
+                            <p>Director of Campus Activities, UCLA</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Flexible Plans</span>
+                <h2>Choose the Right Plan for Your Institution</h2>
+                <p>Transparent pricing with no hidden fees. All plans include core features.</p>
+            </div>
+            <div class="pricing-toggle">
+                <span>Monthly</span>
+                <label class="switch">
+                    <input type="checkbox" id="pricingToggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Annual</span>
+                <span class="discount">Save 20%</span>
+            </div>
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <div class="card-header">
+                        <h3>Starter</h3>
+                        <div class="price">
+                            <span class="price-monthly">$299</span>
+                            <span class="price-annual">$239</span>
+                            <span>/month</span>
+                        </div>
+                        <p>Perfect for small colleges or individual departments</p>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Up to 50 events per year</li>
+                            <li><i class="fa-solid fa-check"></i> Basic AI recommendations</li>
+                            <li><i class="fa-solid fa-check"></i> Standard analytics</li>
+                            <li><i class="fa-solid fa-check"></i> Email support</li>
+                            <li><i class="fa-solid fa-check"></i> 5 admin users</li>
+                        </ul>
+                    </div>
+                    <div class="card-action">
+                        <a href="#" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+                <div class="pricing-card popular">
+                    <div class="popular-badge">Most Popular</div>
+                    <div class="card-header">
+                        <h3>Professional</h3>
+                        <div class="price">
+                            <span class="price-monthly">$599</span>
+                            <span class="price-annual">$479</span>
+                            <span>/month</span>
+                        </div>
+                        <p>Ideal for mid-sized institutions with multiple departments</p>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Unlimited events</li>
+                            <li><i class="fa-solid fa-check"></i> Advanced AI optimization</li>
+                            <li><i class="fa-solid fa-check"></i> Comprehensive analytics</li>
+                            <li><i class="fa-solid fa-check"></i> Priority support</li>
+                            <li><i class="fa-solid fa-check"></i> 20 admin users</li>
+                            <li><i class="fa-solid fa-check"></i> Custom branding</li>
+                            <li><i class="fa-solid fa-check"></i> API access</li>
+                        </ul>
+                    </div>
+                    <div class="card-action">
+                        <a href="#" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+                <div class="pricing-card">
+                    <div class="card-header">
+                        <h3>Enterprise</h3>
+                        <div class="price">
+                            <span class="price-custom">Custom</span>
+                        </div>
+                        <p>For large universities with complex requirements</p>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Everything in Professional</li>
+                            <li><i class="fa-solid fa-check"></i> Dedicated account manager</li>
+                            <li><i class="fa-solid fa-check"></i> Custom integrations</li>
+                            <li><i class="fa-solid fa-check"></i> Advanced security features</li>
+                            <li><i class="fa-solid fa-check"></i> Unlimited admin users</li>
+                            <li><i class="fa-solid fa-check"></i> On-site training</li>
+                            <li><i class="fa-solid fa-check"></i> 24/7 premium support</li>
+                        </ul>
+                    </div>
+                    <div class="card-action">
+                        <a href="#" class="btn btn-outline">Contact Sales</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Transform Your Campus Events?</h2>
+                <p>Join hundreds of institutions already using EventPro AI to create exceptional experiences.</p>
+                <div class="cta-buttons">
+                    <a href="#" class="btn btn-primary btn-lg">Start Free Trial</a>
+                    <a href="#" class="btn btn-outline btn-lg">Schedule Demo</a>
+                </div>
+            </div>
+            <div class="cta-image">
+                <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Platform%20Preview" alt="EventPro AI Platform">
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-logo">
+                    <a href="#">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Event<span class="highlight">Pro</span> AI</span>
+                    </a>
+                    <p>Transforming campus events with artificial intelligence</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h3>Product</h3>
+                        <ul>
+                            <li><a href="#">Features</a></li>
+                            <li><a href="#">Pricing</a></li>
+                            <li><a href="#">Case Studies</a></li>
+                            <li><a href="#">Reviews</a></li>
+                            <li><a href="#">Updates</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h3>Solutions</h3>
+                        <ul>
+                            <li><a href="#">For Students</a></li>
+                            <li><a href="#">For Clubs</a></li>
+                            <li><a href="#">For Faculty</a></li>
+                            <li><a href="#">For Administrators</a></li>
+                            <li><a href="#">For Alumni</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h3>Company</h3>
+                        <ul>
+                            <li><a href="#">About Us</a></li>
+                            <li><a href="#">Careers</a></li>
+                            <li><a href="#">Blog</a></li>
+                            <li><a href="#">Press</a></li>
+                            <li><a href="#">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h3>Resources</h3>
+                        <ul>
+                            <li><a href="#">Help Center</a></li>
+                            <li><a href="#">Documentation</a></li>
+                            <li><a href="#">API</a></li>
+                            <li><a href="#">Community</a></li>
+                            <li><a href="#">Webinars</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-middle">
+                <div class="newsletter">
+                    <h3>Subscribe to our newsletter</h3>
+                    <p>Get the latest updates, news and product offers sent directly to your inbox.</p>
+                    <form class="newsletter-form">
+                        <input type="email" placeholder="Enter your email" required>
+                        <button type="submit" class="btn btn-primary">Subscribe</button>
+                    </form>
+                </div>
+                <div class="social-links">
+                    <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 EventPro AI. All rights reserved.</p>
+                <div class="legal-links">
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Cookie Policy</a>
+                    <a href="#">Security</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- Role Selection Modal -->
+<div class="modal" id="roleModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Select Your Role</h3>
+        <button class="modal-close" id="modalClose">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Please select your role to continue to login:</p>
+        <div class="role-options">
+          <a href="#" class="role-option" data-role="student">
+            <i class="fa-solid fa-user-graduate"></i>
+            <span>Student</span>
+          </a>
+          <a href="#" class="role-option" data-role="club">
+            <i class="fa-solid fa-people-group"></i>
+            <span>Club</span>
+          </a>
+          <a href="#" class="role-option" data-role="faculty">
+            <i class="fa-solid fa-id-badge"></i>
+            <span>Faculty/HR</span>
+          </a>
+          <a href="#" class="role-option" data-role="admin">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Admin</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+    <!-- Custom JS -->
+    <script src="landing.js"></script>
+</body>
+</html>

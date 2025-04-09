@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +8,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
   <!-- Login Page -->
   <div id="login-page" class="page active">
@@ -93,7 +91,7 @@
           <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
           <p class="date-display" id="current-date"></p>
         </div>
-
+        
         <div class="stats-container">
           <div class="stat-card">
             <div class="stat-icon">
@@ -109,7 +107,7 @@
               <i class="fas fa-wallet"></i>
             </div>
             <div class="stat-info">
-              <h3>Total Budget</h3>
+              <h3>Total Expense</h3>
               <p id="total-budget">₹0</p>
             </div>
           </div>
@@ -182,7 +180,7 @@
             <i class="fas fa-plus"></i> Create Event
           </button>
         </div>
-
+        
         <div class="events-filter">
           <div class="filter-group">
             <label for="event-filter"><i class="fas fa-filter"></i> Filter:</label>
@@ -207,7 +205,8 @@
           <!-- Events will be populated here -->
         </div>
       </div>
-
+      
+      
       <!-- Budget Content -->
       <div id="budget-content" class="content">
         <div class="content-header">
@@ -216,6 +215,21 @@
             <i class="fas fa-plus"></i> Add Expense
           </button>
         </div>
+        <!-- Add Input Field for Total Budget Here -->
+   <div class="form-group">
+    <label for="total-budget-input">Update Total Budget</label>
+    <div class="input-with-icon">
+        <i class="fas fa-wallet"></i>
+        <input type="number" id="total-budget-input" placeholder="Enter total budget" min="0">
+    </div>
+    <button id="update-total-budget-btn" class="btn-success">
+        <i class="fas fa-save"></i> Update Budget
+    </button>
+</div>
+
+<div class="budget-overview">
+    <!-- Your Existing Budget Overview Code -->
+</div>
 
         <div class="budget-overview">
           <div class="budget-card">
@@ -303,6 +317,7 @@
                   <th>Description</th>
                   <th>Amount</th>
                   <th>Date</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="expense-table-body">
@@ -318,7 +333,7 @@
         <div class="content-header">
           <h1><i class="fas fa-user"></i> Club Profile</h1>
         </div>
-
+        
         <div class="profile-container">
           <div class="profile-header">
             <div class="profile-pic large">
@@ -407,9 +422,8 @@
   </div>
 
   <!-- Create Event Modal -->
-  <!-- Modified Create Event Modal HTML -->
   <div id="create-event-modal" class="modal">
-    <div class="modal-content modal-lg">
+    <div class="modal-content">
       <div class="modal-header">
         <h2><i class="fas fa-calendar-plus"></i> Create New Event</h2>
         <span class="close-modal"><i class="fas fa-times"></i></span>
@@ -417,26 +431,13 @@
       <div class="modal-body">
         <div class="modal-tabs">
           <div class="tab active" data-tab="event-details">
-            <i class="fas fa-info-circle"></i> Basic Details
-          </div>
-          <div class="tab" data-tab="event-overview">
-            <i class="fas fa-align-left"></i> Overview
-          </div>
-          <div class="tab" data-tab="event-prizes">
-            <i class="fas fa-trophy"></i> Prizes
-          </div>
-          <div class="tab" data-tab="event-schedule">
-            <i class="fas fa-calendar-alt"></i> Schedule
-          </div>
-          <div class="tab" data-tab="event-faq">
-            <i class="fas fa-question-circle"></i> FAQ
+            <i class="fas fa-info-circle"></i> Event Details
           </div>
           <div class="tab" data-tab="event-budget">
-            <i class="fas fa-wallet"></i> Budget
+            <i class="fas fa-wallet"></i> Budget Details
           </div>
         </div>
 
-        <!-- Basic Details Tab -->
         <div id="event-details-tab" class="tab-content active">
           <div class="form-group">
             <label for="event-name">Event Name</label>
@@ -464,6 +465,16 @@
                 <input type="date" id="event-end-date">
               </div>
             </div>
+            <div class="form-group">
+              <label for="total-budget-input">Update Total Budget</label>
+              <div class="input-with-icon">
+                  <i class="fas fa-wallet"></i>
+                  <input type="number" id="total-budget-input" placeholder="Enter total budget" min="0">
+              </div>
+              <button id="update-total-budget-btn" class="btn-success">
+                  <i class="fas fa-save"></i> Update Budget
+              </button>
+          </div>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -486,22 +497,6 @@
             <div class="input-with-icon">
               <i class="fas fa-map-marker-alt"></i>
               <input type="text" id="event-venue" placeholder="Enter venue">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="event-team-min">Min Team Size</label>
-              <div class="input-with-icon">
-                <i class="fas fa-users"></i>
-                <input type="number" id="event-team-min" min="1" value="1">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="event-team-max">Max Team Size</label>
-              <div class="input-with-icon">
-                <i class="fas fa-users"></i>
-                <input type="number" id="event-team-max" min="1" value="5">
-              </div>
             </div>
           </div>
           <div class="form-group">
@@ -550,235 +545,6 @@
           </div>
         </div>
 
-        <!-- Overview Tab -->
-        <div id="event-overview-tab" class="tab-content">
-          <div class="form-group">
-            <label for="event-about">About the Event</label>
-            <textarea id="event-about" placeholder="Detailed description about the event" rows="5"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="event-theme">Event Theme</label>
-            <div class="input-with-icon">
-              <i class="fas fa-lightbulb"></i>
-              <input type="text" id="event-theme" placeholder="Enter event theme (leave blank if no specific theme)">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>What to Expect</label>
-            <div id="expect-items-container">
-              <div class="expect-item">
-                <div class="input-with-icon">
-                  <i class="fas fa-star"></i>
-                  <input type="text" class="expect-input" placeholder="Enter an expectation item">
-                </div>
-                <button class="remove-expect-item"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-expect-item" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Item
-            </button>
-          </div>
-          <div class="form-group">
-            <label>Eligibility Criteria</label>
-            <div id="eligibility-items-container">
-              <div class="eligibility-item">
-                <div class="input-with-icon">
-                  <i class="fas fa-check-circle"></i>
-                  <input type="text" class="eligibility-input" placeholder="Enter eligibility criteria">
-                </div>
-                <button class="remove-eligibility-item"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-eligibility-item" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Criteria
-            </button>
-          </div>
-          <div class="form-group">
-            <label for="event-duty-leave">Duty Leave Available</label>
-            <div class="form-row">
-              <div class="form-group checkbox-group">
-                <input type="checkbox" id="event-duty-leave">
-                <label for="event-duty-leave">Available</label>
-              </div>
-              <div class="form-group">
-                <div class="input-with-icon">
-                  <i class="fas fa-calendar-day"></i>
-                  <input type="number" id="event-duty-leave-days" min="0" value="0" placeholder="Number of days">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Prizes Tab -->
-        <div id="event-prizes-tab" class="tab-content">
-          <div class="form-group">
-            <label for="event-prize-pool">Total Prize Pool (₹)</label>
-            <div class="input-with-icon">
-              <i class="fas fa-rupee-sign"></i>
-              <input type="number" id="event-prize-pool" min="0" value="0">
-            </div>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-trophy"></i> Main Prizes</h3>
-
-            <div class="prize-item">
-              <div class="prize-header">
-                <h4><i class="fas fa-medal" style="color: gold;"></i> First Prize</h4>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Amount (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="first-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Description</label>
-                  <textarea id="first-prize-description" placeholder="Describe the first prize"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="prize-item">
-              <div class="prize-header">
-                <h4><i class="fas fa-medal" style="color: silver;"></i> Second Prize</h4>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Amount (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="second-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Description</label>
-                  <textarea id="second-prize-description" placeholder="Describe the second prize"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="prize-item">
-              <div class="prize-header">
-                <h4><i class="fas fa-medal" style="color: #cd7f32;"></i> Third Prize</h4>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Amount (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="third-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Description</label>
-                  <textarea id="third-prize-description" placeholder="Describe the third prize"></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-star"></i> Special Awards</h3>
-            <div id="special-awards-container">
-              <!-- Special awards will be added here -->
-            </div>
-            <button id="add-special-award" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Special Award
-            </button>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-gift"></i> For All Participants</h3>
-            <div id="participant-perks-container">
-              <div class="participant-perk">
-                <div class="input-with-icon">
-                  <i class="fas fa-gift"></i>
-                  <input type="text" class="perk-input" placeholder="Enter perk (e.g., T-shirts, Certificates)">
-                </div>
-                <button class="remove-perk"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-participant-perk" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Perk
-            </button>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-building"></i> Sponsored By</h3>
-            <div id="sponsors-container">
-              <div class="sponsor-item">
-                <div class="input-with-icon">
-                  <i class="fas fa-building"></i>
-                  <input type="text" class="sponsor-name" placeholder="Sponsor name">
-                </div>
-                <div class="file-input-container">
-                  <input type="file" class="sponsor-logo" accept="image/*">
-                  <label for="sponsor-logo" class="file-input-label">
-                    <i class="fas fa-upload"></i> Upload Logo
-                  </label>
-                </div>
-                <button class="remove-sponsor"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-sponsor" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Sponsor
-            </button>
-          </div>
-        </div>
-
-        <!-- Schedule Tab -->
-        <div id="event-schedule-tab" class="tab-content">
-          <div id="schedule-days-container">
-            <!-- Schedule days will be added here -->
-            <div class="schedule-day" data-day="1">
-              <div class="day-header">
-                <h3>Day 1</h3>
-                <div class="input-with-icon">
-                  <i class="fas fa-calendar"></i>
-                  <input type="date" class="day-date">
-                </div>
-              </div>
-              <div class="schedule-items-container">
-                <!-- Schedule items will be added here -->
-              </div>
-              <button class="add-schedule-item btn-secondary">
-                <i class="fas fa-plus"></i> Add Schedule Item
-              </button>
-            </div>
-          </div>
-          <button id="add-schedule-day" class="btn-secondary">
-            <i class="fas fa-plus"></i> Add Day
-          </button>
-        </div>
-
-        <!-- FAQ Tab -->
-        <div id="event-faq-tab" class="tab-content">
-          <div id="faq-items-container">
-            <div class="faq-item">
-              <div class="form-group">
-                <label>Question</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-question-circle"></i>
-                  <input type="text" class="faq-question" placeholder="Enter a frequently asked question">
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Answer</label>
-                <textarea class="faq-answer" placeholder="Enter the answer to the question"></textarea>
-              </div>
-              <button class="remove-faq"><i class="fas fa-trash-alt"></i></button>
-            </div>
-          </div>
-          <button id="add-faq-item" class="btn-secondary">
-            <i class="fas fa-plus"></i> Add FAQ
-          </button>
-        </div>
-
-        <!-- Budget Tab -->
         <div id="event-budget-tab" class="tab-content">
           <div class="form-group">
             <label for="event-teams">Number of Teams</label>
@@ -787,7 +553,7 @@
               <input type="number" id="event-teams" min="1" value="1">
             </div>
           </div>
-
+          
           <h3><i class="fas fa-money-bill-wave"></i> Expenses</h3>
           <div id="expenses-container">
             <div class="expense-item">
@@ -806,8 +572,7 @@
                 <label for="expense-description-1">Description</label>
                 <div class="input-with-icon">
                   <i class="fas fa-align-left"></i>
-                  <input type="text" id="expense-description-1" class="expense-description"
-                    placeholder="Enter description">
+                  <input type="text" id="expense-description-1" class="expense-description" placeholder="Enter description">
                 </div>
               </div>
               <div class="form-group">
@@ -829,7 +594,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button id="prev-tab-btn" class="btn-secondary">
+        <button id="prev-tab-btn" class="btn-secondary hidden">
           <i class="fas fa-arrow-left"></i> Previous
         </button>
         <button id="next-tab-btn" class="btn-primary">
@@ -1040,5 +805,4 @@
 
   <script src="script.js"></script>
 </body>
-
 </html>

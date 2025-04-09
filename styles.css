@@ -1940,3 +1940,548 @@ textarea {
     background-position: 1000px 0;
   }
 }
+
+
+/* Enhanced Chart Styles */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 400px; /* Adjust height as needed */
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 2rem; /* Increased padding for better spacing */
+  box-shadow: var(--shadow-lg); /* Added larger shadow for premium look */
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem; /* Increased margin for better spacing */
+}
+
+.chart-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Increased gap for better spacing */
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem; /* Increased font size for better visibility */
+}
+
+.chart-header h3 i {
+  color: var(--primary-color);
+}
+
+.chart-actions {
+  display: flex;
+  gap: 0.75rem; /* Increased gap for better spacing */
+}
+
+.chart-action-btn {
+  width: 35px; /* Increased size for better visibility */
+  height: 35px; /* Increased size for better visibility */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+}
+
+.chart-action-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem; /* Increased margin for better spacing */
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Increased gap for better spacing */
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.legend-color {
+  width: 15px; /* Increased size for better visibility */
+  height: 15px; /* Increased size for better visibility */
+  border-radius: 2px;
+}
+
+.legend-text {
+  color: var(--text-secondary);
+}
+
+/* Bar Graph Specific Styling */
+.bar-graph .chart-container {
+  height: 500px; /* Increased height for better visibility */
+}
+
+.bar-graph canvas {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Responsive Charts */
+@media (max-width: 768px) {
+  .chart-container {
+    height: 300px; /* Adjust height for smaller screens */
+  }
+
+  .chart-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .chart-header h3 i {
+    font-size: 1.25rem;
+  }
+
+  .chart-action-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .legend-item {
+    font-size: 0.75rem;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+  }
+}
+/* Enhanced Chart Styles */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 400px; /* Adjust height as needed */
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 2rem; /* Increased padding for better spacing */
+  box-shadow: var(--shadow-lg); /* Added larger shadow for premium look */
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem; /* Increased margin for better spacing */
+}
+
+.chart-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Increased gap for better spacing */
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem; /* Increased font size for better visibility */
+}
+
+.chart-header h3 i {
+  color: var(--primary-color);
+}
+
+.chart-actions {
+  display: flex;
+  gap: 0.75rem; /* Increased gap for better spacing */
+}
+
+.chart-action-btn {
+  width: 35px; /* Increased size for better visibility */
+  height: 35px; /* Increased size for better visibility */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+}
+
+.chart-action-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem; /* Increased margin for better spacing */
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Increased gap for better spacing */
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.legend-color {
+  width: 15px; /* Increased size for better visibility */
+  height: 15px; /* Increased size for better visibility */
+  border-radius: 2px;
+}
+
+.legend-text {
+  color: var(--text-secondary);
+}
+
+/* Bar Graph Specific Styling */
+.bar-graph .chart-container {
+  height: 500px; /* Increased height for better visibility */
+}
+
+.bar-graph canvas {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Responsive Charts */
+@media (max-width: 768px) {
+  .chart-container {
+    height: 300px; /* Adjust height for smaller screens */
+  }
+
+  .chart-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .chart-header h3 i {
+    font-size: 1.25rem;
+  }
+
+  .chart-action-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .legend-item {
+    font-size: 0.75rem;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Base Styles */
+:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: rgba(79, 70, 229, 0.1);
+  --secondary-color: #8b5cf6;
+  --success-color: #10b981;
+  --success-light: rgba(16, 185, 129, 0.1);
+  --danger-color: #ef4444;
+  --danger-light: rgba(239, 68, 68, 0.1);
+  --warning-color: #f59e0b;
+  --warning-light: rgba(245, 158, 11, 0.1);
+  --info-color: #3b82f6;
+  --info-light: rgba(59, 130, 246, 0.1);
+  --background-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --sidebar-width: 250px;
+  --sidebar-bg: #1e293b;
+  --sidebar-text: #f8fafc;
+  --sidebar-hover: #334155;
+  --sidebar-active: #4f46e5;
+  --header-height: 60px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --transition: all 0.3s ease;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+}
+
+/* General Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+a {
+  text-decoration: none;
+  color: var(--primary-color);
+  transition: var(--transition);
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+ul {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+  transition: var(--transition);
+}
+
+input,
+select,
+textarea {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  outline: none;
+  width: 100%;
+  transition: var(--transition);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Chart Styles */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 400px; /* Adjust height as needed */
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem; /* Adjust padding for better spacing */
+  box-shadow: var(--shadow-lg); /* Added larger shadow for premium look */
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem; /* Increased margin for better spacing */
+}
+
+.chart-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Increased gap for better spacing */
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem; /* Increased font size for better visibility */
+}
+
+.chart-header h3 i {
+  color: var(--primary-color);
+}
+
+.chart-actions {
+  display: flex;
+  gap: 0.75rem; /* Increased gap for better spacing */
+}
+
+.chart-action-btn {
+  width: 35px; /* Increased size for better visibility */
+  height: 35px; /* Increased size for better visibility */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+}
+
+.chart-action-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem; /* Increased margin for better spacing */
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Increased gap for better spacing */
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.legend-color {
+  width: 15px; /* Increased size for better visibility */
+  height: 15px; /* Increased size for better visibility */
+  border-radius: 2px;
+}
+
+.legend-text {
+  color: var(--text-secondary);
+}
+
+/* Responsive Charts */
+@media (max-width: 768px) {
+  .chart-container {
+    height: 300px; /* Adjust height for smaller screens */
+  }
+
+  .chart-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .chart-header h3 i {
+    font-size: 1.25rem;
+  }
+
+  .chart-action-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .legend-item {
+    font-size: 0.75rem;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+#total-budget-input {
+  max-width: 300px;
+  margin-right: 10px;
+}
+
+#update-total-budget-btn {
+  margin-top: 10px;
+}
+
+
+
+/* Action Buttons */
+.btn-action {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: var(--transition);
+}
+
+.btn-edit {
+  background-color: var(--info-color);
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-delete {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #dc2626;
+}
+
+.btn-action i {
+  font-size: 1rem;
+}
+
