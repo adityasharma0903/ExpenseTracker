@@ -37,7 +37,8 @@
             </nav>
             <div class="header-buttons">
                 <a href="#" class="btn btn-outline">Log In</a>
-                <a href="#" class="btn btn-primary">Get Started</a>
+                <a href="#" class="btn btn-primary" id="getStartedBtn">Get Started</a>
+
                 
             </div>
             <button class="menu-toggle" id="menuToggle">
@@ -72,7 +73,8 @@
         </nav>
         <div class="mobile-buttons">
             <a href="#" class="btn btn-outline">Log In</a>
-            <a href="#" class="btn btn-primary">Get Started</a>
+            <a href="#" class="btn btn-primary" id="mobileGetStartedBtn">Get Started</a>
+
         </div>
     </div>
 
@@ -584,7 +586,7 @@
                         </ul>
                     </div>
                     <div class="card-action">
-                        <a href="#" class="btn btn-outline">Get Started</a>
+                        <a href="#" class="btn btn-primary">Get Started</a>
                     </div>
                 </div>
                 <div class="pricing-card popular">
@@ -739,37 +741,39 @@
             </div>
         </div>
     </footer>
-    <div class="modal" id="roleModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Select Your Role</h3>
-                <button class="modal-close" id="modalClose">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Please select your role to continue to login:</p>
-                <div class="role-options">
-                    <a href="#" class="role-option" data-role="student">
-                        <i class="fa-solid fa-user-graduate"></i>
-                        <span>Student</span>
-                    </a>
-                    <a href="#" class="role-option" data-role="club">
-                        <i class="fa-solid fa-people-group"></i>
-                        <span>Club</span>
-                    </a>
-                    <a href="#" class="role-option" data-role="faculty">
-                        <i class="fa-solid fa-id-badge"></i>
-                        <span>Faculty/HR</span>
-                    </a>
-                    <a href="#" class="role-option" data-role="admin">
-                        <i class="fa-solid fa-user-shield"></i>
-                        <span>Admin</span>
-                    </a>
-                </div>
-            </div>
+    <!-- Role Selection Modal -->
+<div class="modal" id="roleModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Select Your Role</h3>
+        <button class="modal-close" id="modalClose">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Please select your role to continue to login:</p>
+        <div class="role-options">
+          <a href="#" class="role-option" data-role="student">
+            <i class="fa-solid fa-user-graduate"></i>
+            <span>Student</span>
+          </a>
+          <a href="#" class="role-option" data-role="club">
+            <i class="fa-solid fa-people-group"></i>
+            <span>Club</span>
+          </a>
+          <a href="#" class="role-option" data-role="faculty">
+            <i class="fa-solid fa-id-badge"></i>
+            <span>Faculty/HR</span>
+          </a>
+          <a href="#" class="role-option" data-role="admin">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Admin</span>
+          </a>
         </div>
+      </div>
     </div>
+  </div>
+  
     <!-- Custom JS -->
     <script src="landing.js"></script>
 </body>

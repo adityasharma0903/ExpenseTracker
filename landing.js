@@ -23,11 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const annualPrices = document.querySelectorAll(".price-annual")
   
     // Role Selection Modal
-    const getStartedBtn = document.getElementById("getStartedBtn")
-    const mobileGetStartedBtn = document.getElementById("mobileGetStartedBtn")
-    const roleModal = document.getElementById("roleModal")
-    const modalClose = document.getElementById("modalClose")
-    const roleOptions = document.querySelectorAll(".role-option")
+    // const getStartedBtn = document.getElementById("getStartedBtn")
+    // const mobileGetStartedBtn = document.getElementById("mobileGetStartedBtn")
+    // const roleModal = document.getElementById("roleModal")
+    // const modalClose = document.getElementById("modalClose")
+    // const roleOptions = document.querySelectorAll(".role-option")
   
     // Header Scroll Effect
     window.addEventListener("scroll", () => {
@@ -168,57 +168,69 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   
     // Role Selection Modal
-    if (getStartedBtn) {
-      getStartedBtn.addEventListener("click", (e) => {
-        e.preventDefault()
-        roleModal.classList.add("active")
-        document.body.style.overflow = "hidden"
-      })
-    }
+    document.addEventListener("DOMContentLoaded", () => {
+      const getStartedBtn = document.querySelector(".btn.btn-primary");
+      const roleModal = document.getElementById("roleModal");
+      const modalClose = document.getElementById("modalClose");
+      const roleOptions = document.querySelectorAll(".role-option");
   
-    if (mobileGetStartedBtn) {
-      mobileGetStartedBtn.addEventListener("click", (e) => {
-        e.preventDefault()
-        roleModal.classList.add("active")
-        document.body.style.overflow = "hidden"
-        // Close mobile menu if open
-        menuToggle.classList.remove("active")
-        mobileMenu.classList.remove("active")
-      })
-    }
+      console.log("Get Started Button:", getStartedBtn);
+      console.log("Role Modal:", roleModal);
   
-    if (modalClose) {
-      modalClose.addEventListener("click", () => {
-        roleModal.classList.remove("active")
-        document.body.style.overflow = ""
-      })
-    }
-  
-    // Close modal when clicking outside
-    roleModal.addEventListener("click", (e) => {
-      if (e.target === roleModal) {
-        roleModal.classList.remove("active")
-        document.body.style.overflow = ""
+      // Open Modal on "Get Started" Button Click
+      if (getStartedBtn) {
+          getStartedBtn.addEventListener("click", (e) => {
+              e.preventDefault();
+              console.log("Opening modal...");
+              if (roleModal) {
+                  roleModal.classList.add("active");
+                  document.body.style.overflow = "hidden"; // Disable scrolling
+                  console.log("Modal opened.");
+              } else {
+                  console.error("Role Modal not found.");
+              }
+          });
+      } else {
+          console.error("Get Started Button not found.");
       }
-    })
   
-    // Role options click handler
-    if (roleOptions) {
-      roleOptions.forEach((option) => {
-        option.addEventListener("click", function (e) {
-          e.preventDefault()
-          const role = this.getAttribute("data-role")
-          // Redirect to login page with role parameter
-          // For now, just show an alert
-          alert(`Redirecting to login page for ${role} role`)
-          roleModal.classList.remove("active")
-          document.body.style.overflow = ""
+      // Close Modal on "Close" Button Click
+      if (modalClose) {
+          modalClose.addEventListener("click", () => {
+              if (roleModal) {
+                  roleModal.classList.remove("active");
+                  document.body.style.overflow = ""; // Re-enable scrolling
+                  console.log("Modal closed.");
+              }
+          });
+      }
   
-          // In a real implementation, you would redirect to a login page:
-          // window.location.href = `/login?role=${role}`;
-        })
-      })
-    }
+      // Close Modal When Clicking Outside of Modal Content
+      if (roleModal) {
+          roleModal.addEventListener("click", (e) => {
+              if (e.target === roleModal) {
+                  roleModal.classList.remove("active");
+                  document.body.style.overflow = ""; // Re-enable scrolling
+                  console.log("Modal closed by clicking outside.");
+              }
+          });
+      }
+  
+      // Handle Role Selection and Redirect
+      if (roleOptions) {
+          roleOptions.forEach((option) => {
+              option.addEventListener("click", (e) => {
+                  e.preventDefault();
+                  const role = option.getAttribute("data-role");
+                  if (role) {
+                      console.log(`Selected role: ${role}`);
+                      // Redirect to login page with role parameter
+                      window.location.href = `/login.html?role=${role}`;
+                  }
+              });
+          });
+      }
+  });
   
     // Smooth Scroll for Navigation Links
     document.querySelectorAll('a[href^="#"]').forEach((anchor) => {

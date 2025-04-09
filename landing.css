@@ -1494,41 +1494,41 @@ input:checked + .slider:before {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    display: none;
+    /* display: none; */
     align-items: center;
     justify-content: center;
     z-index: 1000;
     backdrop-filter: blur(5px);
-  }
-  
-  .modal.active {
+}
+
+.modal.active {
     display: flex;
     animation: fadeIn 0.3s ease;
-  }
-  
-  .modal-content {
+}
+
+.modal-content {
     background-color: var(--bg-white);
     border-radius: var(--radius-lg);
     width: 90%;
     max-width: 32rem;
     box-shadow: var(--shadow-xl);
     overflow: hidden;
-  }
-  
-  .modal-header {
+}
+
+.modal-header {
     padding: 1.5rem;
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-  }
-  
-  .modal-header h3 {
+}
+
+.modal-header h3 {
     font-size: 1.5rem;
     margin: 0;
-  }
-  
-  .modal-close {
+}
+
+.modal-close {
     background: none;
     border: none;
     font-size: 1.25rem;
@@ -1541,29 +1541,29 @@ input:checked + .slider:before {
     justify-content: center;
     border-radius: 50%;
     transition: all 0.2s ease;
-  }
-  
-  .modal-close:hover {
+}
+
+.modal-close:hover {
     background-color: var(--bg-gray);
     color: var(--text-primary);
-  }
-  
-  .modal-body {
+}
+
+.modal-body {
     padding: 1.5rem;
-  }
-  
-  .modal-body p {
+}
+
+.modal-body p {
     margin-bottom: 1.5rem;
     color: var(--text-secondary);
-  }
-  
-  .role-options {
+}
+
+.role-options {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-  }
-  
-  .role-option {
+}
+
+.role-option {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1573,32 +1573,49 @@ input:checked + .slider:before {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     transition: all 0.3s ease;
-  }
-  
-  .role-option i {
+}
+
+.role-option i {
     font-size: 2rem;
     color: var(--primary);
-  }
-  
-  .role-option span {
+}
+
+.role-option span {
     font-weight: 500;
-  }
-  
-  .role-option:hover {
+}
+
+.role-option:hover {
     background-color: var(--primary);
     border-color: var(--primary);
     transform: translateY(-0.25rem);
     box-shadow: var(--shadow-md);
-  }
-  
-  .role-option:hover i,
-  .role-option:hover span {
+}
+
+.role-option:hover i,
+.role-option:hover span {
     color: white;
-  }
-  
-  @media (max-width: 576px) {
+}
+
+@media (max-width: 576px) {
     .role-options {
-      grid-template-columns: 1fr;
+        grid-template-columns: 1fr;
     }
-  }
+}
+
+.btn-primary {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
   
