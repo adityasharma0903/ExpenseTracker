@@ -864,6 +864,7 @@ function openAddExpenseModal() {
   });
 }
 
+
 // Modify your existing addExpense function to include date and description
 function addExpense() {
   const loggedInClub = JSON.parse(localStorage.getItem('loggedInClub'));
@@ -2481,14 +2482,38 @@ function showToast(title, message, type = 'info') {
 
 // Helper function to format date
 function formatDate(date) {
+  const parsedDate = date instanceof Date ? date : new Date(date);
+  if (isNaN(parsedDate)) {
+    console.error("Invalid date passed to formatDate:", date);
+    return "Invalid Date";
+  }
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  return date.toLocaleDateString('en-US', options);
+  return parsedDate.toLocaleDateString('en-US', options);
 }
 
-// Helper function to validate email
-function isValidEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+function renderExpenseTable(expenses) {
+  const expenseTableBody = document.getElementById("expense-table-body");
+  expenseTableBody.innerHTML = ""; // Clear existing rows
+
+  expenses.forEach(expense => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${expense.event || "N/A"}</td>
+      <td>${expense.category}</td>
+      <td>${expense.description}</td>
+      <td>₹${expense.amount}</td>
+      <td>${formatDate(expense.date)}</td>
+      <td>
+        <button class="btn-action btn-edit" data-id="${expense.id}">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn-action btn-delete" data-id="${expense.id}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+    expenseTableBody.appendChild(row);
+  });
 }
 
 // Add some sample data for demonstration
@@ -2672,3 +2697,140 @@ document.addEventListener("DOMContentLoaded", function() {
   initializeBudgetData();
   loadBudgetData();
 });
+
+
+function renderExpenseTable(expenses) {
+  const expenseTableBody = document.getElementById("expense-table-body");
+  expenseTableBody.innerHTML = ""; // Clear existing rows
+
+  expenses.forEach((expense, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${expense.event || "N/A"}</td>
+      <td>${expense.category}</td>
+      <td>${expense.description}</td>
+      <td>₹${expense.amount}</td>
+      <td>${formatDate(expense.date)}</td>
+      <td style=" display: flex; justify-content: center; align-items: center; gap: 10px; ">
+        <button class="btn-action btn-edit" data-index="${index}">
+          <i class="fas fa-edit"></i> 
+        </button>
+        <button class="btn-action btn-delete" data-index="${index}">
+          <i class="fas fa-trash"></i> 
+        </button>
+      </td>
+    `;
+    expenseTableBody.appendChild(row);
+  });
+
+  // Add event listeners for edit and delete buttons
+  addExpenseActionListeners(expenses);
+}
+
+function addExpenseActionListeners(expenses) {
+  // Edit button functionality
+  document.querySelectorAll(".btn-edit").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      const index = e.target.closest("button").dataset.index;
+      const expense = expenses[index];
+
+      const newDescription = prompt("Edit Description:", expense.description);
+      const newAmount = parseFloat(prompt("Edit Amount:", expense.amount));
+
+      if (newDescription && !isNaN(newAmount)) {
+        expenses[index].description = newDescription;
+        expenses[index].amount = newAmount;
+
+        // Save updated data and re-render the table
+        localStorage.setItem("expenses", JSON.stringify(expenses));
+        renderExpenseTable(expenses);
+      }
+    });
+  });
+
+  // Delete button functionality
+  document.querySelectorAll(".btn-delete").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      const index = e.target.closest("button").dataset.index;
+
+      if (confirm("Are you sure you want to delete this expense?")) {
+        expenses.splice(index, 1);
+
+        // Save updated data and re-render the table
+        localStorage.setItem("expenses", JSON.stringify(expenses));
+        renderExpenseTable(expenses);
+      }
+    });
+  });
+}
+
+function addEventActionListeners(events) {
+  // Delete button functionality
+  document.querySelectorAll(".btn-delete").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      const eventId = e.target.closest("button").dataset.id;
+
+      if (confirm("Are you sure you want to delete this event?")) {
+        // Remove the event from the events array
+        const updatedEvents = events.filter(event => event.id !== eventId);
+
+        // Save the updated events array to localStorage
+        localStorage.setItem("events", JSON.stringify(updatedEvents));
+
+        // Re-render the events list
+        renderEvents(updatedEvents);
+      }
+    });
+  });
+}
+
+function loadEvents() {
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
+  if (!loggedInClub) {
+    console.error("No logged-in club found!");
+    return;
+  }
+
+  const events = JSON.parse(localStorage.getItem("events")) || [];
+  const clubEvents = events.filter(event => event.clubId === loggedInClub.id);
+
+  console.log("Loaded Events:", clubEvents);
+
+  renderEvents(clubEvents);
+}
+
+function renderEvents(events) {
+  const container = document.getElementById("events-list");
+  container.innerHTML = ""; // Clear existing events
+
+  if (events.length === 0) {
+    container.innerHTML = '<p class="text-muted">No events found</p>';
+    return;
+  }
+
+  events.forEach(event => {
+    const eventCard = document.createElement("div");
+    eventCard.className = "event-card";
+    eventCard.innerHTML = `
+      <div class="event-image">
+        <img src="${event.poster || 'https://via.placeholder.com/300x180?text=Event'}" alt="${event.name}">
+      </div>
+      <div class="event-content">
+        <h4>${event.name}</h4>
+        <p>${event.description}</p>
+        <div class="event-actions">
+          <button class="btn-action btn-edit" data-id="${event.id}">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button class="btn-action btn-delete" data-id="${event.id}">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    `;
+    container.appendChild(eventCard);
+  });
+
+  // Add action listeners for edit and delete buttons
+  addEventActionListeners(events);
+}
