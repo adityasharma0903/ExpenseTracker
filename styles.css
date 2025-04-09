@@ -2438,3 +2438,15 @@ textarea {
     height: 12px;
   }
 }
+
+#total-budget-input {
+  max-width: 300px;
+  margin-right: 10px;
+}
+
+#update-total-budget-btn {
+  margin-top: 10px;
+}
+
+
+

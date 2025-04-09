@@ -112,7 +112,7 @@
               <i class="fas fa-wallet"></i>
             </div>
             <div class="stat-info">
-              <h3>Total Budget</h3>
+              <h3>Total Expense</h3>
               <p id="total-budget">₹0</p>
             </div>
           </div>
@@ -209,7 +209,8 @@
           <!-- Events will be populated here -->
         </div>
       </div>
-
+      
+      
       <!-- Budget Content -->
       <div id="budget-content" class="content">
         <div class="content-header">
@@ -218,6 +219,21 @@
             <i class="fas fa-plus"></i> Add Expense
           </button>
         </div>
+        <!-- Add Input Field for Total Budget Here -->
+   <div class="form-group">
+    <label for="total-budget-input">Update Total Budget</label>
+    <div class="input-with-icon">
+        <i class="fas fa-wallet"></i>
+        <input type="number" id="total-budget-input" placeholder="Enter total budget" min="0">
+    </div>
+    <button id="update-total-budget-btn" class="btn-success">
+        <i class="fas fa-save"></i> Update Budget
+    </button>
+</div>
+
+<div class="budget-overview">
+    <!-- Your Existing Budget Overview Code -->
+</div>
 
         <div class="budget-overview">
           <div class="budget-card">
@@ -466,6 +482,16 @@
                 <input type="date" id="event-end-date">
               </div>
             </div>
+            <div class="form-group">
+              <label for="total-budget-input">Update Total Budget</label>
+              <div class="input-with-icon">
+                  <i class="fas fa-wallet"></i>
+                  <input type="number" id="total-budget-input" placeholder="Enter total budget" min="0">
+              </div>
+              <button id="update-total-budget-btn" class="btn-success">
+                  <i class="fas fa-save"></i> Update Budget
+              </button>
+          </div>
           </div>
           <div class="form-row">
             <div class="form-group">
