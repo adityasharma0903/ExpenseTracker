@@ -480,6 +480,20 @@ function setupEventListeners() {
       navigateTo(page);
     });
   });
+
+  function setupAdditionalEventListeners() {
+    // Event detail modal listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Make sure the modal exists in the DOM
+      if (!document.getElementById('event-detail-modal')) {
+        console.error('Event detail modal not found in the DOM');
+        return;
+      }
+      
+      // Setup listeners
+      setupDetailModalListeners();
+    });
+  }
   
   // Logout button
   document.getElementById('logout-btn').addEventListener('click', handleLogout);
@@ -1330,10 +1344,14 @@ function createEvent() {
   showToast("Event Created", `${name} has been created successfully`, "success");
 }
 
+
+
 document.getElementById("create-event-btn").addEventListener("click", function() {
   openCreateEventModal();
   setupEnhancedEventListeners();
 });
+
+
 
 // Load dashboard data
 function loadDashboardData() {
@@ -2800,37 +2818,373 @@ function loadEvents() {
 }
 
 function renderEvents(events) {
-  const container = document.getElementById("events-list");
-  container.innerHTML = ""; // Clear existing events
-
+  const container = document.getElementById('events-list');
+  container.innerHTML = '';
+  
   if (events.length === 0) {
     container.innerHTML = '<p class="text-muted">No events found</p>';
     return;
   }
-
-  events.forEach(event => {
-    const eventCard = document.createElement("div");
-    eventCard.className = "event-card";
+  
+  // Sort events by start date (newest first)
+  events.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+  
+  events.forEach((event, index) => {
+    const eventCard = document.createElement('div');
+    eventCard.className = 'event-card';
+    eventCard.dataset.id = event.id;
+    eventCard.style.opacity = '0';
+    eventCard.style.transform = 'translateY(20px)';
+    
+    const eventDate = new Date(event.startDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const isUpcoming = eventDate >= today;
+    
     eventCard.innerHTML = `
+      <div class="event-actions">
+        <button class="btn-action btn-edit" data-id="${event.id}">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn-action btn-delete" data-id="${event.id}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
       <div class="event-image">
         <img src="${event.poster || 'https://via.placeholder.com/300x180?text=Event'}" alt="${event.name}">
+        <div class="event-date">
+          <i class="fas fa-calendar-alt"></i>
+          ${formatDate(eventDate)}
+        </div>
       </div>
       <div class="event-content">
-        <h4>${event.name}</h4>
-        <p>${event.description}</p>
-        <div class="event-actions">
-          <button class="btn-action btn-edit" data-id="${event.id}">
-            <i class="fas fa-edit"></i> Edit
-          </button>
-          <button class="btn-action btn-delete" data-id="${event.id}">
-            <i class="fas fa-trash"></i> Delete
-          </button>
+        <h4 class="event-title">${event.name}</h4>
+        <p class="event-description">${event.description}</p>
+        <div class="event-footer">
+          <div class="event-meta">
+            <div class="meta-item">
+              <i class="fas fa-clock"></i>
+              <span>${event.startTime}</span>
+            </div>
+            <div class="meta-item">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>${event.venue}</span>
+            </div>
+          </div>
         </div>
       </div>
     `;
+    
     container.appendChild(eventCard);
+    
+    // Animate card appearance
+    setTimeout(() => {
+      eventCard.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      eventCard.style.opacity = '1';
+      eventCard.style.transform = 'translateY(0)';
+    }, 100 + index * 100);
   });
-
-  // Add action listeners for edit and delete buttons
-  addEventActionListeners(events);
+  
+  // Add event listeners
+  setTimeout(() => {
+    // Event card click to view details
+    const eventCards = document.querySelectorAll('.event-card');
+    eventCards.forEach(card => {
+      card.addEventListener('click', function(e) {
+        // Don't open detail view if clicking on action buttons
+        if (!e.target.closest('.btn-action')) {
+          const eventId = this.dataset.id;
+          openEventDetailModal(eventId);
+        }
+      });
+    });
+    
+    // Edit button click
+    const editButtons = document.querySelectorAll('.btn-edit');
+    editButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent event card click
+        const eventId = this.getAttribute('data-id');
+        openEventDetailModal(eventId, true); // Open in edit mode
+      });
+    });
+    
+    // Delete button click
+    const deleteButtons = document.querySelectorAll('.btn-delete');
+    deleteButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent event card click
+        const eventId = this.getAttribute('data-id');
+        confirmDeleteEvent(eventId);
+      });
+    });
+  }, 500);
 }
+
+function openEventDetailModal(eventId, editMode = false) {
+  const events = JSON.parse(localStorage.getItem('events')) || [];
+  const event = events.find(e => e.id === eventId);
+  
+  if (!event) {
+    showToast('Error', 'Event not found', 'error');
+    return;
+  }
+  
+  // Set current event ID
+  const modal = document.getElementById('event-detail-modal');
+  modal.setAttribute('data-event-id', eventId);
+  
+  // Populate view container
+  document.getElementById('detail-event-title').textContent = event.name;
+  document.getElementById('detail-event-poster').src = event.poster || 'https://via.placeholder.com/300x250?text=Event';
+  document.getElementById('detail-event-description').textContent = event.description;
+  document.getElementById('detail-event-date').textContent = `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
+  document.getElementById('detail-event-time').textContent = `${event.startTime} - ${event.endTime}`;
+  document.getElementById('detail-event-venue').textContent = event.venue;
+  document.getElementById('detail-event-team-size').textContent = `${event.teamMin} - ${event.teamMax} members`;
+  document.getElementById('detail-event-about').textContent = event.about || 'No details provided';
+  document.getElementById('detail-event-theme').textContent = event.theme || 'No theme specified';
+  document.getElementById('detail-event-prize-pool').textContent = `₹${event.prizes?.pool || 0}`;
+  document.getElementById('detail-event-first-prize').textContent = event.prizes?.first?.amount ? 
+    `₹${event.prizes.first.amount} - ${event.prizes.first.description || ''}` : 'None';
+  document.getElementById('detail-event-second-prize').textContent = event.prizes?.second?.amount ? 
+    `₹${event.prizes.second.amount} - ${event.prizes.second.description || ''}` : 'None';
+  document.getElementById('detail-event-third-prize').textContent = event.prizes?.third?.amount ? 
+    `₹${event.prizes.third.amount} - ${event.prizes.third.description || ''}` : 'None';
+  document.getElementById('detail-event-budget').textContent = `₹${event.totalBudget || 0}`;
+  
+  // Populate edit form
+  document.getElementById('edit-event-name').value = event.name;
+  document.getElementById('edit-event-description').value = event.description;
+  document.getElementById('edit-event-start-date').value = event.startDate;
+  document.getElementById('edit-event-end-date').value = event.endDate;
+  document.getElementById('edit-event-start-time').value = event.startTime;
+  document.getElementById('edit-event-end-time').value = event.endTime;
+  document.getElementById('edit-event-venue').value = event.venue;
+  document.getElementById('edit-event-team-min').value = event.teamMin || 1;
+  document.getElementById('edit-event-team-max').value = event.teamMax || 5;
+  document.getElementById('edit-event-about').value = event.about || '';
+  document.getElementById('edit-event-theme').value = event.theme || '';
+  document.getElementById('edit-event-prize-pool').value = event.prizes?.pool || 0;
+  document.getElementById('edit-first-prize-amount').value = event.prizes?.first?.amount || 0;
+  document.getElementById('edit-first-prize-description').value = event.prizes?.first?.description || '';
+  document.getElementById('edit-second-prize-amount').value = event.prizes?.second?.amount || 0;
+  document.getElementById('edit-second-prize-description').value = event.prizes?.second?.description || '';
+  document.getElementById('edit-third-prize-amount').value = event.prizes?.third?.amount || 0;
+  document.getElementById('edit-third-prize-description').value = event.prizes?.third?.description || '';
+  
+  // Show modal
+  modal.style.display = 'block';
+  
+  // Show edit form if in edit mode
+  if (editMode) {
+    toggleEditMode(true);
+  } else {
+    toggleEditMode(false);
+  }
+  
+  // Add event listeners
+  setupDetailModalListeners();
+}
+
+function toggleEditMode(editMode) {
+  const viewContainer = document.getElementById('event-view-container');
+  const editContainer = document.getElementById('edit-form-container');
+  
+  if (editMode) {
+    viewContainer.classList.add('hidden');
+    editContainer.classList.add('active');
+    document.getElementById('detail-event-title').textContent = 'Edit Event';
+  } else {
+    viewContainer.classList.remove('hidden');
+    editContainer.classList.remove('active');
+    
+    // Reset title if needed
+    const eventId = document.getElementById('event-detail-modal').getAttribute('data-event-id');
+    const events = JSON.parse(localStorage.getItem('events')) || [];
+    const event = events.find(e => e.id === eventId);
+    if (event) {
+      document.getElementById('detail-event-title').textContent = event.name;
+    }
+  }
+}
+
+// Function to setup event listeners for the detail modal
+function setupDetailModalListeners() {
+  // Close button
+  document.querySelector('.close-detail-modal').addEventListener('click', closeEventDetailModal);
+  
+  // Edit button
+  document.getElementById('btn-edit-event').addEventListener('click', function() {
+    toggleEditMode(true);
+  });
+  
+  // Delete button
+  document.getElementById('btn-delete-event').addEventListener('click', function() {
+    const eventId = document.getElementById('event-detail-modal').getAttribute('data-event-id');
+    confirmDeleteEvent(eventId);
+  });
+  
+  // Cancel edit button
+  document.getElementById('btn-cancel-edit').addEventListener('click', function() {
+    toggleEditMode(false);
+  });
+  
+  // Save changes form submission
+  document.getElementById('edit-event-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveEventChanges();
+  });
+  
+  // Close modal when clicking outside
+  const modal = document.getElementById('event-detail-modal');
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeEventDetailModal();
+    }
+  });
+}
+
+// Function to save event changes
+function saveEventChanges() {
+  const eventId = document.getElementById('event-detail-modal').getAttribute('data-event-id');
+  const events = JSON.parse(localStorage.getItem('events')) || [];
+  const eventIndex = events.findIndex(e => e.id === eventId);
+  
+  if (eventIndex === -1) {
+    showToast('Error', 'Event not found', 'error');
+    return;
+  }
+  
+  // Get form values
+  const name = document.getElementById('edit-event-name').value.trim();
+  const description = document.getElementById('edit-event-description').value.trim();
+  const startDate = document.getElementById('edit-event-start-date').value;
+  const endDate = document.getElementById('edit-event-end-date').value;
+  const startTime = document.getElementById('edit-event-start-time').value;
+  const endTime = document.getElementById('edit-event-end-time').value;
+  const venue = document.getElementById('edit-event-venue').value.trim();
+  const teamMin = parseInt(document.getElementById('edit-event-team-min').value) || 1;
+  const teamMax = parseInt(document.getElementById('edit-event-team-max').value) || 5;
+  const about = document.getElementById('edit-event-about').value.trim();
+  const theme = document.getElementById('edit-event-theme').value.trim();
+  const prizePool = parseInt(document.getElementById('edit-event-prize-pool').value) || 0;
+  const firstPrizeAmount = parseInt(document.getElementById('edit-first-prize-amount').value) || 0;
+  const firstPrizeDescription = document.getElementById('edit-first-prize-description').value.trim();
+  const secondPrizeAmount = parseInt(document.getElementById('edit-second-prize-amount').value) || 0;
+  const secondPrizeDescription = document.getElementById('edit-second-prize-description').value.trim();
+  const thirdPrizeAmount = parseInt(document.getElementById('edit-third-prize-amount').value) || 0;
+  const thirdPrizeDescription = document.getElementById('edit-third-prize-description').value.trim();
+  
+  // Validate required fields
+  if (!name || !description || !startDate || !endDate || !startTime || !endTime || !venue) {
+    showToast('Error', 'Please fill in all required fields', 'error');
+    return;
+  }
+  
+  // Update event object
+  const event = events[eventIndex];
+  event.name = name;
+  event.description = description;
+  event.startDate = startDate;
+  event.endDate = endDate;
+  event.startTime = startTime;
+  event.endTime = endTime;
+  event.venue = venue;
+  event.teamMin = teamMin;
+  event.teamMax = teamMax;
+  event.about = about;
+  event.theme = theme;
+  
+  // Update prizes
+  if (!event.prizes) {
+    event.prizes = {};
+  }
+  
+  event.prizes.pool = prizePool;
+  event.prizes.first = {
+    amount: firstPrizeAmount,
+    description: firstPrizeDescription
+  };
+  event.prizes.second = {
+    amount: secondPrizeAmount,
+    description: secondPrizeDescription
+  };
+  event.prizes.third = {
+    amount: thirdPrizeAmount,
+    description: thirdPrizeDescription
+  };
+  
+  // Save to localStorage
+  localStorage.setItem('events', JSON.stringify(events));
+  
+  // Close edit mode and refresh view
+  toggleEditMode(false);
+  
+  // Update view with new data
+  document.getElementById('detail-event-title').textContent = name;
+  document.getElementById('detail-event-description').textContent = description;
+  document.getElementById('detail-event-date').textContent = `${formatDate(new Date(startDate))} - ${formatDate(new Date(endDate))}`;
+  document.getElementById('detail-event-time').textContent = `${startTime} - ${endTime}`;
+  document.getElementById('detail-event-venue').textContent = venue;
+  document.getElementById('detail-event-team-size').textContent = `${teamMin} - ${teamMax} members`;
+  document.getElementById('detail-event-about').textContent = about || 'No details provided';
+  document.getElementById('detail-event-theme').textContent = theme || 'No theme specified';
+  document.getElementById('detail-event-prize-pool').textContent = `₹${prizePool}`;
+  document.getElementById('detail-event-first-prize').textContent = firstPrizeAmount ? 
+    `₹${firstPrizeAmount} - ${firstPrizeDescription || ''}` : 'None';
+  document.getElementById('detail-event-second-prize').textContent = secondPrizeAmount ? 
+    `₹${secondPrizeAmount} - ${secondPrizeDescription || ''}` : 'None';
+  document.getElementById('detail-event-third-prize').textContent = thirdPrizeAmount ? 
+    `₹${thirdPrizeAmount} - ${thirdPrizeDescription || ''}` : 'None';
+  
+  // Refresh events list
+  loadEvents();
+  
+  showToast('Success', 'Event updated successfully', 'success');
+}
+
+// Function to close event detail modal
+function closeEventDetailModal() {
+  document.getElementById('event-detail-modal').style.display = 'none';
+}
+
+// Function to confirm delete event
+function confirmDeleteEvent(eventId) {
+  if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+    deleteEvent(eventId);
+  }
+}
+
+// Function to delete event
+function deleteEvent(eventId) {
+  const events = JSON.parse(localStorage.getItem('events')) || [];
+  const eventIndex = events.findIndex(e => e.id === eventId);
+  
+  if (eventIndex === -1) {
+    showToast('Error', 'Event not found', 'error');
+    return;
+  }
+  
+  const eventName = events[eventIndex].name;
+  
+  // Remove event
+  events.splice(eventIndex, 1);
+  
+  // Save to localStorage
+  localStorage.setItem('events', JSON.stringify(events));
+  
+  // Close modal if open
+  closeEventDetailModal();
+  
+  // Refresh events list
+  loadEvents();
+  
+  // Refresh dashboard data
+  loadDashboardData();
+  
+  showToast('Success', `Event "${eventName}" has been deleted`, 'success');
+}
+
+setupAdditionalEventListeners();

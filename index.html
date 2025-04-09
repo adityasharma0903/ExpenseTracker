@@ -1052,6 +1052,250 @@
     </div>
   </div>
 
+  <!-- Add this at the end of your body tag, before the script tag -->
+  <!-- Event Detail Modal -->
+  <div id="event-detail-modal" class="event-detail-modal">
+    <div class="event-detail-content">
+      <div class="event-detail-header">
+        <h2 id="detail-event-title">Event Title</h2>
+        <button class="close-detail-modal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="event-detail-body">
+        <!-- View Container -->
+        <div id="event-view-container" class="event-view-container">
+          <div class="event-detail-grid">
+            <div class="event-detail-image">
+              <img id="detail-event-poster" src="/placeholder.svg" alt="Event Poster">
+            </div>
+            <div class="event-detail-info">
+              <div class="event-detail-section">
+                <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                <div class="detail-item">
+                  <div class="detail-label">Description:</div>
+                  <div id="detail-event-description" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Date:</div>
+                  <div id="detail-event-date" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Time:</div>
+                  <div id="detail-event-time" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Venue:</div>
+                  <div id="detail-event-venue" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Team Size:</div>
+                  <div id="detail-event-team-size" class="detail-value"></div>
+                </div>
+              </div>
+
+              <div class="event-detail-section">
+                <h3><i class="fas fa-align-left"></i> Overview</h3>
+                <div class="detail-item">
+                  <div class="detail-label">About:</div>
+                  <div id="detail-event-about" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Theme:</div>
+                  <div id="detail-event-theme" class="detail-value"></div>
+                </div>
+              </div>
+
+              <div class="event-detail-section">
+                <h3><i class="fas fa-trophy"></i> Prizes</h3>
+                <div class="detail-item">
+                  <div class="detail-label">Prize Pool:</div>
+                  <div id="detail-event-prize-pool" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">First Prize:</div>
+                  <div id="detail-event-first-prize" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Second Prize:</div>
+                  <div id="detail-event-second-prize" class="detail-value"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Third Prize:</div>
+                  <div id="detail-event-third-prize" class="detail-value"></div>
+                </div>
+              </div>
+
+              <div class="event-detail-section">
+                <h3><i class="fas fa-wallet"></i> Budget</h3>
+                <div class="detail-item">
+                  <div class="detail-label">Total Budget:</div>
+                  <div id="detail-event-budget" class="detail-value"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="event-detail-actions">
+            <button id="btn-edit-event" class="btn-primary-action btn-edit-detail">
+              <i class="fas fa-edit"></i> Edit Event
+            </button>
+            <button id="btn-delete-event" class="btn-primary-action btn-delete-detail">
+              <i class="fas fa-trash"></i> Delete Event
+            </button>
+          </div>
+        </div>
+
+        <!-- Edit Form Container -->
+        <div id="edit-form-container" class="edit-form-container">
+          <form id="edit-event-form">
+            <div class="form-group">
+              <label for="edit-event-name">Event Name</label>
+              <div class="input-with-icon">
+                <i class="fas fa-signature"></i>
+                <input type="text" id="edit-event-name" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-event-description">Event Description</label>
+              <textarea id="edit-event-description" required></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-event-start-date">Start Date</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-calendar"></i>
+                  <input type="date" id="edit-event-start-date" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="edit-event-end-date">End Date</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-calendar"></i>
+                  <input type="date" id="edit-event-end-date" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-event-start-time">Start Time</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-clock"></i>
+                  <input type="time" id="edit-event-start-time" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="edit-event-end-time">End Time</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-clock"></i>
+                  <input type="time" id="edit-event-end-time" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-event-venue">Venue</label>
+              <div class="input-with-icon">
+                <i class="fas fa-map-marker-alt"></i>
+                <input type="text" id="edit-event-venue" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-event-team-min">Min Team Size</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-users"></i>
+                  <input type="number" id="edit-event-team-min" min="1" value="1" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="edit-event-team-max">Max Team Size</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-users"></i>
+                  <input type="number" id="edit-event-team-max" min="1" value="5" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-event-about">About the Event</label>
+              <textarea id="edit-event-about" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-event-theme">Event Theme</label>
+              <div class="input-with-icon">
+                <i class="fas fa-lightbulb"></i>
+                <input type="text" id="edit-event-theme">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-event-prize-pool">Prize Pool (₹)</label>
+              <div class="input-with-icon">
+                <i class="fas fa-rupee-sign"></i>
+                <input type="number" id="edit-event-prize-pool" min="0" value="0">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-first-prize-amount">First Prize (₹)</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-rupee-sign"></i>
+                  <input type="number" id="edit-first-prize-amount" min="0" value="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="edit-first-prize-description">First Prize Description</label>
+                <input type="text" id="edit-first-prize-description">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-second-prize-amount">Second Prize (₹)</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-rupee-sign"></i>
+                  <input type="number" id="edit-second-prize-amount" min="0" value="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="edit-second-prize-description">Second Prize Description</label>
+                <input type="text" id="edit-second-prize-description">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-third-prize-amount">Third Prize (₹)</label>
+                <div class="input-with-icon">
+                  <i class="fas fa-rupee-sign"></i>
+                  <input type="number" id="edit-third-prize-amount" min="0" value="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="edit-third-prize-description">Third Prize Description</label>
+                <input type="text" id="edit-third-prize-description">
+              </div>
+            </div>
+
+            <div class="edit-form-actions">
+              <button type="button" id="btn-cancel-edit" class="btn-primary-action btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+              </button>
+              <button type="submit" id="btn-save-event" class="btn-primary-action btn-save">
+                <i class="fas fa-save"></i> Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toast-container" class="toast-container"></div>
 
