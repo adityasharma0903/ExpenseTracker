@@ -1478,7 +1478,7 @@ function renderBudgetChart(expenses) {
   
   // Render timeline chart
   // Render timeline chart
-// Render timeline chart
+// Render timeline chart with vertically aligned event names in tooltips
 function renderTimelineChart(events) {
   const canvas = document.getElementById('timeline-chart');
   const ctx = canvas.getContext('2d');
@@ -1490,109 +1490,155 @@ function renderTimelineChart(events) {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (events.length === 0) {
+  // Get the current year
+  const currentYear = new Date().getFullYear();
+
+  // Filter events for the current year
+  const filteredEvents = events.filter(event => {
+    const eventStartYear = new Date(event.startDate).getFullYear();
+    return eventStartYear === currentYear;
+  });
+
+  if (filteredEvents.length === 0) {
     // No data
     ctx.font = '16px Arial';
     ctx.fillStyle = '#64748b';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('No events available', canvas.width / 2, canvas.height / 2);
+    ctx.fillText(`No events available for ${currentYear}`, canvas.width / 2, canvas.height / 2);
     return;
   }
 
-  const sortedEvents = events.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-  const labels = sortedEvents.map(event => event.name);
-  const data = sortedEvents.map(event => ({
-    x: new Date(event.startDate),
-    y: event.name
-  }));
+  // Process events for chart visualization
+  const months = Array.from({ length: 12 }, (_, i) => new Date(currentYear, i, 1));
+  const eventCounts = Array(12).fill(0);
+  const eventNamesByMonth = Array(12).fill(null).map(() => []);
 
-  // Find the min and max dates from the events
-  const minDate = new Date(Math.min(...sortedEvents.map(event => new Date(event.startDate))));
-  const maxDate = new Date(Math.max(...sortedEvents.map(event => new Date(event.startDate))));
+  filteredEvents.forEach(event => {
+    const eventMonth = new Date(event.startDate).getMonth();
+    eventCounts[eventMonth]++;
+    eventNamesByMonth[eventMonth].push(event.name);
+  });
 
   // Destroy existing chart instance if it exists
   if (window.timelineChart) {
     window.timelineChart.destroy();
   }
 
-  // Create new chart instance
+  // Create new chart instance with improved UI
   window.timelineChart = new Chart(ctx, {
-    type: 'scatter',
+    type: 'bar',
     data: {
-      labels: labels,
-      datasets: [{
-        label: 'Event Timeline',
-        data: data,
-        backgroundColor: '#4f46e5',
-        borderColor: '#4f46e5',
-        showLine: true,
-        fill: false,
-        tension: 0.1,
-        pointRadius: 5,
-        pointHoverRadius: 7
-      }]
+      labels: months.map(month => month.toLocaleDateString('en-US', { month: 'short' })), // Display month names
+      datasets: [
+        {
+          label: `Events in ${currentYear}`,
+          data: eventCounts,
+          backgroundColor: eventCounts.map(count => (count > 0 ? '#4f46e5' : '#e5e7eb')), // Highlight months with events
+          borderColor: '#3b82f6',
+          borderWidth: 1,
+          hoverBackgroundColor: '#3b82f6', // Change color on hover
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
         x: {
-          type: 'time',
-          time: {
-            unit: 'month',
-            displayFormats: {
-              month: 'MMM yyyy'
-            }
-          },
           title: {
             display: true,
-            text: 'Date'
+            text: 'Months',
+            font: {
+              size: 14,
+              weight: 'bold',
+            },
+            color: '#374151',
           },
-          min: minDate,
-          max: maxDate
+          grid: {
+            display: false, // Cleaner UI by removing grid lines
+          },
         },
         y: {
           title: {
             display: true,
-            text: 'Events'
+            text: 'Number of Events',
+            font: {
+              size: 14,
+              weight: 'bold',
+            },
+            color: '#374151',
           },
           ticks: {
-            autoSkip: false
-          }
-        }
+            stepSize: 1,
+            beginAtZero: true,
+            color: '#4b5563',
+          },
+          grid: {
+            color: '#e5e7eb', // Subtle grid lines
+          },
+        },
       },
       plugins: {
-        legend: {
-          display: false
-        },
         tooltip: {
+          backgroundColor: '#1e293b',
+          titleFont: {
+            size: 14,
+            weight: 'bold',
+          },
+          bodyFont: {
+            size: 12,
+          },
+          bodySpacing: 6,
+          padding: 10,
           callbacks: {
-            title: function(tooltipItems) {
-              return tooltipItems[0].label;
+            title: function (context) {
+              const monthIndex = context[0].dataIndex;
+              return `Month: ${context[0].label}`;
             },
-            label: function(tooltipItem) {
-              return `Date: ${tooltipItem.raw.x.toLocaleDateString()}`;
-            }
-          }
-        }
-      },
-      animation: {
-        animateScale: true,
-        animateRotate: true
+            label: function (context) {
+              const monthIndex = context.dataIndex;
+              const eventCount = eventCounts[monthIndex];
+              const eventNames = eventNamesByMonth[monthIndex]
+                .map(name => `• ${name}`) // Add bullet points to each event name
+                .join('\n'); // Ensure each name is on a new line
+              return [`${eventCount} event${eventCount === 1 ? '' : 's'}:`].concat(eventNames.split('\n'));
+            },
+          },
+        },
+        legend: {
+          display: false, // Hide legend for cleaner UI
+        },
       },
       layout: {
         padding: {
           top: 20,
           bottom: 20,
-          left: 20,
-          right: 20
-        }
-      }
-    }
+          left: 10,
+          right: 10,
+        },
+      },
+      animation: {
+        duration: 1000, // Smooth animation for loading
+        easing: 'easeOutQuart',
+      },
+    },
   });
+
+  console.log(`Events for ${currentYear}:`, filteredEvents); // Debugging purposes
 }
 
+// Sample usage with events data
+document.addEventListener('DOMContentLoaded', () => {
+  const sampleEvents = [
+    { name: 'Hackathon 1', startDate: '2025-01-15', endDate: '2025-01-20' },
+    { name: 'Hackathon 2', startDate: '2025-02-10', endDate: '2025-02-15' },
+    { name: 'Hackathon 3', startDate: '2025-03-05', endDate: '2025-03-10' },
+    { name: 'Hackathon 4', startDate: '2025-04-01', endDate: '2025-04-05' },
+    { name: 'Hackathon 5', startDate: '2024-12-25', endDate: '2024-12-30' }, // Not in the current year
+  ];
+  renderTimelineChart(sampleEvents);
+});
 // Fetch events and update timeline chart
 function loadEvents() {
   // Fetch events from localStorage or API
