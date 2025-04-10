@@ -1139,6 +1139,30 @@ function createEvent() {
     }
   });
   
+  async function createEvent(eventData) {
+    try {
+      const token = localStorage.getItem('token'); // Replace with your method of storing JWT
+      const response = await fetch('http://localhost:5000/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(eventData)
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        console.log('Event created successfully:', result);
+      } else {
+        console.error('Error creating event:', result.message);
+      }
+    } catch (error) {
+      console.error('Network or server error:', error);
+    }
+  }
+
   // Get eligibility criteria
   const eligibilityCriteria = [];
   document.querySelectorAll(".eligibility-input").forEach(input => {
@@ -3188,3 +3212,57 @@ function deleteEvent(eventId) {
 }
 
 setupAdditionalEventListeners();
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const createEventBtn = document.getElementById("createEventBtn");
+
+  createEventBtn.addEventListener("click", async () => {
+    // Collect form data
+    const eventData = {
+      name: document.getElementById("eventName").value,
+      department: document.getElementById("eventDepartment").value,
+      club: document.getElementById("eventClub").value,
+      startDate: document.getElementById("eventStartDate").value,
+      endDate: document.getElementById("eventEndDate").value,
+      startTime: document.getElementById("eventStartTime").value,
+      endTime: document.getElementById("eventEndTime").value,
+      venue: document.getElementById("eventVenue").value,
+      description: document.getElementById("eventDescription").value,
+      expenses: JSON.parse(document.getElementById("eventExpenses").value || "[]"), // Convert JSON string to array
+    };
+
+    try {
+      // Fetch token (if required)
+      const token = localStorage.getItem("token"); // Replace with your JWT token retrieval method
+
+      // Send data to backend
+      const response = await fetch("http://localhost:5000/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token, // Ensure token is added to the header
+        },
+        body: JSON.stringify(eventData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert("Event created successfully!");
+        console.log("Event created:", result);
+      } else {
+        alert("Failed to create event: " + result.message);
+        console.error("Error:", result);
+      }
+    } catch (error) {
+      console.error("Network or server error:", error);
+      alert("An error occurred while creating the event.");
+    }
+  });
+});

@@ -1928,3 +1928,39 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${hour12}:${minutes} ${ampm}`;
   }
 });
+
+
+async function createEvent(eventData) {
+  try {
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    const token = loggedInUser ? loggedInUser.token : null;
+
+    if (!token) {
+      console.error("No token found. User not authenticated.");
+      showToast("Error", "You are not authenticated. Please log in.", "error");
+      return;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token,
+      },
+      body: JSON.stringify(eventData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast("Success", "Event created successfully", "success");
+      // Optionally, refresh the events table
+      updateEventsTable();
+    } else {
+      showToast("Error", data.message || "Failed to create event", "error");
+    }
+  } catch (error) {
+    console.error("Error creating event:", error);
+    showToast("Error", "Failed to create event", "error");
+  }
+}
