@@ -930,10 +930,7 @@ app.get("/api/events", async (req, res) => {
       events = await Event.find().sort({ startDate: 1 })
     }
 
-    res.status(200).json({
-      success: true,
-      events,
-    })
+
   } catch (error) {
     console.error("Error fetching events:", error.message || error)
     res.status(500).json({
@@ -943,11 +940,8 @@ app.get("/api/events", async (req, res) => {
   }
 })
 
-res.status(200).json({
-  success: true,
-  events,
-})
-console.log(events);  // Add this to log the events to the console
+
+
 
 app.get("/api/club-events/:id", async (req, res) => {
   try {
