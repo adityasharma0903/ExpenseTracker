@@ -821,38 +821,27 @@ app.post("/api/auth/department/login", validateLogin, async (req, res) => {
 // @access  Private
 app.post("/api/events", auth, validateEventCreation, async (req, res) => {
   try {
-    const {
-      department,
-      name,
-      club,
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      venue,
-      description,
-      expenses,
-    } = req.body;
+    const { department, name, club, startDate, endDate, startTime, endTime, venue, description, expenses } = req.body
 
     // Log the token for debugging
-    console.log("[DEBUG] Token received for event creation:", req.header("x-auth-token"));
+    console.log("[DEBUG] Token received for event creation:", req.header("x-auth-token"))
 
     // Validate required fields
     if (!name || !club || !startDate || !endDate || !startTime || !endTime || !venue) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields. Please provide all necessary details.",
-      });
+      })
     }
 
     // Validate date and time
-    const start = new Date(`${startDate}T${startTime}`);
-    const end = new Date(`${endDate}T${endTime}`);
+    const start = new Date(`${startDate}T${startTime}`)
+    const end = new Date(`${endDate}T${endTime}`)
     if (start >= end) {
       return res.status(400).json({
         success: false,
         message: "Invalid date or time. Start date/time must be before end date/time.",
-      });
+      })
     }
 
     // Create new event
@@ -868,25 +857,25 @@ app.post("/api/events", auth, validateEventCreation, async (req, res) => {
       description: description || "No description provided.", // Default description
       expenses: expenses || [], // Default to an empty array
       createdBy: req.user.id,
-    });
+    })
 
     // Save event to the database
-    const event = await newEvent.save();
+    const event = await newEvent.save()
 
     // Respond with success
     res.json({
       success: true,
       message: "Event created successfully.",
       event,
-    });
+    })
   } catch (error) {
-    console.error("[ERROR] Error creating event:", error);
+    console.error("[ERROR] Error creating event:", error)
     res.status(500).json({
       success: false,
       message: "Server error. Please try again later.",
-    });
+    })
   }
-});
+})
 
 // @route   GET api/events
 // @desc    Get all events
@@ -929,8 +918,6 @@ app.get("/api/events", async (req, res) => {
       // No token, return all events
       events = await Event.find().sort({ startDate: 1 })
     }
-
-
   } catch (error) {
     console.error("Error fetching events:", error.message || error)
     res.status(500).json({
@@ -940,38 +927,73 @@ app.get("/api/events", async (req, res) => {
   }
 })
 
-
-
-
+// Replace the existing /api/club-events/:id endpoint with this enhanced version
 app.get("/api/club-events/:id", async (req, res) => {
   try {
-    const event = await ClubEvent.findById(req.params.id); // Fetch event by ID
+    const event = await ClubEvent.findById(req.params.id) // Fetch event by ID
     if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" });
+      return res.status(404).json({ success: false, message: "Event not found" })
     }
-    res.json({ success: true, event });
+
+    // Log the event data for debugging
+    console.log("Event data from database:", JSON.stringify(event, null, 2))
+
+    // Ensure all necessary fields are included in the response with proper structure
+    res.json({
+      success: true,
+      event: {
+        ...event.toObject(),
+        prizes: event.prizes || {
+          pool: 0,
+          first: { amount: 0, description: "" },
+          second: { amount: 0, description: "" },
+          third: { amount: 0, description: "" },
+          special: [],
+          perks: [],
+        },
+        schedule: event.schedule || [],
+        faqs: event.faqs || [],
+        startTime: event.startTime || "9:00 AM",
+        endTime: event.endTime || "6:00 PM",
+        poster: event.poster || null,
+        teamMin: event.teamMin || 1,
+        teamMax: event.teamMax || 4,
+        dutyLeave: event.dutyLeave || { available: false, days: 0 },
+        organizer: event.organizer || event.club || "Event Organizer",
+        organizerLogo: event.organizerLogo || null,
+        eligibilityCriteria: event.eligibilityCriteria || [],
+        registrationCount: event.registrationCount || 0,
+        registrationDeadline: event.registrationDeadline || "Open",
+      },
+    })
   } catch (error) {
-    console.error("Error fetching club event:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error fetching club event:", error)
+    res.status(500).json({ success: false, message: "Server error" })
   }
-});
+})
+
+// Declare displayEventDetails function (or import it)
+function displayEventDetails(event) {
+  console.log("Event Details:", event)
+  // Add your logic here to display the event details in the desired format
+}
 
 async function fetchEventDetails(eventId) {
   try {
-    const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`);
+    const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`)
     if (!response.ok) {
-      console.warn(`Event with ID ${eventId} not found.`);
-      return;
+      console.warn(`Event with ID ${eventId} not found.`)
+      return
     }
 
-    const data = await response.json();
+    const data = await response.json()
     if (data.success && data.event) {
-      displayEventDetails(data.event);
+      displayEventDetails(data.event)
     } else {
-      console.warn(`Event with ID ${eventId} not found.`);
+      console.warn(`Event with ID ${eventId} not found.`)
     }
   } catch (error) {
-    console.error("Error fetching event details:", error);
+    console.error("Error fetching event details:", error)
   }
 }
 
@@ -1418,33 +1440,6 @@ app.get("/api/club-events", async (req, res) => {
   }
 })
 
-// @route   GET api/club-events/:id
-// @desc    Get club event by ID
-// @access  Public
-app.get("/api/club-events/:id", async (req, res) => {
-  try {
-    const event = await ClubEvent.findById(req.params.id)
-
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found",
-      })
-    }
-
-    res.json({
-      success: true,
-      event,
-    })
-  } catch (error) {
-    console.error("Error fetching club event:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
 // @route   PUT api/club-events/:id
 // @desc    Update a club event
 // @access  Public
@@ -1575,18 +1570,16 @@ const insertDefaultAccounts = async () => {
   }
 }
 
-
 app.post("/api/events", auth, async (req, res) => {
   try {
-    const newEvent = new Event(req.body);
-    const event = await newEvent.save();
-    res.json({ success: true, event });
+    const newEvent = new Event(req.body)
+    const event = await newEvent.save()
+    res.json({ success: true, event })
   } catch (error) {
-    console.error("Error saving event:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error saving event:", error)
+    res.status(500).json({ success: false, message: "Server error" })
   }
-});
-
+})
 
 // ==================== SERVER STARTUP ====================
 
@@ -1622,13 +1615,12 @@ app.get("/", (req, res) => {
   res.send("Event Management API is running")
 })
 
-
 app.get("/api/approved-events", async (req, res) => {
   try {
-    const events = await Event.find({ status: "approved" }).sort({ startDate: 1 });
-    res.json({ success: true, events });
+    const events = await Event.find({ status: "approved" }).sort({ startDate: 1 })
+    res.json({ success: true, events })
   } catch (error) {
-    console.error("Error fetching approved events:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error fetching approved events:", error)
+    res.status(500).json({ success: false, message: "Server error" })
   }
-});
+})
