@@ -318,50 +318,45 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   
     function showEventDetails(eventId) {
-      // Get event data
-      const event = eventData[eventId]
-      if (!event) return
+      const event = eventData[eventId];
+      if (!event) return;
   
-      // Update event details in the DOM
-      document.getElementById("eventBanner").src = event.banner
-      document.getElementById("organizerLogo").src = event.organizerLogo
-      document.getElementById("organizerName").textContent = event.organizer
+      document.getElementById('eventBanner').src = event.banner;
+      document.getElementById('organizerLogo').src = event.organizerLogo;
+      document.getElementById('organizerName').textContent = event.organizer;
   
-      // Update event tags
-      const eventTagsContainer = document.getElementById("eventTags")
-      eventTagsContainer.innerHTML = ""
-      event.tags.forEach((tag) => {
-        const tagElement = document.createElement("span")
-        tagElement.className = "tag"
-        tagElement.textContent = tag
-        eventTagsContainer.appendChild(tagElement)
-      })
+      const eventTagsContainer = document.getElementById('eventTags');
+      eventTagsContainer.innerHTML = '';
+      event.tags.forEach(tag => {
+          const tagElement = document.createElement('span');
+          tagElement.className = 'tag';
+          tagElement.textContent = tag;
+          eventTagsContainer.appendChild(tagElement);
+      });
   
-      document.getElementById("eventTitle").textContent = event.title
-      document.getElementById("eventDescription").innerHTML = event.description
-      document.getElementById("eventDate").textContent = event.date
-      document.getElementById("eventTime").textContent = event.time
-      document.getElementById("eventVenue").textContent = event.venue
-      document.getElementById("teamSize").textContent = event.teamSize
-      document.getElementById("prizePool").textContent = event.prizePool
-      document.getElementById("dutyLeave").textContent = event.dutyLeave
-      document.getElementById("registrationCount").innerHTML =
-        `<i class="fas fa-user-check"></i> ${event.registrationCount}`
-      document.getElementById("registrationDeadline").innerHTML =
-        `<i class="fas fa-hourglass-half"></i> ${event.registrationDeadline}`
+      document.getElementById('eventTitle').textContent = event.title;
+      document.getElementById('eventDescription').innerHTML = event.description;
+      document.getElementById('eventDate').textContent = event.date;
+      document.getElementById('eventTime').textContent = event.time;
+      document.getElementById('eventVenue').textContent = event.venue;
+      document.getElementById('teamSize').textContent = event.teamSize;
+      document.getElementById('prizePool').textContent = event.prizePool;
+      document.getElementById('dutyLeave').textContent = event.dutyLeave;
+      document.getElementById('registrationCount').innerHTML = `<i class="fas fa-user-check"></i> ${event.registrationCount}`;
+      document.getElementById('registrationDeadline').innerHTML = `<i class="fas fa-hourglass-half"></i> ${event.registrationDeadline}`;
   
-      // Update modal event titles
-      document.getElementById("modalEventTitle").textContent = event.title
-      document.getElementById("successEventTitle").textContent = event.title
-      document.getElementById("confirmEventDate").textContent = event.date
+      document.getElementById('modalEventTitle').textContent = event.title;
+      document.getElementById('successEventTitle').textContent = event.title;
+      document.getElementById('confirmEventDate').textContent = event.date;
   
-      // Show event detail view
-      eventDetailView.classList.add("active")
-      document.body.style.overflow = "hidden"
+      eventDetailView.classList.add('active');
+      document.body.style.overflow = 'hidden';
   
-      // Update countdown timer for this event
-      updateCountdownForEvent(event.date)
-    }
+      updateCountdownForEvent(event.date);
+  }
+  window.showEventDetails = showEventDetails;
+  
+    
   
     // Tab Navigation in Event Detail View
     const tabBtns = document.querySelectorAll(".tab-btn")
@@ -384,51 +379,41 @@ document.addEventListener("DOMContentLoaded", () => {
   
     // Countdown Timer
     function updateCountdownForEvent(eventDateStr) {
-      // Parse the event date string (e.g., "May 15-16, 2023")
-      const dateParts = eventDateStr.split(" ")
-      const month = dateParts[0]
-      const day = Number.parseInt(dateParts[1].split("-")[0])
-      const year = Number.parseInt(dateParts[2].replace(",", ""))
-  
-      const eventDate = new Date(`${month} ${day}, ${year} 09:00:00`).getTime()
-  
-      // Clear any existing interval
-      if (window.countdownInterval) {
-        clearInterval(window.countdownInterval)
-      }
-  
+      const date = new Date(eventDateStr);
+      if (isNaN(date)) return;
+    
+      const eventDate = date.getTime();
+    
+      if (window.countdownInterval) clearInterval(window.countdownInterval);
+    
       function updateCountdown() {
-        const now = new Date().getTime()
-        const distance = eventDate - now
-  
-        // If the event date is in the past, show zeros
+        const now = new Date().getTime();
+        const distance = eventDate - now;
+    
         if (distance < 0) {
-          document.getElementById("days").textContent = "00"
-          document.getElementById("hours").textContent = "00"
-          document.getElementById("minutes").textContent = "00"
-          document.getElementById("seconds").textContent = "00"
-          return
+          document.getElementById('days').textContent = '00';
+          document.getElementById('hours').textContent = '00';
+          document.getElementById('minutes').textContent = '00';
+          document.getElementById('seconds').textContent = '00';
+          return;
         }
-  
-        // Calculate days, hours, minutes, seconds
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000)
-  
-        // Add leading zeros
-        document.getElementById("days").textContent = days < 10 ? `0${days}` : days
-        document.getElementById("hours").textContent = hours < 10 ? `0${hours}` : hours
-        document.getElementById("minutes").textContent = minutes < 10 ? `0${minutes}` : minutes
-        document.getElementById("seconds").textContent = seconds < 10 ? `0${seconds}` : seconds
+    
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+        document.getElementById('days').textContent = days < 10 ? `0${days}` : days;
+        document.getElementById('hours').textContent = hours < 10 ? `0${hours}` : hours;
+        document.getElementById('minutes').textContent = minutes < 10 ? `0${minutes}` : minutes;
+        document.getElementById('seconds').textContent = seconds < 10 ? `0${seconds}` : seconds;
       }
-  
-      // Update countdown immediately
-      updateCountdown()
-  
-      // Update countdown every second
-      window.countdownInterval = setInterval(updateCountdown, 1000)
+    
+      updateCountdown();
+      window.countdownInterval = setInterval(updateCountdown, 1000);
     }
+    
+    window.updateCountdownForEvent = updateCountdownForEvent;
   
     // Bookmark Button
     const bookmarkBtn = document.getElementById("bookmarkBtn")
@@ -767,92 +752,82 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   // Add this function to render mock events when no real events are available
-  function renderMockEvents() {
-    const container = document.querySelector("#dynamic-events")
-    container.innerHTML = ""
-  
-    // Mock event data
-    const mockEvents = [
-      {
-        name: "Hack The Grid – LUKSO",
-        club: "Blockchain Club",
-        department: "Computer Science",
-        venue: "Virtual Event",
-        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        status: "upcoming",
-      },
-      {
-        name: "DevYug 2023",
-        club: "Tech Community",
-        department: "Engineering",
-        venue: "Main Auditorium",
-        startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-        status: "upcoming",
-      },
-      {
-        name: "AI Workshop",
-        club: "AI Research Group",
-        department: "Data Science",
-        venue: "Lab Complex",
-        startDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-        status: "upcoming",
-      },
-    ]
-  
-    mockEvents.forEach((event) => {
-      const card = document.createElement("div")
-      card.className = "event-card"
-      card.setAttribute("data-event-id", "mock-" + Math.random().toString(36).substr(2, 9))
-  
-      card.innerHTML = `
-          <div class="event-card-header">
-            <h3>${event.name}</h3>
-            <p class="event-type">${event.club || "Hackathon"}</p>
-          </div>
-          <div class="event-card-actions">
-            <a href="#" class="btn-link">
-              <i class="fas fa-link"></i>
-            </a>
-            <a href="#" class="btn-social">
-              <i class="fab fa-twitter"></i>
-            </a>
-          </div>
-          <div class="event-card-content">
-            <div class="event-themes">
-              <span class="theme-label">THEME</span>
-              <div class="theme-tags">
-                <span class="theme-tag">${event.department || "TECHNOLOGY"}</span>
-                <span class="theme-tag">${event.club || "INNOVATION"}</span>
-              </div>
-            </div>
-            <div class="event-participants">
-              <div class="participant-avatars">
-                <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Participant" onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
-                <img src="https://randomuser.me/api/portraits/women/42.jpg" alt="Participant" onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
-                <img src="https://randomuser.me/api/portraits/men/43.jpg" alt="Participant" onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
-              </div>
-              <span class="participant-count">+${Math.floor(Math.random() * 100) + 50} interested</span>
-            </div>
-            <div class="event-status-tags">
-              <span class="status-tag">${event.venue}</span>
-              <span class="status-tag">${isUpcoming(event.startDate) ? "UPCOMING" : "ONGOING"}</span>
-              <span class="status-tag">STARTS ${formatDate(event.startDate)}</span>
-            </div>
-            <a href="#" class="btn-notify">Notify me</a>
-          </div>
-        `
-  
-      container.appendChild(card)
-  
-      // Add event listener to show event details when clicked
-      card.addEventListener("click", () => {
-        if (typeof showEventDetails === "function") {
-          // If the showEventDetails function exists, call it with a default ID
-          showEventDetails("techfest-2023")
+function renderMockEvents() {
+  const container = document.querySelector("#dynamic-events");
+  container.innerHTML = "";
+
+  // Mock event data
+  const mockEvents = [
+    {
+      _id: "mock1",
+      name: "Hack The Grid – LUKSO",
+      club: "Blockchain Club",
+      department: "Computer Science",
+      venue: "Virtual Event",
+      startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      endDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000), // 8 days from now
+      description: "A 48-hour hackathon focused on blockchain innovation.",
+      prizes: [
+        { title: "First Prize", amount: 200000, description: "₹2,00,000 cash prize for the winning team." },
+        { title: "Second Prize", amount: 100000, description: "₹1,00,000 cash prize for the runner-up." }
+      ],
+      schedule: [
+        {
+          date: "April 20, 2025",
+          activities: [
+            { time: "9:00 AM", title: "Kickoff", description: "Welcome and problem statement reveal." },
+            { time: "11:00 AM", title: "Workshop: Blockchain Basics", description: "Hosted by LUKSO experts." }
+          ]
+        },
+        {
+          date: "April 21, 2025",
+          activities: [
+            { time: "3:00 PM", title: "Submission Deadline", description: "All projects must be submitted." },
+            { time: "5:00 PM", title: "Closing Ceremony", description: "Winners announced and prizes distributed." }
+          ]
         }
-      })
-    })
-  }
+      ]
+    },
+    // Add more mock events as needed
+  ];
+
+  mockEvents.forEach(event => {
+    const card = document.createElement("div");
+    card.className = "event-card";
+    card.setAttribute("data-event-id", event._id);
+
+    card.innerHTML = `
+      <div class="event-card-header">
+        <h3>${event.name}</h3>
+        <p class="event-type">${event.club}</p>
+      </div>
+      <div class="event-card-actions">
+        <a href="#" class="btn-link">
+          <i class="fas fa-link"></i>
+        </a>
+        <a href="#" class="btn-social">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </div>
+      <div class="event-card-content">
+        <div class="event-themes">
+          <span class="theme-label">THEME</span>
+          <div class="theme-tags">
+            <span class="theme-tag">${event.department}</span>
+            <span class="theme-tag">${event.club}</span>
+          </div>
+        </div>
+        <div class="event-status-tags">
+          <span class="status-tag">${event.venue}</span>
+          <span class="status-tag">STARTS ${formatDate(event.startDate)}</span>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener("click", () => displayEventDetails(event));
+    container.appendChild(card);
+  });
+}
   
   // Update the renderEvents function to handle different data structures
   function renderEvents(events) {
@@ -917,169 +892,128 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
   
+  app.get("/api/club-events/:id", async (req, res) => {
+    try {
+      const event = await ClubEvent.findById(req.params.id); // Use ClubEvent model
+      if (!event) {
+        return res.status(404).json({ success: false, message: "Event not found" });
+      }
+  
+      res.json({
+        success: true,
+        event: {
+          ...event.toObject(),
+          prizes: event.prizes || { pool: 0 }, // Ensure prizes are included
+          schedule: event.schedule || [], // Include schedule if available
+          startTime: event.startTime || "9:00 AM",
+          endTime: event.endTime || "6:00 PM",
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching club event:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  });
+  
   // Add a new function to fetch event details by ID
   async function fetchEventDetails(eventId) {
     try {
-      // First try to get the event from the database
-      let event = null
-      let response = null
-  
-      // Try regular events endpoint
-      try {
-        response = await fetch(`http://localhost:5000/api/events/${eventId}`)
-        const data = await response.json()
-        if (data.success && data.event) {
-          event = data.event
-        }
-      } catch (err) {
-        console.log("Not found in regular events, trying club events...")
+      const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`); // Correct endpoint
+      if (!response.ok) {
+        console.warn(`Event with ID ${eventId} not found.`);
+        return;
       }
   
-      // If not found, try club events endpoint
-      if (!event) {
-        try {
-          response = await fetch(`http://localhost:5000/api/club-events/${eventId}`)
-          const data = await response.json()
-          if (data.success && data.event) {
-            event = data.event
-          }
-        } catch (err) {
-          console.log("Not found in club events either...")
-        }
-      }
-  
-      // If we found the event, display it
-      if (event) {
-        displayEventDetails(event)
+      const data = await response.json();
+      if (data.success && data.event) {
+        displayEventDetails(data.event);
       } else {
-        // Fallback to mock data if event not found
-        console.log("Event not found in database, using fallback mock data")
-        showEventDetails(eventId.includes("mock-") ? "techfest-2023" : eventId)
+        console.warn(`Event with ID ${eventId} not found.`);
       }
-    } catch (err) {
-      console.error("Error fetching event details:", err)
-      // Fallback to mock data on error
-      showEventDetails("techfest-2023")
+    } catch (error) {
+      console.error("Error fetching event details:", error);
     }
   }
   
+  
+  
   // Add a new function to display event details from database
   function displayEventDetails(event) {
-    // Get the event detail view element
-    const eventDetailView = document.getElementById("eventDetailView")
+    const eventDetailView = document.getElementById("eventDetailView");
   
     // Set default values for missing fields
-    const defaultBanner = "https://source.unsplash.com/random/1200x400/?hackathon"
-    const defaultLogo = "https://source.unsplash.com/random/100x100/?tech"
+    const defaultBanner = "https://source.unsplash.com/random/1200x400/?hackathon";
+    const defaultLogo = "https://source.unsplash.com/random/100x100/?tech";
   
-    // Format dates and times
-    const startDate = new Date(event.startDate)
-    const endDate = new Date(event.endDate)
-    const formattedDate = formatDateRange(startDate, endDate)
-    const formattedTime = `${event.startTime || "9:00 AM"} - ${event.endTime || "6:00 PM"}`
+    const startDate = new Date(event.startDate);
+    const endDate = new Date(event.endDate);
+    const formattedDate = formatDateRange(startDate, endDate);
   
     // Update event details in the DOM
-    document.getElementById("eventBanner").src = event.poster || event.banner || defaultBanner
-    document.getElementById("organizerLogo").src = event.organizerLogo || defaultLogo
-    document.getElementById("organizerName").textContent = event.club || event.organizer || "Event Organizer"
+    document.getElementById("eventBanner").src = event.banner || defaultBanner;
+    document.getElementById("organizerLogo").src = event.organizerLogo || defaultLogo;
+    document.getElementById("organizerName").textContent = event.organizer || "Event Organizer";
   
     // Update event tags
-    const eventTagsContainer = document.getElementById("eventTags")
-    eventTagsContainer.innerHTML = ""
+    const eventTagsContainer = document.getElementById("eventTags");
+    eventTagsContainer.innerHTML = "";
   
-    // Create tags from available data
-    const tags = []
-    if (event.department) tags.push(event.department)
-    if (event.theme) tags.push(event.theme)
-    if (event.expectItems && event.expectItems.length > 0) {
-      tags.push(...event.expectItems.slice(0, 2))
-    }
-  
-    // If no tags found, add default tags
-    if (tags.length === 0) {
-      tags.push("Technology", "Innovation")
-    }
-  
-    // Add tags to the DOM
+    const tags = [event.department, event.theme, "Technology", "Innovation"];
     tags.forEach((tag) => {
-      const tagElement = document.createElement("span")
-      tagElement.className = "tag"
-      tagElement.textContent = tag
-      eventTagsContainer.appendChild(tagElement)
-    })
+      if (tag) {
+        const tagElement = document.createElement("span");
+        tagElement.className = "tag";
+        tagElement.textContent = tag;
+        eventTagsContainer.appendChild(tagElement);
+      }
+    });
   
-    // Update event details
-    document.getElementById("eventTitle").textContent = event.name
+    document.getElementById("eventTitle").textContent = event.title;
   
-    // Format description based on what's available
-    let description = ""
-    if (event.description) {
-      description = event.description
-    } else if (event.about) {
-      description = `<p>${event.about}</p>`
-    }
-  
-    // Add eligibility criteria if available
-    if (event.eligibilityCriteria && event.eligibilityCriteria.length > 0) {
-      description += `<h3>Eligibility Criteria:</h3><ul>`
+    // Format description
+    let description = event.description || "<p>No description available.</p>";
+    if (event.eligibilityCriteria) {
+      description += "<h3>Eligibility Criteria:</h3><ul>";
       event.eligibilityCriteria.forEach((criteria) => {
-        description += `<li>${criteria}</li>`
-      })
-      description += `</ul>`
+        description += `<li>${criteria}</li>`;
+      });
+      description += "</ul>";
     }
+    document.getElementById("eventDescription").innerHTML = description;
   
-    // Add what to expect if available
-    if (event.expectItems && event.expectItems.length > 0) {
-      description += `<h3>What to Expect:</h3><ul>`
-      event.expectItems.forEach((item) => {
-        description += `<li>${item}</li>`
-      })
-      description += `</ul>`
-    }
-  
-    document.getElementById("eventDescription").innerHTML = description
-    document.getElementById("eventDate").textContent = formattedDate
-    document.getElementById("eventTime").textContent = event.time
-    document.getElementById("eventVenue").textContent = event.venue
+    document.getElementById("eventDate").textContent = formattedDate;
+    document.getElementById("eventTime").textContent = event.time || "N/A";
+    document.getElementById("eventVenue").textContent = event.venue || "N/A";
   
     // Team size
-    const teamSize =
-      event.teamMin && event.teamMax ? `${event.teamMin}-${event.teamMax} Members` : event.teamSize || "1-5 Members"
-    document.getElementById("teamSize").textContent = teamSize
+    document.getElementById("teamSize").textContent = event.teamSize || "N/A";
   
     // Prize pool
-    const prizePool =
-      event.prizes && event.prizes.pool ? `₹${event.prizes.pool.toLocaleString()}` : event.prizePool || "TBD"
-    document.getElementById("prizePool").textContent = prizePool
+    document.getElementById("prizePool").textContent = event.prizes?.pool
+      ? `₹${event.prizes.pool.toLocaleString()}`
+      : "N/A";
   
     // Duty leave
-    const dutyLeave =
-      event.dutyLeave && event.dutyLeave.available
-        ? `Available (${event.dutyLeave.days} Days)`
-        : event.hasDL
-          ? "Available"
-          : "Not Available"
-    document.getElementById("dutyLeave").textContent = dutyLeave
+    const dutyLeave = event.dutyLeave?.available
+      ? `Available (${event.dutyLeave.days} Days)`
+      : "Not Available";
+    document.getElementById("dutyLeave").textContent = dutyLeave;
   
     // Registration count
-    const regCount = `<i class="fas fa-user-check"></i> ${event.registrationCount || "200 Interested"}`
-    document.getElementById("registrationCount").innerHTML = regCount
+    document.getElementById("registrationCount").innerHTML = `<i class="fas fa-user-check"></i> ${
+      event.registrationCount || "N/A"
+    }`;
   
     // Registration deadline
-    const deadline = `<i class="fas fa-hourglass-half"></i> ${event.registrationDeadline || "Opens Soon"}`
-    document.getElementById("registrationDeadline").innerHTML = deadline
-  
-    // Update modal event titles
-    document.getElementById("modalEventTitle").textContent = event.name
-    document.getElementById("successEventTitle").textContent = event.name
-    document.getElementById("confirmEventDate").textContent = formattedDate
+    document.getElementById("registrationDeadline").innerHTML = `<i class="fas fa-hourglass-half"></i> ${
+      event.registrationDeadline || "Opens Soon"
+    }`;
   
     // Show event detail view
-    eventDetailView.classList.add("active")
-    document.body.style.overflow = "hidden"
+    eventDetailView.classList.add("active");
+    document.body.style.overflow = "hidden";
   
-    // Update countdown timer for this event
-    updateCountdownForEvent(startDate)
+    updateCountdownForEvent(event.startDate);
   }
   
   // Helper function to format date range
@@ -1165,3 +1099,89 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 3000)
   }
   
+  fetch('http://localhost:5000/api/events')
+  .then(response => {
+      if (!response.ok) {
+          throw new Error('Failed to fetch events');
+      }
+      return response.json();
+  })
+  .then(events => {
+      console.log(events); // Here you can display or process all the events
+      // Example: Display events on the page
+      events.forEach(event => {
+          console.log(event.name); // Or however you want to display the event
+      });
+  })
+  .catch(error => {
+      console.error(error);
+  });
+
+
+  let eventData = {}; // Will be filled from API
+
+  async function fetchAndDisplayEvents() {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('https://your-backend-domain.com/api/events', {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+  
+      const data = await response.json();
+  
+      if (data.success) {
+        const events = data.events;
+        const eventContainer = document.getElementById('eventContainer'); // ID of the div where cards go
+  
+        eventContainer.innerHTML = ''; // Clear existing cards
+        eventData = {}; // Clear previous
+  
+        events.forEach(event => {
+          const eventId = event._id;
+          eventData[eventId] = {
+            title: event.name,
+            organizer: event.club,
+            banner: event.banner || `https://source.unsplash.com/random/1200x400/?event,${event.club}`,
+            organizerLogo: event.organizerLogo || `https://source.unsplash.com/random/100x100/?club,${event.club}`,
+            tags: [event.department, event.status],
+            date: formatDate(event.startDate),
+            time: `${event.startTime || "N/A"} - ${event.endTime || "N/A"}`,
+            venue: event.venue || "N/A",
+            teamSize: event.teamMin && event.teamMax ? `${event.teamMin}-${event.teamMax} Members` : "N/A",
+            prizePool: event.prizes?.pool ? `₹${event.prizes.pool.toLocaleString()}` : "N/A", // Ensure prizes are mapped
+            dutyLeave: event.dutyLeave?.available ? `Available (${event.dutyLeave.days} Days)` : "Not Available",
+            registrationCount: event.registrationCount || "N/A",
+            registrationDeadline: formatDate(event.endDate),
+            description: event.description || "<p>No description available.</p>",
+          };
+  
+          // Create card dynamically
+          const card = document.createElement('div');
+          card.className = 'event-card';
+          card.setAttribute('data-event-id', eventId);
+          card.innerHTML = `
+            <img src="https://source.unsplash.com/random/400x200/?${event.club}" alt="${event.name}" />
+            <h3>${event.name}</h3>
+            <p>${event.club}</p>
+          `;
+  
+          card.addEventListener('click', () => showEventDetails(eventId));
+          eventContainer.appendChild(card);
+        });
+      } else {
+        showToast('Failed to fetch events');
+      }
+    } catch (err) {
+      console.error('Error fetching events:', err);
+      showToast('Something went wrong');
+    }
+  }
+
+// Utility to format date (YYYY-MM-DD to readable format)
+function formatDate(isoDate) {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+

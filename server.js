@@ -19,206 +19,8 @@ const MONGODB_URI =
 
 // Middleware
 app.use(cors())
-
 app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ extended: true, limit: "50mb" }))
-
-// Modify the /api/events endpoint to ensure it returns events even without authentication
-app.get("/api/events", async (req, res) => {
-  try {
-    // Get all events without filtering by user
-    const events = await Event.find().sort({ startDate: 1 })
-
-    // Return events as a raw array for easier frontend processing
-    res.status(200).json(events)
-  } catch (error) {
-    console.error("Error fetching events:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    })
-  }
-})
-
-// Add a new endpoint to get all events (both club and department events)
-app.get("/api/all-events", async (req, res) => {
-  try {
-    // Get all events from both collections
-    const departmentEvents = await Event.find().sort({ startDate: 1 })
-    const clubEvents = await ClubEvent.find().sort({ startDate: 1 })
-
-    // Combine the events
-    const allEvents = [...departmentEvents, ...clubEvents]
-
-    res.status(200).json(allEvents)
-  } catch (error) {
-    console.error("Error fetching all events:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    })
-  }
-})
-
-// Add a test event if the database is empty (for demonstration purposes)
-app.get("/api/seed-test-event", async (req, res) => {
-  try {
-    // Check if there are any events
-    const eventCount = await Event.countDocuments()
-
-    if (eventCount === 0) {
-      // Create a test event
-      const testEvent = new Event({
-        department: "Computer Science",
-        name: "Test Hackathon",
-        club: "Tech Club",
-        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        endDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000), // 8 days from now
-        startTime: "09:00",
-        endTime: "17:00",
-        venue: "Main Auditorium",
-        description: "This is a test event for demonstration purposes.",
-        status: "approved",
-        createdBy: "6507f1a5c52e8b3e3c9d1b5a", // A placeholder ID
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-
-      await testEvent.save()
-      res.status(200).json({
-        success: true,
-        message: "Test event created successfully",
-        event: testEvent,
-      })
-    } else {
-      res.status(200).json({
-        success: true,
-        message: "Events already exist, no test event created",
-        count: eventCount,
-      })
-    }
-  } catch (error) {
-    console.error("Error creating test event:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    })
-  }
-})
-
-// Add a new endpoint to get event by ID (works for both collections)
-app.get("/api/events/:id", async (req, res) => {
-  try {
-    // First try to find in the regular events collection
-    let event = await Event.findById(req.params.id)
-
-    // If not found, try the club events collection
-    if (!event) {
-      event = await ClubEvent.findById(req.params.id)
-    }
-
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found",
-      })
-    }
-
-    res.json({
-      success: true,
-      event,
-    })
-  } catch (error) {
-    console.error("Error fetching event:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    })
-  }
-})
-
-// Add a new endpoint to create a more detailed test event
-app.get("/api/seed-detailed-test-event", async (req, res) => {
-  try {
-    // Check if there are any events
-    const eventCount = await Event.countDocuments()
-
-    if (eventCount === 0) {
-      // Create a detailed test event
-      const testEvent = new Event({
-        department: "Computer Science",
-        name: "Code For Good 2023",
-        club: "NGO Alliance",
-        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        endDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000), // 9 days from now
-        startTime: "10:00 AM",
-        endTime: "6:00 PM",
-        venue: "Community Center, Mumbai",
-        description: `
-          <p>Code For Good is a hackathon with a purpose - to create technology solutions for non-profit organizations and social causes. This event brings together developers, designers, and problem solvers to address real challenges faced by NGOs.</p>
-          
-          <p>This 3-day event will be held in Mumbai and will feature direct interaction with NGO representatives who will present their challenges to the participants.</p>
-          
-          <p>This year's focus areas are <strong>Healthcare</strong> and <strong>Education</strong>, with specific problem statements provided by our partner NGOs.</p>
-          
-          <h3>What to Expect:</h3>
-          <ul>
-              <li>Real-world problem statements from NGOs</li>
-              <li>Mentorship from tech and social sector experts</li>
-              <li>Opportunity to implement your solution</li>
-              <li>Networking with social impact organizations</li>
-              <li>Prizes and implementation grants</li>
-          </ul>
-          
-          <h3>Eligibility Criteria:</h3>
-          <ul>
-              <li>Open to students and professionals</li>
-              <li>Teams of 3-5 members</li>
-              <li>Passion for social impact</li>
-              <li>Diverse skills (coding, design, domain knowledge)</li>
-          </ul>
-        `,
-        status: "approved",
-        createdBy: "6507f1a5c52e8b3e3c9d1b5a", // A placeholder ID
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        prizePool: "₹75,000 + Implementation",
-        teamSize: "3-5 Members",
-        registrationCount: "200 Interested",
-        registrationDeadline: "Opens April 15",
-        banner: "https://source.unsplash.com/random/1200x400/?social,impact",
-        organizerLogo: "https://source.unsplash.com/random/100x100/?ngo",
-        organizer: "NGO Alliance",
-        tags: ["Social Impact", "Healthcare", "Education"],
-        dutyLeave: "Available (3 Days)",
-      })
-
-      await testEvent.save()
-      res.status(200).json({
-        success: true,
-        message: "Detailed test event created successfully",
-        event: testEvent,
-      })
-    } else {
-      res.status(200).json({
-        success: true,
-        message: "Events already exist, no test event created",
-        count: eventCount,
-      })
-    }
-  } catch (error) {
-    console.error("Error creating detailed test event:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    })
-  }
-})
 
 // ==================== SCHEMAS & MODELS ====================
 
@@ -1019,27 +821,38 @@ app.post("/api/auth/department/login", validateLogin, async (req, res) => {
 // @access  Private
 app.post("/api/events", auth, validateEventCreation, async (req, res) => {
   try {
-    const { department, name, club, startDate, endDate, startTime, endTime, venue, description, expenses } = req.body
+    const {
+      department,
+      name,
+      club,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      venue,
+      description,
+      expenses,
+    } = req.body;
 
     // Log the token for debugging
-    console.log("[DEBUG] Token received for event creation:", req.header("x-auth-token"))
+    console.log("[DEBUG] Token received for event creation:", req.header("x-auth-token"));
 
     // Validate required fields
     if (!name || !club || !startDate || !endDate || !startTime || !endTime || !venue) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields. Please provide all necessary details.",
-      })
+      });
     }
 
     // Validate date and time
-    const start = new Date(`${startDate}T${startTime}`)
-    const end = new Date(`${endDate}T${endTime}`)
+    const start = new Date(`${startDate}T${startTime}`);
+    const end = new Date(`${endDate}T${endTime}`);
     if (start >= end) {
       return res.status(400).json({
         success: false,
         message: "Invalid date or time. Start date/time must be before end date/time.",
-      })
+      });
     }
 
     // Create new event
@@ -1055,71 +868,118 @@ app.post("/api/events", auth, validateEventCreation, async (req, res) => {
       description: description || "No description provided.", // Default description
       expenses: expenses || [], // Default to an empty array
       createdBy: req.user.id,
-    })
+    });
 
     // Save event to the database
-    const event = await newEvent.save()
+    const event = await newEvent.save();
 
     // Respond with success
     res.json({
       success: true,
       message: "Event created successfully.",
       event,
-    })
+    });
   } catch (error) {
-    console.error("[ERROR] Error creating event:", error)
+    console.error("[ERROR] Error creating event:", error);
     res.status(500).json({
       success: false,
       message: "Server error. Please try again later.",
-    })
+    });
   }
-})
+});
 
 // @route   GET api/events
 // @desc    Get all events
 // @access  Private
-// app.get("/api/events", async (req, res) => {
-//   try {
-//     let events
+app.get("/api/events", async (req, res) => {
+  try {
+    let events
 
-//     // Check if there's a token
-//     const token = req.header("x-auth-token")
+    // Check if there's a token
+    const token = req.header("x-auth-token")
 
-//     if (token) {
-//       try {
-//         // Verify token
-//         const decoded = jwt.verify(token, JWT_SECRET)
-//         const user = decoded.user
+    if (token) {
+      try {
+        // Verify token
+        const decoded = jwt.verify(token, JWT_SECRET)
+        const user = decoded.user
 
-//         // If user is admin, get all events
-//         if (user.type === "admin") {
-//           events = await Event.find().sort({ startDate: 1 })
-//         }
-//         // If user is department, get only their events
-//         else if (user.type === "department") {
-//           events = await Event.find({ department: user.department }).sort({ startDate: 1 })
-//         }
-//       } catch (error) {
-//         // If token verification fails, return all events
-//         events = await Event.find().sort({ startDate: 1 })
-//       }
-//     } else {
-//       // No token, return all events
-//       events = await Event.find().sort({ startDate: 1 })
-//     }
+        // If user type is missing
+        if (!user.type) {
+          return res.status(403).json({
+            success: false,
+            message: "User type is not defined",
+          })
+        }
 
-//     res.json({
-//       success: true,
-//       events,
-//     })
-//   } catch (error) {
-//     console.error("Error fetching events:", error)
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//     })
-//   }
-// })
+        // If user is admin, get all events
+        if (user.type === "admin") {
+          events = await Event.find().sort({ startDate: 1 })
+        }
+        // If user is department, get only their events
+        else if (user.type === "department") {
+          events = await Event.find({ department: user.department }).sort({ startDate: 1 })
+        }
+      } catch (error) {
+        console.error("Error verifying token:", error)
+        // If token verification fails, return all events
+        events = await Event.find().sort({ startDate: 1 })
+      }
+    } else {
+      // No token, return all events
+      events = await Event.find().sort({ startDate: 1 })
+    }
+
+    res.status(200).json({
+      success: true,
+      events,
+    })
+  } catch (error) {
+    console.error("Error fetching events:", error.message || error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    })
+  }
+})
+
+res.status(200).json({
+  success: true,
+  events,
+})
+console.log(events);  // Add this to log the events to the console
+
+app.get("/api/club-events/:id", async (req, res) => {
+  try {
+    const event = await ClubEvent.findById(req.params.id); // Fetch event by ID
+    if (!event) {
+      return res.status(404).json({ success: false, message: "Event not found" });
+    }
+    res.json({ success: true, event });
+  } catch (error) {
+    console.error("Error fetching club event:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+async function fetchEventDetails(eventId) {
+  try {
+    const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`);
+    if (!response.ok) {
+      console.warn(`Event with ID ${eventId} not found.`);
+      return;
+    }
+
+    const data = await response.json();
+    if (data.success && data.event) {
+      displayEventDetails(data.event);
+    } else {
+      console.warn(`Event with ID ${eventId} not found.`);
+    }
+  } catch (error) {
+    console.error("Error fetching event details:", error);
+  }
+}
 
 // @route   GET api/events/:id
 // @desc    Get event by ID
@@ -1165,32 +1025,6 @@ app.get("/api/events/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error",
-    })
-  }
-})
-
-// Add a new endpoint to get club event by ID
-app.get("/api/club-events/:id", async (req, res) => {
-  try {
-    const event = await ClubEvent.findById(req.params.id)
-
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found",
-      })
-    }
-
-    res.json({
-      success: true,
-      event,
-    })
-  } catch (error) {
-    console.error("Error fetching club event:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
     })
   }
 })
@@ -1747,26 +1581,18 @@ const insertDefaultAccounts = async () => {
   }
 }
 
+
 app.post("/api/events", auth, async (req, res) => {
   try {
-    const newEvent = new Event(req.body)
-    const event = await newEvent.save()
-    res.json({ success: true, event })
+    const newEvent = new Event(req.body);
+    const event = await newEvent.save();
+    res.json({ success: true, event });
   } catch (error) {
-    console.error("Error saving event:", error)
-    res.status(500).json({ success: false, message: "Server error" })
+    console.error("Error saving event:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-})
+});
 
-app.get("/api/approved-events", async (req, res) => {
-  try {
-    const events = await Event.find({ status: "approved" }).sort({ startDate: 1 })
-    res.json({ success: true, events })
-  } catch (error) {
-    console.error("Error fetching approved events:", error)
-    res.status(500).json({ success: false, message: "Server error" })
-  }
-})
 
 // ==================== SERVER STARTUP ====================
 
@@ -1802,12 +1628,13 @@ app.get("/", (req, res) => {
   res.send("Event Management API is running")
 })
 
+
 app.get("/api/approved-events", async (req, res) => {
   try {
-    const events = await Event.find({ status: "approved" }).sort({ startDate: 1 })
-    res.json({ success: true, events })
+    const events = await Event.find({ status: "approved" }).sort({ startDate: 1 });
+    res.json({ success: true, events });
   } catch (error) {
-    console.error("Error fetching approved events:", error)
-    res.status(500).json({ success: false, message: "Server error" })
+    console.error("Error fetching approved events:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-})
+});
