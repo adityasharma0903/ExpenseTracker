@@ -711,7 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
       let events = []
   
       // First try the main events endpoint
-      const mainResponse = await fetch("http://localhost:5000/api/events")
+      const mainResponse = await fetch("http://localhost:5000/api/club-events")
       const mainData = await mainResponse.json()
   
       if (Array.isArray(mainData) && mainData.length > 0) {
@@ -892,33 +892,33 @@ function renderMockEvents() {
     })
   }
   
-  app.get("/api/club-events/:id", async (req, res) => {
-    try {
-      const event = await ClubEvent.findById(req.params.id); // Use ClubEvent model
-      if (!event) {
-        return res.status(404).json({ success: false, message: "Event not found" });
-      }
+  // app.get("/api/club-events/:id", async (req, res) => {
+  //   try {
+  //     const event = await ClubEvent.findById(req.params.id); // Use ClubEvent model
+  //     if (!event) {
+  //       return res.status(404).json({ success: false, message: "Event not found" });
+  //     }
   
-      res.json({
-        success: true,
-        event: {
-          ...event.toObject(),
-          prizes: event.prizes || { pool: 0 }, // Ensure prizes are included
-          schedule: event.schedule || [], // Include schedule if available
-          startTime: event.startTime || "9:00 AM",
-          endTime: event.endTime || "6:00 PM",
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching club event:", error);
-      res.status(500).json({ success: false, message: "Server error" });
-    }
-  });
+  //     res.json({
+  //       success: true,
+  //       event: {
+  //         ...event.toObject(),
+  //         prizes: event.prizes || { pool: 0 }, // Ensure prizes are included
+  //         schedule: event.schedule || [], // Include schedule if available
+  //         startTime: event.startTime || "9:00 AM",
+  //         endTime: event.endTime || "6:00 PM",
+  //       },
+  //     });
+  //   } catch (error) {
+  //     console.error("Error fetching club event:", error);
+  //     res.status(500).json({ success: false, message: "Server error" });
+  //   }
+  // });
   
   // Add a new function to fetch event details by ID
   async function fetchEventDetails(eventId) {
     try {
-      const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`); // Correct endpoint
+      const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`);
       if (!response.ok) {
         console.warn(`Event with ID ${eventId} not found.`);
         return;
