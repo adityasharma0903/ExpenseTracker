@@ -65,6 +65,139 @@ const userSchema = new mongoose.Schema({
   },
 })
 
+const approvedTeamSchema = new mongoose.Schema({
+  eventId: {
+    type: String,
+    required: true,
+  },
+  teamName: {
+    type: String,
+    required: true,
+  },
+  leaderName: {
+    type: String,
+    required: true,
+  },
+  members: [
+    {
+      name: String,
+      email: String,
+      phone: String,
+      department: String,
+    },
+  ],
+  projectIdea: String,
+  techStack: String,
+  approvedAt: {
+    type: Date,
+    default: Date.now,
+  },
+})
+
+const ApprovedTeam = mongoose.model("approvedteams", approvedTeamSchema)
+
+
+app.put("/api/team-registrations/:id/approve", async (req, res) => {
+  try {
+    const teamRegistration = await TeamRegistration.findById(req.params.id)
+
+    if (!teamRegistration) {
+      return res.status(404).json({
+        success: false,
+        message: "Team registration not found",
+      })
+    }
+
+    // ✅ Update team status to approved
+    teamRegistration.status = "approved"
+    if (req.body.notes) teamRegistration.notes = req.body.notes
+    await teamRegistration.save()
+
+    // ✅ Create and store approved team in new collection
+    const leader = teamRegistration.members.find(m => m.isLeader)
+
+    const approvedTeam = new ApprovedTeam({
+      eventId: teamRegistration.eventId,
+      teamName: teamRegistration.teamName,
+      leaderName: leader ? leader.name : "",
+      members: teamRegistration.members,
+      projectIdea: teamRegistration.projectIdea,
+      techStack: teamRegistration.techStack,
+    })
+
+    await approvedTeam.save()
+
+    res.json({
+      success: true,
+      message: "Team approved and added to approved list",
+      teamRegistration,
+    })
+  } catch (error) {
+    console.error("Error approving team registration:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    })
+  }
+})
+
+app.get("/api/approved-teams", async (req, res) => {
+  try {
+    const { eventId } = req.query
+    const query = eventId ? { eventId } : {}
+
+    const teams = await ApprovedTeam.find(query)
+
+    res.json({
+      success: true,
+      teams,
+    })
+  } catch (error) {
+    console.error("Error fetching approved teams:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    })
+  }
+})
+
+app.put("/api/team-registrations/:id/status", async (req, res) => {
+  try {
+    const team = await TeamRegistration.findById(req.params.id);
+    if (!team) {
+      return res.status(404).json({ success: false, message: "Team not found" });
+    }
+
+    const { status } = req.body;
+    if (!["approved", "rejected", "pending"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    team.status = status;
+    await team.save();
+
+    // Auto-create approved entry
+    if (status === "approved") {
+      const ApprovedTeam = mongoose.model("approvedteams"); // or import it properly
+      const leader = team.members.find(m => m.isLeader);
+      await ApprovedTeam.create({
+        eventId: team.eventId,
+        teamName: team.teamName,
+        leaderName: leader ? leader.name : "",
+        members: team.members,
+        projectIdea: team.projectIdea,
+        techStack: team.techStack
+      });
+    }
+
+    res.json({ success: true, message: "Status updated", team });
+  } catch (err) {
+    console.error("Status update error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
 // Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next()

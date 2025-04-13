@@ -12,6 +12,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Display current date
   displayCurrentDate()
+
+  const observer = new MutationObserver(() => {
+    const modal = document.getElementById("event-detail-modal");
+    if (modal && modal.style.display === "block") {
+      activateEventModalTabs();
+    }
+  });
+
+  observer.observe(document.body, { attributes: true, childList: true, subtree: true });
 })
 let eventId = null;
 // Display current date
@@ -707,7 +716,33 @@ async function deleteEvent(eventId) {
     showToast('Error', 'Failed to connect to server', 'error');
   }
 }
+function activateEventModalTabs() {
+  const modal = document.getElementById("event-detail-modal");
 
+  // Tabs and their content
+  const tabs = modal.querySelectorAll(".event-detail-tabs .tab");
+  const tabContents = modal.querySelectorAll(".event-detail-body .tab-content");
+
+  tabs.forEach(tab => {
+    tab.addEventListener("click", function () {
+      const selectedTab = this.getAttribute("data-tab");
+      const targetContentId = `${selectedTab}-tab`;
+
+      // Remove active class from all tabs and contents
+      tabs.forEach(t => t.classList.remove("active"));
+      tabContents.forEach(c => c.classList.remove("active"));
+
+      // Add active to current tab and its content
+      this.classList.add("active");
+      const contentToShow = document.getElementById(targetContentId);
+      if (contentToShow) {
+        contentToShow.classList.add("active");
+      } else {
+        console.warn(`Tab content with ID '${targetContentId}' not found.`);
+      }
+    });
+  });
+}
 // Function to set up event listeners for the detail modal
 function setupDetailModalListeners(eventId) {
   const modal = document.getElementById("event-detail-modal");
@@ -2031,6 +2066,114 @@ function switchModalTab(tabId) {
 }
 
 
+async function loadRegisteredTeams(eventId) {
+  try {
+    const teams = await fetchTeamRegistrations(eventId);
+    const registeredTeamsList = document.getElementById("registered-teams-list");
+
+    if (!registeredTeamsList) {
+      console.warn("registered-teams-list element not found");
+      return;
+    }
+
+    if (teams.length === 0) {
+      registeredTeamsList.innerHTML = `<p>No teams registered yet.</p>`;
+      return;
+    }
+
+    // Render each team card
+    registeredTeamsList.innerHTML = ""; // clear previous list
+
+    teams.forEach((team, index) => {
+      const teamCard = document.createElement("div");
+      teamCard.className = "team-card";
+
+      teamCard.innerHTML = `
+        <div class="team-summary" data-index="${index}">
+          <strong>${team.teamName}</strong> 
+          <span style="color: #555;">(Leader: ${team.leaderName || "N/A"})</span>
+          <i class="fas fa-chevron-down toggle-icon" style="float:right;"></i>
+        </div>
+
+        <div class="team-details hidden">
+          <p><strong>Registration Date:</strong> ${new Date(team.createdAt).toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${team.status}</p>
+          <p><strong>Members:</strong></p>
+          <ul>
+            ${team.members.map(member => `<li>${member.name} (${member.email})</li>`).join("")}
+          </ul>
+
+          <div class="team-actions">
+            <button class="approve-team" data-id="${team._id}"><i class="fas fa-check"></i> Approve</button>
+            <button class="reject-team" data-id="${team._id}"><i class="fas fa-times"></i> Reject</button>
+          </div>
+        </div>
+      `;
+
+      registeredTeamsList.appendChild(teamCard);
+    });
+
+    // Dropdown toggle
+    registeredTeamsList.querySelectorAll(".team-summary").forEach(summary => {
+      summary.addEventListener("click", () => {
+        const details = summary.nextElementSibling;
+        const icon = summary.querySelector(".toggle-icon");
+        details.classList.toggle("hidden");
+        icon.classList.toggle("fa-chevron-down");
+        icon.classList.toggle("fa-chevron-up");
+      });
+    });
+
+    // Approve & Reject
+    registeredTeamsList.querySelectorAll(".approve-team").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        await updateTeamStatus(id, "approved");
+      });
+    });
+
+    registeredTeamsList.querySelectorAll(".reject-team").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        await updateTeamStatus(id, "rejected");
+      });
+    });
+
+  } catch (err) {
+    console.error("Error loading teams:", err);
+    document.getElementById("registered-teams-list").innerHTML = `<p>Error loading teams.</p>`;
+  }
+}
+
+async function fetchApprovedTeams(eventId) {
+  const token = localStorage.getItem("authToken");
+  const response = await fetch(`http://localhost:5000/api/approved-teams?eventId=${eventId}`, {
+    headers: {
+      "x-auth-token": token
+    }
+  });
+
+  const data = await response.json();
+  return data.success ? data.teams : [];
+}
+async function loadApprovedTeams(eventId) {
+  const teams = await fetchApprovedTeams(eventId);
+  const approvedList = document.getElementById("accepted-teams-list");
+
+  if (!approvedList) return;
+
+  if (teams.length === 0) {
+    approvedList.innerHTML = "<p>No approved teams yet.</p>";
+    return;
+  }
+
+  approvedList.innerHTML = teams.map(team => `
+    <div class="team-card">
+      <strong>${team.teamName}</strong> (Leader: ${team.leaderName})
+      <p>${team.members.map(m => m.name).join(", ")}</p>
+    </div>
+  `).join("");
+}
 
 async function openEventDetailModal(id) {
   eventId = id;
@@ -2098,6 +2241,8 @@ async function openEventDetailModal(id) {
     // Fetch and load team registrations
     fetchTeamRegistrations(eventId);
     loadTeamRegistrations(eventId);
+    loadRegisteredTeams(eventId)
+    loadApprovedTeams(eventId)
 
     // Show the first tab (event info)
     switchModalTab('event-info');
@@ -2216,140 +2361,100 @@ async function loadTeamRegistrations(eventId) {
   }
 }
 
-function renderTeamsList(container, teams, listType) {
-  if (teams.length === 0) {
-    if (listType === "pending") {
-      container.innerHTML = '<div class="empty-message">No pending team registrations found.</div>'
-    } else if (listType === "accepted") {
-      container.innerHTML = '<div class="empty-message">No accepted teams yet.</div>'
+async function updateTeamStatus(teamId, newStatus) {
+  const token = localStorage.getItem("authToken");
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast("Status Updated", `Team marked as ${newStatus}`, "success");
+      // Optionally refresh team list
+      const eventId = document.getElementById("btn-edit-event").getAttribute("data-id");
+      loadRegisteredTeams(eventId);
     } else {
-      container.innerHTML = '<div class="empty-message">No teams found with the selected filter.</div>'
+      showToast("Error", data.message || "Failed to update team", "error");
     }
-    return
+  } catch (error) {
+    console.error("Error updating status:", error);
+    showToast("Error", "Server issue", "error");
+  }
+}
+
+
+function renderTeamsList(container, teams, statusContext = "all") {
+  if (!teams || teams.length === 0) {
+    container.innerHTML = `<p>No teams found.</p>`;
+    return;
   }
 
-  container.innerHTML = ""
+  container.innerHTML = ""; // Clear old content
 
-  teams.forEach((team) => {
-    // Find team leader
-    const leader = team.members.find((member) => member.isLeader) || team.members[0]
+  teams.forEach((team, index) => {
+    const teamCard = document.createElement("div");
+    teamCard.className = "team-card";
 
-    const teamItem = document.createElement("div")
-    teamItem.className = "team-item"
-    teamItem.setAttribute("data-team-id", team._id)
-    teamItem.setAttribute("data-status", team.status)
-
-    teamItem.innerHTML = `
-      <div class="team-item-header">
-        <div class="team-name">
-          <i class="fas fa-users"></i> ${team.teamName}
-        </div>
-        <div class="team-leader">
-          <i class="fas fa-user-tie"></i> ${leader.name}
-        </div>
-        <div class="team-status status-${team.status}">
-          ${team.status.charAt(0).toUpperCase() + team.status.slice(1)}
-        </div>
-        <button class="toggle-team-details">
-          <i class="fas fa-chevron-down"></i>
-        </button>
+    teamCard.innerHTML = `
+      <div class="team-summary" data-index="${index}">
+        <strong>${team.teamName}</strong> 
+        <span style="color: #555;">(Leader: ${team.leaderName || "N/A"})</span>
+        <i class="fas fa-chevron-down toggle-icon" style="float:right;"></i>
       </div>
-      <div class="team-item-details">
-        <div class="team-members">
-          <h4>Team Members (${team.members.length})</h4>
-          <ul>
-            ${team.members
-              .map(
-                (member) => `
-              <li>
-                <div class="member-name">${member.name} ${member.isLeader ? '<span class="leader-badge">Leader</span>' : ""}</div>
-                <div class="member-info">
-                  <span><i class="fas fa-envelope"></i> ${member.email}</span>
-                  <span><i class="fas fa-phone"></i> ${member.phone}</span>
-                  <span><i class="fas fa-building"></i> ${member.department}</span>
-                </div>
-              </li>
-            `,
-              )
-              .join("")}
-          </ul>
+
+      <div class="team-details hidden">
+        <p><strong>Registration Date:</strong> ${new Date(team.createdAt).toLocaleDateString()}</p>
+        <p><strong>Status:</strong> ${team.status}</p>
+        <p><strong>Members:</strong></p>
+        <ul>
+          ${team.members.map(member => `<li>${member.name} (${member.email})</li>`).join("")}
+        </ul>
+
+        <div class="team-actions">
+          <button class="approve-team" data-id="${team._id}"><i class="fas fa-check"></i> Approve</button>
+          <button class="reject-team" data-id="${team._id}"><i class="fas fa-times"></i> Reject</button>
         </div>
-        ${
-          team.projectIdea
-            ? `
-          <div class="team-project">
-            <h4>Project Idea</h4>
-            <p>${team.projectIdea}</p>
-          </div>
-        `
-            : ""
-        }
-        ${
-          team.techStack
-            ? `
-          <div class="team-tech">
-            <h4>Tech Stack</h4>
-            <p>${team.techStack}</p>
-          </div>
-        `
-            : ""
-        }
-        ${
-          team.status === "pending"
-            ? `
-          <div class="team-actions">
-            <button class="approve-team" data-team-id="${team._id}">
-              <i class="fas fa-check"></i> Approve
-            </button>
-            <button class="reject-team" data-team-id="${team._id}">
-              <i class="fas fa-times"></i> Reject
-            </button>
-          </div>
-        `
-            : ""
-        }
       </div>
-    `
+    `;
 
-    container.appendChild(teamItem)
+    container.appendChild(teamCard);
+  });
 
-    // Add event listener to toggle details
-    const toggleButton = teamItem.querySelector(".toggle-team-details")
-    const detailsSection = teamItem.querySelector(".team-item-details")
+  // Toggle dropdown on click
+  container.querySelectorAll(".team-summary").forEach(summary => {
+    summary.addEventListener("click", () => {
+      const details = summary.nextElementSibling;
+      const icon = summary.querySelector(".toggle-icon");
+      details.classList.toggle("hidden");
+      icon.classList.toggle("fa-chevron-down");
+      icon.classList.toggle("fa-chevron-up");
+    });
+  });
 
-    toggleButton.addEventListener("click", () => {
-      const isExpanded = detailsSection.classList.contains("expanded")
+  // Approve & Reject functionality
+  container.querySelectorAll(".approve-team").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      await updateTeamStatus(id, "approved");
+    });
+  });
 
-      if (isExpanded) {
-        detailsSection.classList.remove("expanded")
-        toggleButton.innerHTML = '<i class="fas fa-chevron-down"></i>'
-      } else {
-        detailsSection.classList.add("expanded")
-        toggleButton.innerHTML = '<i class="fas fa-chevron-up"></i>'
-      }
-    })
-
-    // Add event listeners for approve/reject buttons
-    const approveButton = teamItem.querySelector(".approve-team")
-    const rejectButton = teamItem.querySelector(".reject-team")
-
-    if (approveButton) {
-      approveButton.addEventListener("click", function (e) {
-        e.stopPropagation()
-        const teamId = this.getAttribute("data-team-id")
-        approveTeamRegistration(teamId)
-      })
-    }
-
-    if (rejectButton) {
-      rejectButton.addEventListener("click", function (e) {
-        e.stopPropagation()
-        const teamId = this.getAttribute("data-team-id")
-        rejectTeamRegistration(teamId)
-      })
-    }
-  })
+  container.querySelectorAll(".reject-team").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      await updateTeamStatus(id, "rejected");
+    });
+  });
 }
+
 
 // Function to approve team registration
 async function approveTeamRegistration(teamId) {

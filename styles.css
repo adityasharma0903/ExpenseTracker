@@ -2251,6 +2251,56 @@ textarea {
   animation: fadeIn 0.3s ease;
 }
 
+.team-card {
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: #fdfdfd;
+}
+
+.team-summary {
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.team-details {
+  margin-top: 10px;
+  display: none;
+}
+
+.team-details.hidden {
+  display: none;
+}
+
+.team-details:not(.hidden) {
+  display: block;
+}
+
+.team-actions {
+  margin-top: 10px;
+}
+
+.team-actions button {
+  margin-right: 10px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.approve-team {
+  background-color: #28a745;
+  color: white;
+}
+
+.reject-team {
+  background-color: #dc3545;
+  color: white;
+}
+
+
 /* Teams Container */
 .teams-container {
   background-color: #fff;
