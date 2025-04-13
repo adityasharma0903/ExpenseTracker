@@ -1452,6 +1452,7 @@ app.put("/api/users/profile", auth, async (req, res) => {
 // @route   POST api/club-events
 // @desc    Create a new club event
 // @access  Public
+
 app.post("/api/club-events", async (req, res) => {
   try {
     // Get token from header
