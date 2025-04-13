@@ -717,8 +717,14 @@ function setupDetailModalListeners() {
   
   // Edit button
   document.getElementById('btn-edit-event').addEventListener('click', function() {
-    const eventId = this.getAttribute('data-id');
-    openEventEditForm(eventId);
+// Instead of using eventId directly
+const eventId = this.getAttribute('data-id') || this.dataset.eventId;
+if (!eventId) {
+  console.error("eventId not found!");
+  return;
+}
+openEventDetailModal(eventId);
+
   });
   
   // Delete button
@@ -3077,3 +3083,1121 @@ document.getElementById("create-event-btn").addEventListener("click", () => {
 function setupDetailModalListeners() {
   // Add your event detail modal listeners here
 }
+
+
+
+// Function to fetch team registrations for an event
+async function fetchTeamRegistrations(eventId) {
+  try {
+    const token = localStorage.getItem("authToken");
+    const response = await fetch(`http://localhost:5000/api/team-registrations?eventId=${eventId}`, {
+      headers: {
+        "x-auth-token": token
+      }
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      // Render the team registrations
+      renderEventRegistrations(data.teamRegistrations);
+    } else {
+      console.error("Failed to fetch team registrations:", data.message);
+      // Fallback to localStorage if API fails
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      const eventTeams = teams.filter((team) => team.eventId === eventId);
+      renderEventRegistrations(eventTeams);
+    }
+  } catch (error) {
+    console.error("Error fetching team registrations:", error);
+    // Fallback to localStorage if API fails
+    const teams = JSON.parse(localStorage.getItem("teams")) || [];
+    const eventTeams = teams.filter((team) => team.eventId === eventId);
+    renderEventRegistrations(eventTeams);
+  }
+}
+
+// Add this at the end of the openEventDetailModal function
+fetchTeamRegistrations(eventId);
+
+// Approve team
+async function approveTeam() {
+  const teamId = document.getElementById("view-team-modal").getAttribute("data-team-id");
+  const token = localStorage.getItem("authToken");
+  
+  try {
+    // Send approval to server
+    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/approve`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update local storage as fallback
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      const teamIndex = teams.findIndex((t) => t.id === teamId);
+      
+      if (teamIndex !== -1) {
+        teams[teamIndex].status = "approved";
+        localStorage.setItem("teams", JSON.stringify(teams));
+      }
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        fetchTeamRegistrations(eventId);
+      }
+      
+      showToast("Team Approved", `Team has been approved`, "success");
+    } else {
+      showToast("Error", data.message || "Failed to approve team", "error");
+    }
+  } catch (error) {
+    console.error("Error approving team:", error);
+    showToast("Error", "Failed to connect to server", "error");
+    
+    // Fallback to localStorage
+    const teams = JSON.parse(localStorage.getItem("teams")) || [];
+    const teamIndex = teams.findIndex((t) => t.id === teamId);
+    
+    if (teamIndex !== -1) {
+      teams[teamIndex].status = "approved";
+      localStorage.setItem("teams", JSON.stringify(teams));
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        const eventTeams = teams.filter((team) => team.eventId === eventId);
+        renderEventRegistrations(eventTeams);
+      }
+      
+      showToast("Team Approved", `${teams[teamIndex].name} has been approved`, "success");
+    }
+  }
+}
+
+// Reject team
+async function rejectTeam() {
+  const teamId = document.getElementById("view-team-modal").getAttribute("data-team-id");
+  const token = localStorage.getItem("authToken");
+  
+  try {
+    // Send rejection to server
+    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/reject`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update local storage as fallback
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      const teamIndex = teams.findIndex((t) => t.id === teamId);
+      
+      if (teamIndex !== -1) {
+        teams[teamIndex].status = "rejected";
+        localStorage.setItem("teams", JSON.stringify(teams));
+      }
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        fetchTeamRegistrations(eventId);
+      }
+      
+      showToast("Team Rejected", `Team has been rejected`, "error");
+    } else {
+      showToast("Error", data.message || "Failed to reject team", "error");
+    }
+  } catch (error) {
+    console.error("Error rejecting team:", error);
+    showToast("Error", "Failed to connect to server", "error");
+    
+    // Fallback to localStorage
+    const teams = JSON.parse(localStorage.getItem("teams")) || [];
+    const teamIndex = teams.findIndex((t) => t.id === teamId);
+    
+    if (teamIndex !== -1) {
+      teams[teamIndex].status = "rejected";
+      localStorage.setItem("teams", JSON.stringify(teams));
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        const eventTeams = teams.filter((team) => team.eventId === eventId);
+        renderEventRegistrations(eventTeams);
+      }
+      
+      showToast("Team Rejected", `${teams[teamIndex].name} has been rejected`, "error");
+    }
+  }
+}
+
+// Open view team modal
+async function openViewTeamModal(teamId) {
+  try {
+    const token = localStorage.getItem("authToken");
+    
+    // Try to fetch team from server
+    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}`, {
+      headers: {
+        "x-auth-token": token
+      }
+    });
+    
+    let team;
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        team = data.teamRegistration;
+      }
+    }
+    
+    // If server fetch fails, fallback to localStorage
+    if (!team) {
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      team = teams.find((t) => t.id === teamId);
+    }
+    
+    if (!team) {
+      showToast("Error", "Team not found", "error");
+      return;
+    }
+    
+    // Find event
+    const events = await fetchEvents();
+    const event = events.find((e) => e._id === team.eventId || e.id === team.eventId);
+    
+    // Update modal content
+    document.getElementById("view-team-title").textContent = `Team: ${team.name}`;
+    document.getElementById("view-team-name").textContent = team.name;
+    document.getElementById("view-team-event").textContent = event ? event.name : "Unknown Event";
+    document.getElementById("view-team-date").textContent = formatDate(new Date(team.registeredAt));
+    document.getElementById("view-team-status").textContent = team.status.charAt(0).toUpperCase() + team.status.slice(1);
+    document.getElementById("view-team-status").className = `status-${team.status}`;
+    
+    // Render team members
+    const membersContainer = document.getElementById("team-members-list");
+    membersContainer.innerHTML = "";
+    
+    team.members.forEach((member, index) => {
+      const memberItem = document.createElement("div");
+      memberItem.className = "team-member";
+      memberItem.style.opacity = "0";
+      memberItem.style.transform = "translateY(10px)";
+      
+      memberItem.innerHTML = `
+        <div class="member-name"><i class="fas fa-user"></i> ${member.name}</div>
+        <div class="member-details">
+          <div class="member-email"><i class="fas fa-envelope"></i> ${member.email}</div>
+          <div class="member-phone"><i class="fas fa-phone"></i> ${member.phone}</div>
+        </div>
+      `;
+      
+      membersContainer.appendChild(memberItem);
+      
+      // Animate item appearance
+      setTimeout(() => {
+        memberItem.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+        memberItem.style.opacity = "1";
+        memberItem.style.transform = "translateY(0)";
+      }, 50 * index);
+    });
+    
+    // Show/hide action buttons based on status
+    const approveBtn = document.getElementById("approve-team-btn");
+    const rejectBtn = document.getElementById("reject-team-btn");
+    
+    if (team.status === "pending") {
+      approveBtn.style.display = "flex";
+      rejectBtn.style.display = "flex";
+    } else {
+      approveBtn.style.display = "none";
+      rejectBtn.style.display = "none";
+    }
+    
+    // Store current team ID
+    document.getElementById("view-team-modal").setAttribute("data-team-id", teamId);
+    
+    // Show modal
+    document.getElementById("view-team-modal").style.display = "block";
+  } catch (error) {
+    console.error("Error opening team modal:", error);
+    showToast("Error", "Failed to load team details", "error");
+  }
+}
+
+// Render event registrations
+function renderEventRegistrations(teams) {
+  const container = document.getElementById("event-registrations");
+  container.innerHTML = "";
+  
+  if (!teams || teams.length === 0) {
+    container.innerHTML = '<p class="text-muted">No registrations yet</p>';
+    return;
+  }
+  
+  // Filter teams based on status
+  const statusFilter = document.getElementById("registration-status").value;
+  
+  if (statusFilter !== "all") {
+    teams = teams.filter((team) => team.status === statusFilter);
+  }
+  
+  teams.forEach((team, index) => {
+    const teamItem = document.createElement("div");
+    teamItem.className = "registration-item";
+    teamItem.style.opacity = "0";
+    teamItem.style.transform = "translateY(10px)";
+    
+    teamItem.innerHTML = `
+      <div class="team-info">
+        <div class="team-name">${team.name}</div>
+        <div class="team-members">${team.members.length} Members</div>
+      </div>
+      <div class="team-status-container">
+        <span class="team-status status-${team.status}">${team.status.charAt(0).toUpperCase() + team.status.slice(1)}</span>
+        <button class="view-team" data-id="${team.id || team._id}">View <i class="fas fa-arrow-right"></i></button>
+      </div>
+    `;
+    
+    container.appendChild(teamItem);
+    
+    // Animate item appearance
+    setTimeout(() => {
+      teamItem.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      teamItem.style.opacity = "1";
+      teamItem.style.transform = "translateY(0)";
+    }, 50 * index);
+  });
+  
+  // Add event listeners to view buttons
+  setTimeout(() => {
+    const viewButtons = document.querySelectorAll(".view-team");
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", function() {
+        const teamId = this.getAttribute("data-id");
+        openViewTeamModal(teamId);
+      });
+    });
+  }, 300);
+}
+
+// Add this inside your setupEventListeners function
+document.addEventListener("DOMContentLoaded", () => {
+  // Make sure the modal exists in the DOM
+  if (!document.getElementById("event-detail-modal")) {
+    console.error("Event detail modal not found in the DOM");
+    return;
+  }
+  
+  // Setup listeners
+  setupDetailModalListeners();
+});
+
+// Add this at the end of your loadEvents function
+setTimeout(() => {
+  setupEventCardFunctionality();
+}, 600); // Slightly longer than your animation delay to ensure all cards are rendered
+
+
+// Function to fetch team registrations for an event
+async function fetchTeamRegistrations(eventId) {
+  try {
+    const token = localStorage.getItem("authToken");
+    const response = await fetch(`http://localhost:5000/api/team-registrations?eventId=${eventId}`, {
+      headers: {
+        "x-auth-token": token || ""
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch team registrations");
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Render the team registrations
+      renderEventRegistrations(data.teamRegistrations);
+      
+      // Update team count in the UI
+      const eventTeamsElement = document.getElementById("view-event-teams");
+      if (eventTeamsElement) {
+        const teams = data.teamRegistrations.length;
+        const maxTeams = eventTeamsElement.textContent.split('/')[1] || "∞";
+        eventTeamsElement.textContent = `${teams} / ${maxTeams.trim()}`;
+      }
+    } else {
+      console.error("Failed to fetch team registrations:", data.message);
+      // Fallback to localStorage if API fails
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      const eventTeams = teams.filter((team) => team.eventId === eventId);
+      renderEventRegistrations(eventTeams);
+    }
+  } catch (error) {
+    console.error("Error fetching team registrations:", error);
+    // Fallback to localStorage if API fails
+    const teams = JSON.parse(localStorage.getItem("teams")) || [];
+    const eventTeams = teams.filter((team) => team.eventId === eventId);
+    renderEventRegistrations(eventTeams);
+  }
+}
+
+// Render event registrations
+function renderEventRegistrations(teams) {
+  const container = document.getElementById("event-registrations");
+  if (!container) {
+    console.error("Event registrations container not found");
+    return;
+  }
+  
+  container.innerHTML = "";
+  
+  if (!teams || teams.length === 0) {
+    container.innerHTML = '<p class="text-muted">No registrations yet</p>';
+    return;
+  }
+  
+  // Filter teams based on status
+  const statusFilter = document.getElementById("registration-status").value;
+  
+  let filteredTeams = teams;
+  if (statusFilter !== "all") {
+    filteredTeams = teams.filter((team) => team.status === statusFilter);
+  }
+  
+  filteredTeams.forEach((team, index) => {
+    const teamItem = document.createElement("div");
+    teamItem.className = "registration-item";
+    teamItem.style.opacity = "0";
+    teamItem.style.transform = "translateY(10px)";
+    
+    // Make sure we have a valid team name and ID
+    const teamName = team.teamName || team.name || "Unnamed Team";
+    const teamId = team._id || team.id || `team-${Date.now()}-${index}`;
+    const teamStatus = team.status || "pending";
+    const memberCount = team.members ? team.members.length : 0;
+    
+    teamItem.innerHTML = `
+      <div class="team-info">
+        <div class="team-name">${teamName}</div>
+        <div class="team-members">${memberCount} Members</div>
+      </div>
+      <div class="team-status-container">
+        <span class="team-status status-${teamStatus}">${teamStatus.charAt(0).toUpperCase() + teamStatus.slice(1)}</span>
+        <button class="view-team" data-id="${teamId}">View <i class="fas fa-arrow-right"></i></button>
+      </div>
+    `;
+    
+    container.appendChild(teamItem);
+    
+    // Animate item appearance
+    setTimeout(() => {
+      teamItem.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      teamItem.style.opacity = "1";
+      teamItem.style.transform = "translateY(0)";
+    }, 50 * index);
+  });
+  
+  // Add event listeners to view buttons
+  setTimeout(() => {
+    const viewButtons = document.querySelectorAll(".view-team");
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", function() {
+        const teamId = this.getAttribute("data-id");
+        openViewTeamModal(teamId);
+      });
+    });
+  }, 300);
+}
+
+// Filter registrations based on status
+function filterRegistrations() {
+  const eventId = document.getElementById("view-event-modal").getAttribute("data-event-id");
+  if (!eventId) return;
+  
+  fetchTeamRegistrations(eventId);
+}
+
+// Open view event modal
+async function openViewEventModal(eventId) {
+  try {
+    // Fetch events from MongoDB
+    const events = await fetchEvents();
+    
+    // Find event
+    const event = events.find((e) => e._id === eventId || e.id === eventId);
+    
+    if (!event) {
+      console.error("Event not found:", eventId);
+      showToast("Error", "Event not found", "error");
+      return;
+    }
+    
+    // Update modal content
+    document.getElementById("view-event-title").textContent = event.name;
+    document.getElementById("view-event-poster").src = event.poster || "https://via.placeholder.com/300x250?text=Event";
+    document.getElementById("view-event-description").textContent = event.description;
+    document.getElementById("view-event-date").textContent = 
+      `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
+    document.getElementById("view-event-time").textContent = `${event.startTime} - ${event.endTime}`;
+    document.getElementById("view-event-venue").textContent = event.venue;
+    document.getElementById("view-event-teams").textContent = `0 / ${event.teams || "∞"} Teams`;
+    document.getElementById("view-event-budget").textContent = `₹${event.totalBudget || 0}`;
+    
+    // Render expenses
+    const expenseTable = document.getElementById("view-expense-table");
+    expenseTable.innerHTML = "";
+    
+    if (!event.expenses || event.expenses.length === 0) {
+      const row = document.createElement("tr");
+      row.innerHTML = '<td colspan="3">No expenses</td>';
+      expenseTable.appendChild(row);
+    } else {
+      event.expenses.forEach((expense) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
+          <td>${expense.description}</td>
+          <td>₹${expense.amount}</td>
+        `;
+        expenseTable.appendChild(row);
+      });
+    }
+    
+    // Store current event ID
+    document.getElementById("view-event-modal").setAttribute("data-event-id", eventId);
+    
+    // Show modal
+    document.getElementById("view-event-modal").style.display = "block";
+    
+    // Switch to registrations tab
+    switchTab("registrations", document.querySelector("#view-event-modal .event-tabs"));
+    
+    // Fetch team registrations
+    fetchTeamRegistrations(eventId);
+  } catch (error) {
+    console.error("Error opening event modal:", error);
+    showToast("Error", "Failed to load event details", "error");
+  }
+}
+
+// Open view team modal
+async function openViewTeamModal(teamId) {
+  try {
+    const token = localStorage.getItem("authToken");
+    
+    // Try to fetch team from server
+    let team;
+    try {
+      const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}`, {
+        headers: {
+          "x-auth-token": token || ""
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          team = data.teamRegistration;
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching team from server:", error);
+    }
+    
+    // If server fetch fails, fallback to localStorage
+    if (!team) {
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      team = teams.find((t) => t.id === teamId || t._id === teamId);
+    }
+    
+    if (!team) {
+      showToast("Error", "Team not found", "error");
+      return;
+    }
+    
+    // Find event
+    const events = await fetchEvents();
+    const event = events.find((e) => e._id === team.eventId || e.id === team.eventId);
+    
+    // Update modal content
+    const teamName = team.teamName || team.name || "Unnamed Team";
+    document.getElementById("view-team-title").textContent = `Team: ${teamName}`;
+    document.getElementById("view-team-name").textContent = teamName;
+    document.getElementById("view-team-event").textContent = event ? event.name : "Unknown Event";
+    
+    // Format date properly
+    const registeredDate = team.registeredAt ? new Date(team.registeredAt) : new Date();
+    document.getElementById("view-team-date").textContent = formatDate(registeredDate);
+    
+    // Set status
+    const status = team.status || "pending";
+    document.getElementById("view-team-status").textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    document.getElementById("view-team-status").className = `status-${status}`;
+    
+    // Render team members
+    const membersContainer = document.getElementById("team-members-list");
+    membersContainer.innerHTML = "";
+    
+    if (team.members && team.members.length > 0) {
+      team.members.forEach((member, index) => {
+        const memberItem = document.createElement("div");
+        memberItem.className = "team-member";
+        memberItem.style.opacity = "0";
+        memberItem.style.transform = "translateY(10px)";
+        
+        memberItem.innerHTML = `
+          <div class="member-name"><i class="fas fa-user"></i> ${member.name}</div>
+          <div class="member-details">
+            <div class="member-email"><i class="fas fa-envelope"></i> ${member.email}</div>
+            <div class="member-phone"><i class="fas fa-phone"></i> ${member.phone}</div>
+            ${member.department ? `<div class="member-department"><i class="fas fa-building"></i> ${member.department}</div>` : ''}
+          </div>
+        `;
+        
+        membersContainer.appendChild(memberItem);
+        
+        // Animate item appearance
+        setTimeout(() => {
+          memberItem.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+          memberItem.style.opacity = "1";
+          memberItem.style.transform = "translateY(0)";
+        }, 50 * index);
+      });
+    } else {
+      membersContainer.innerHTML = '<p class="text-muted">No team members found</p>';
+    }
+    
+    // Show/hide action buttons based on status
+    const approveBtn = document.getElementById("approve-team-btn");
+    const rejectBtn = document.getElementById("reject-team-btn");
+    
+    if (status === "pending") {
+      approveBtn.style.display = "flex";
+      rejectBtn.style.display = "flex";
+    } else {
+      approveBtn.style.display = "none";
+      rejectBtn.style.display = "none";
+    }
+    
+    // Store current team ID
+    document.getElementById("view-team-modal").setAttribute("data-team-id", teamId);
+    
+    // Show modal
+    document.getElementById("view-team-modal").style.display = "block";
+  } catch (error) {
+    console.error("Error opening team modal:", error);
+    showToast("Error", "Failed to load team details", "error");
+  }
+}
+
+// Switch tabs
+function switchTab(tabId, tabsContainer) {
+  // Hide all tab contents
+  const tabContents = document.querySelectorAll(".tab-content");
+  tabContents.forEach(tab => {
+    tab.classList.remove("active");
+  });
+  
+  // Show selected tab content
+  const selectedTab = document.getElementById(`${tabId}-tab`);
+  if (selectedTab) {
+    selectedTab.classList.add("active");
+  }
+  
+  // Update tab buttons
+  const tabButtons = tabsContainer.querySelectorAll(".tab-btn");
+  tabButtons.forEach(button => {
+    button.classList.remove("active");
+    if (button.getAttribute("data-tab") === tabId) {
+      button.classList.add("active");
+    }
+  });
+}
+
+// Approve team
+async function approveTeam() {
+  const teamId = document.getElementById("view-team-modal").getAttribute("data-team-id");
+  const token = localStorage.getItem("authToken");
+  
+  try {
+    // Send approval to server
+    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/approve`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token || ""
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update local storage as fallback
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      const teamIndex = teams.findIndex((t) => t.id === teamId || t._id === teamId);
+      
+      if (teamIndex !== -1) {
+        teams[teamIndex].status = "approved";
+        localStorage.setItem("teams", JSON.stringify(teams));
+      }
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        fetchTeamRegistrations(eventId);
+      }
+      
+      showToast("Success", "Team has been approved", "success");
+    } else {
+      showToast("Error", data.message || "Failed to approve team", "error");
+    }
+  } catch (error) {
+    console.error("Error approving team:", error);
+    showToast("Error", "Failed to connect to server", "error");
+    
+    // Fallback to localStorage
+    const teams = JSON.parse(localStorage.getItem("teams")) || [];
+    const teamIndex = teams.findIndex((t) => t.id === teamId || t._id === teamId);
+    
+    if (teamIndex !== -1) {
+      teams[teamIndex].status = "approved";
+      localStorage.setItem("teams", JSON.stringify(teams));
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        const eventTeams = teams.filter((team) => team.eventId === eventId);
+        renderEventRegistrations(eventTeams);
+      }
+      
+      showToast("Success", `${teams[teamIndex].name || 'Team'} has been approved`, "success");
+    }
+  }
+}
+
+// Reject team
+async function rejectTeam() {
+  const teamId = document.getElementById("view-team-modal").getAttribute("data-team-id");
+  const token = localStorage.getItem("authToken");
+  
+  try {
+    // Send rejection to server
+    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/reject`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token || ""
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update local storage as fallback
+      const teams = JSON.parse(localStorage.getItem("teams")) || [];
+      const teamIndex = teams.findIndex((t) => t.id === teamId || t._id === teamId);
+      
+      if (teamIndex !== -1) {
+        teams[teamIndex].status = "rejected";
+        localStorage.setItem("teams", JSON.stringify(teams));
+      }
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        fetchTeamRegistrations(eventId);
+      }
+      
+      showToast("Info", "Team has been rejected", "info");
+    } else {
+      showToast("Error", data.message || "Failed to reject team", "error");
+    }
+  } catch (error) {
+    console.error("Error rejecting team:", error);
+    showToast("Error", "Failed to connect to server", "error");
+    
+    // Fallback to localStorage
+    const teams = JSON.parse(localStorage.getItem("teams")) || [];
+    const teamIndex = teams.findIndex((t) => t.id === teamId || t._id === teamId);
+    
+    if (teamIndex !== -1) {
+      teams[teamIndex].status = "rejected";
+      localStorage.setItem("teams", JSON.stringify(teams));
+      
+      // Close modal and refresh teams
+      closeAllModals();
+      
+      // Refresh event registrations if event modal is open
+      const eventModal = document.getElementById("view-event-modal");
+      if (eventModal.style.display === "block") {
+        const eventId = eventModal.getAttribute("data-event-id");
+        const eventTeams = teams.filter((team) => team.eventId === eventId);
+        renderEventRegistrations(eventTeams);
+      }
+      
+      showToast("Info", `${teams[teamIndex].name || 'Team'} has been rejected`, "info");
+    }
+  }
+}
+
+// Close all modals
+function closeAllModals() {
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach(modal => {
+    modal.style.display = "none";
+  });
+}
+
+// Setup event listeners for modals
+function setupModalListeners() {
+  // Close modal when clicking on X
+  const closeButtons = document.querySelectorAll('.close-modal');
+  closeButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      closeAllModals();
+    });
+  });
+  
+  // Close modal when clicking outside
+  window.addEventListener('click', function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+  });
+  
+  // Tab switching
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const tabId = this.getAttribute('data-tab');
+      const tabsContainer = this.closest('.event-tabs');
+      switchTab(tabId, tabsContainer);
+    });
+  });
+  
+  // Registration status filter
+  const statusFilter = document.getElementById('registration-status');
+  if (statusFilter) {
+    statusFilter.addEventListener('change', filterRegistrations);
+  }
+}
+
+// Setup event card functionality
+function setupEventCardFunctionality() {
+  // Add click event to event cards
+  const eventCards = document.querySelectorAll('.event-card');
+  eventCards.forEach(card => {
+    card.addEventListener('click', function(e) {
+      // Don't open if clicking on action buttons
+      if (e.target.closest('.event-actions') || e.target.closest('.btn-action')) {
+        return;
+      }
+      
+      // Get event ID
+      const eventId = this.getAttribute('data-id');
+      if (eventId) {
+        openViewEventModal(eventId);
+      }
+    });
+  });
+  
+  // Add click event to view event buttons
+  const viewButtons = document.querySelectorAll('.view-event');
+  viewButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.stopPropagation(); // Prevent event card click
+      const eventId = this.getAttribute('data-id');
+      openViewEventModal(eventId);
+    });
+  });
+}
+
+// Initialize everything when the document is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  setupModalListeners();
+  
+  // Setup event card functionality after events are loaded
+  if (typeof loadEvents === 'function') {
+    const originalLoadEvents = loadEvents;
+    loadEvents = function() {
+      originalLoadEvents.apply(this, arguments);
+      setTimeout(() => {
+        setupEventCardFunctionality();
+      }, 500);
+    };
+    
+    // Call loadEvents if it hasn't been called yet
+    if (document.querySelectorAll('.event-card').length === 0) {
+      loadEvents();
+    } else {
+      setupEventCardFunctionality();
+    }
+  } else {
+    setupEventCardFunctionality();
+  }
+});
+
+async function openViewEventModal(eventId) {
+  try {
+    const response = await fetch(`/api/events/${eventId}`);
+    const data = await response.json();
+    if (data.success) {
+      const event = data.event;
+      document.getElementById("view-event-title").innerText = event.name;
+      document.getElementById("view-event-description").innerText = event.description;
+
+      // Fetch and render registered teams
+      fetchEventTeams(eventId);
+
+      // Show the modal
+      document.getElementById("view-event-modal").classList.add("active");
+    } else {
+      console.error("Failed to fetch event details:", data.message);
+    }
+  } catch (error) {
+    console.error("Error opening event modal:", error);
+  }
+}
+// Helper function to format date
+function formatDate(date) {
+  if (!(date instanceof Date) || isNaN(date)) {
+    return "Invalid Date";
+  }
+  
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+}
+
+// Toast notification function
+function showToast(title, message, type = "info") {
+  // Check if toast container exists, if not create it
+  let toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    toastContainer.style.position = 'fixed';
+    toastContainer.style.top = '20px';
+    toastContainer.style.right = '20px';
+    toastContainer.style.zIndex = '9999';
+    document.body.appendChild(toastContainer);
+  }
+  
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.style.backgroundColor = type === 'success' ? '#28a745' : 
+                               type === 'error' ? '#dc3545' : 
+                               type === 'warning' ? '#ffc107' : '#17a2b8';
+  toast.style.color = type === 'warning' ? '#212529' : '#fff';
+  toast.style.padding = '15px';
+  toast.style.borderRadius = '4px';
+  toast.style.marginBottom = '10px';
+  toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+  toast.style.minWidth = '250px';
+  toast.style.animation = 'fadeIn 0.3s, fadeOut 0.5s 2.5s forwards';
+  
+  // Add toast content
+  toast.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 5px;">${title}</div>
+    <div>${message}</div>
+  `;
+  
+  // Add to container
+  toastContainer.appendChild(toast);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => {
+      toastContainer.removeChild(toast);
+    }, 500);
+  }, 3000);
+}
+
+// Add CSS for toast animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(20px); }
+  }
+`;
+document.head.appendChild(style);
+
+
+// Add this function to initialize the page when DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  // Initialize club data if not exists
+  initializeClubData()
+
+  // Setup event listeners
+  setupEventListeners()
+
+  // Check if user is logged in
+  checkLoginStatus()
+
+  // Display current date
+  displayCurrentDate()
+
+  // Setup event card functionality
+  setTimeout(() => {
+    setupEventCardFunctionality()
+  }, 500)
+})
+
+// Modify the setupEventCardFunctionality function to handle null elements
+function setupEventCardFunctionality() {
+  // Get all event cards
+  const eventCards = document.querySelectorAll(".event-card")
+
+  if (eventCards.length === 0) {
+    console.log("No event cards found on the page")
+    return
+  }
+
+  // Add click event to each card
+  eventCards.forEach((card) => {
+    // Add event listener for click on the card
+    card.addEventListener("click", function (e) {
+      // Prevent click if the action buttons were clicked
+      if (e.target.closest(".event-actions") || e.target.closest(".btn-action")) {
+        return
+      }
+
+      // Get the event ID from the view button inside this card
+      const viewButton = this.querySelector(".view-event")
+      const eventId = viewButton ? viewButton.getAttribute("data-id") : null
+
+      if (eventId) {
+        openEventDetailModal(eventId)
+      } else {
+        console.warn("No event ID found for this card")
+      }
+    })
+
+    // Add hover functionality for action buttons if they don't exist
+    if (!card.querySelector(".event-actions")) {
+      const actionButtons = document.createElement("div")
+      actionButtons.className = "event-actions"
+      actionButtons.innerHTML = `
+        <button class="btn-action btn-edit" title="Edit Event">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn-action btn-delete" title="Delete Event">
+          <i class="fas fa-trash"></i>
+        </button>
+      `
+      card.appendChild(actionButtons)
+    }
+
+    // Add event listeners to the action buttons
+    const editButton = card.querySelector(".btn-edit")
+    if (editButton) {
+      editButton.addEventListener("click", (e) => {
+        e.stopPropagation() // Prevent card click
+        const viewButton = card.querySelector(".view-event")
+        if (viewButton) {
+          const eventId = viewButton.getAttribute("data-id")
+          if (eventId) {
+            openEventEditForm(eventId)
+          }
+        }
+      })
+    }
+
+    const deleteButton = card.querySelector(".btn-delete")
+    if (deleteButton) {
+      deleteButton.addEventListener("click", (e) => {
+        e.stopPropagation() // Prevent card click
+        const viewButton = card.querySelector(".view-event")
+        if (viewButton) {
+          const eventId = viewButton.getAttribute("data-id")
+          if (eventId) {
+            confirmDeleteEvent(eventId)
+          }
+        }
+      })
+    }
+  })
+
+  // Add click event to view event buttons
+  const viewButtons = document.querySelectorAll(".view-event")
+  viewButtons.forEach((button) => {
+    button.addEventListener("click", function (e) {
+      e.stopPropagation() // Prevent event card click
+      const eventId = this.getAttribute("data-id")
+      if (eventId) {
+        openEventDetailModal(eventId)
+      }
+    })
+  })
+}
+
+async function openTeamModal(teamId) {
+  try {
+    const res = await fetch(`/api/registrations/team/${teamId}`);
+    const contentType = res.headers.get("content-type");
+
+    if (!res.ok) throw new Error("Server returned an error status.");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await res.text(); // This will show you what's actually returned
+      throw new Error("Expected JSON but got: " + text.slice(0, 100));
+    }
+
+    const team = await res.json();
+
+    // Use the team data here...
+    console.log(team);
+  } catch (err) {
+    console.error("Error opening event modal:", err);
+    showToast("Error", err.message, "error");
+  }
+}
+

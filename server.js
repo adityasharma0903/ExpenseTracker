@@ -384,6 +384,79 @@ clubEventSchema.pre("save", function (next) {
 
 const ClubEvent = mongoose.model("eventschitkara", clubEventSchema)
 
+// ==================== TEAM REGISTRATION SCHEMA (NEW) ====================
+
+// Team Member Schema
+const teamMemberSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+  },
+  department: {
+    type: String,
+    required: true,
+  },
+  isLeader: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+// Team Registration Schema
+const teamRegistrationSchema = new mongoose.Schema({
+  eventId: {
+    type: String,
+    required: true,
+    index: true,
+  },
+  teamName: {
+    type: String,
+    required: true,
+  },
+  members: [teamMemberSchema],
+  projectIdea: {
+    type: String,
+    default: "",
+  },
+  techStack: {
+    type: String,
+    default: "",
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+  },
+  registeredAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  notes: {
+    type: String,
+    default: "",
+  },
+})
+
+// Update the updatedAt field before saving
+teamRegistrationSchema.pre("save", function (next) {
+  this.updatedAt = Date.now()
+  next()
+})
+
+const TeamRegistration = mongoose.model("teamregistrations", teamRegistrationSchema)
+
 // ==================== MIDDLEWARE ====================
 
 // Authentication middleware
@@ -638,6 +711,31 @@ const validateClubEventCreation = (req, res, next) => {
       success: false,
       message: "End date cannot be before start date",
     })
+  }
+
+  next()
+}
+
+// Validate team registration
+const validateTeamRegistration = (req, res, next) => {
+  const { eventId, teamName, members, projectIdea, techStack } = req.body
+
+  // Check if all required fields are provided
+  if (!eventId || !teamName || !members || !Array.isArray(members) || members.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide all required fields",
+    })
+  }
+
+  // Validate team members
+  for (const member of members) {
+    if (!member.name || !member.email || !member.phone || !member.department) {
+      return res.status(400).json({
+        success: false,
+        message: "Each team member must have a name, email, phone, and department",
+      })
+    }
   }
 
   next()
@@ -918,6 +1016,11 @@ app.get("/api/events", async (req, res) => {
       // No token, return all events
       events = await Event.find().sort({ startDate: 1 })
     }
+
+    res.json({
+      success: true,
+      events,
+    })
   } catch (error) {
     console.error("Error fetching events:", error.message || error)
     res.status(500).json({
@@ -927,7 +1030,9 @@ app.get("/api/events", async (req, res) => {
   }
 })
 
-// Replace the existing /api/club-events/:id endpoint with this enhanced version
+// @route   GET api/club-events/:id
+// @desc    Get club event by ID
+// @access  Public
 app.get("/api/club-events/:id", async (req, res) => {
   try {
     const event = await ClubEvent.findById(req.params.id) // Fetch event by ID
@@ -971,31 +1076,6 @@ app.get("/api/club-events/:id", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" })
   }
 })
-
-// Declare displayEventDetails function (or import it)
-function displayEventDetails(event) {
-  console.log("Event Details:", event)
-  // Add your logic here to display the event details in the desired format
-}
-
-async function fetchEventDetails(eventId) {
-  try {
-    const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`)
-    if (!response.ok) {
-      console.warn(`Event with ID ${eventId} not found.`)
-      return
-    }
-
-    const data = await response.json()
-    if (data.success && data.event) {
-      displayEventDetails(data.event)
-    } else {
-      console.warn(`Event with ID ${eventId} not found.`)
-    }
-  } catch (error) {
-    console.error("Error fetching event details:", error)
-  }
-}
 
 // @route   GET api/events/:id
 // @desc    Get event by ID
@@ -1495,6 +1575,163 @@ app.delete("/api/club-events/:id", async (req, res) => {
   }
 })
 
+// ==================== TEAM REGISTRATION ROUTES (NEW) ====================
+
+// @route   POST api/team-registrations
+// @desc    Register a team for an event
+// @access  Public
+app.post("/api/team-registrations", validateTeamRegistration, async (req, res) => {
+  try {
+    // Create new team registration
+    const newTeamRegistration = new TeamRegistration(req.body)
+
+    // Save team registration
+    const teamRegistration = await newTeamRegistration.save()
+
+    // Update event registration count
+    const event = await ClubEvent.findById(req.body.eventId)
+    if (event) {
+      event.registrationCount = (event.registrationCount || 0) + 1
+      await event.save()
+    }
+
+    res.json({
+      success: true,
+      message: "Team registered successfully",
+      teamRegistration,
+    })
+  } catch (error) {
+    console.error("Error registering team:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    })
+  }
+})
+
+// @route   GET api/team-registrations
+// @desc    Get all team registrations
+// @access  Public
+app.get("/api/team-registrations", async (req, res) => {
+  try {
+    // Get query parameters
+    const { eventId, status } = req.query
+
+    // Build query
+    const query = {}
+    if (eventId) query.eventId = eventId
+    if (status) query.status = status
+
+    // Get team registrations
+    const teamRegistrations = await TeamRegistration.find(query).sort({ registeredAt: -1 })
+
+    res.json({
+      success: true,
+      teamRegistrations,
+    })
+  } catch (error) {
+    console.error("Error fetching team registrations:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    })
+  }
+})
+
+// @route   GET api/team-registrations/:id
+// @desc    Get team registration by ID
+// @access  Public
+app.get("/api/team-registrations/:id", async (req, res) => {
+  try {
+    const teamRegistration = await TeamRegistration.findById(req.params.id)
+
+    if (!teamRegistration) {
+      return res.status(404).json({
+        success: false,
+        message: "Team registration not found",
+      })
+    }
+
+    res.json({
+      success: true,
+      teamRegistration,
+    })
+  } catch (error) {
+    console.error("Error fetching team registration:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    })
+  }
+})
+
+// @route   PUT api/team-registrations/:id/approve
+// @desc    Approve a team registration
+// @access  Public
+app.put("/api/team-registrations/:id/approve", async (req, res) => {
+  try {
+    const teamRegistration = await TeamRegistration.findById(req.params.id)
+
+    if (!teamRegistration) {
+      return res.status(404).json({
+        success: false,
+        message: "Team registration not found",
+      })
+    }
+
+    teamRegistration.status = "approved"
+    if (req.body.notes) teamRegistration.notes = req.body.notes
+
+    await teamRegistration.save()
+
+    res.json({
+      success: true,
+      message: "Team registration approved",
+      teamRegistration,
+    })
+  } catch (error) {
+    console.error("Error approving team registration:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    })
+  }
+})
+
+// @route   PUT api/team-registrations/:id/reject
+// @desc    Reject a team registration
+// @access  Public
+app.put("/api/team-registrations/:id/reject", async (req, res) => {
+  try {
+    const teamRegistration = await TeamRegistration.findById(req.params.id)
+
+    if (!teamRegistration) {
+      return res.status(404).json({
+        success: false,
+        message: "Team registration not found",
+      })
+    }
+
+    teamRegistration.status = "rejected"
+    if (req.body.notes) teamRegistration.notes = req.body.notes
+
+    await teamRegistration.save()
+
+    res.json({
+      success: true,
+      message: "Team registration rejected",
+      teamRegistration,
+    })
+  } catch (error) {
+    console.error("Error rejecting team registration:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    })
+  }
+})
+
 // ==================== UTILITY FUNCTIONS ====================
 
 // Insert default department accounts
@@ -1570,17 +1807,6 @@ const insertDefaultAccounts = async () => {
   }
 }
 
-app.post("/api/events", auth, async (req, res) => {
-  try {
-    const newEvent = new Event(req.body)
-    const event = await newEvent.save()
-    res.json({ success: true, event })
-  } catch (error) {
-    console.error("Error saving event:", error)
-    res.status(500).json({ success: false, message: "Server error" })
-  }
-})
-
 // ==================== SERVER STARTUP ====================
 
 // Connect to MongoDB
@@ -1615,12 +1841,7 @@ app.get("/", (req, res) => {
   res.send("Event Management API is running")
 })
 
-app.get("/api/approved-events", async (req, res) => {
-  try {
-    const events = await Event.find({ status: "approved" }).sort({ startDate: 1 })
-    res.json({ success: true, events })
-  } catch (error) {
-    console.error("Error fetching approved events:", error)
-    res.status(500).json({ success: false, message: "Server error" })
-  }
-})
+module.exports = app
+
+
+
