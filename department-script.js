@@ -473,7 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function initializeDashboard() {
     const department = loggedInUser.department
   
-    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+    fetch(`https://expensetracker-qppb.onrender.com/api/get-events?department=${encodeURIComponent(department)}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -813,7 +813,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const department = loggedInUser.department;
   
     // Fetch events from the server
-    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+    fetch(`https://expensetracker-qppb.onrender.com/api/get-events?department=${encodeURIComponent(department)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -993,7 +993,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const [year, month] = monthFilter.split("-").map((num) => Number.parseInt(num))
   
     // Fetch events from the server
-    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+    fetch(`https://expensetracker-qppb.onrender.com/api/get-events?department=${encodeURIComponent(department)}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -1116,7 +1116,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
     // If no filtered expenses provided, fetch all expenses
     if (!filteredExpenses) {
-      fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+      fetch(`https://expensetracker-qppb.onrender.com/api/get-events?department=${encodeURIComponent(department)}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -1297,7 +1297,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const department = loggedInUser.department
     const expenseEventFilter = document.getElementById("expenseEventFilter")
   
-    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+    fetch(`https://expensetracker-qppb.onrender.com/api/get-events?department=${encodeURIComponent(department)}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -1784,7 +1784,7 @@ fetch(`http://127.0.0.1:5000/api/get-events?department=${department}`)
   function loadEvents() {
     const department = loggedInUser.department;
     
-    fetch(`http://localhost:5000/api/get-events?department=${encodeURIComponent(department)}`, {
+    fetch(`https://expensetracker-qppb.onrender.com/api/get-events?department=${encodeURIComponent(department)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'

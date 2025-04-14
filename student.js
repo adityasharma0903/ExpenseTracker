@@ -587,7 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         // Send registration data to server
-        const response = await fetch("http://localhost:5000/api/team-registrations", {
+        const response = await fetch("https://expensetracker-qppb.onrender.com/api/team-registrations", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -813,7 +813,7 @@ You will receive an email notification once your registration is approved.
   // Fetch all events from the server
   async function fetchAllEvents() {
     try {
-      const response = await fetch("http://localhost:5000/api/club-events")
+      const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events")
       const data = await response.json()
 
       if (data.success && Array.isArray(data.events) && data.events.length > 0) {
@@ -976,7 +976,7 @@ You will receive an email notification once your registration is approved.
   // Fetch event details by ID
   async function fetchEventDetails(eventId) {
     try {
-      const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`)
+      const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
       if (!response.ok) {
         throw new Error("Failed to fetch event details")
       }
@@ -1409,7 +1409,7 @@ You will receive an email notification once your registration is approved.
   function fetchEventDetails(eventId) {
     try {
       // First try to fetch from the server
-      fetch(`http://localhost:5000/api/club-events/${eventId}`)
+      fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
         .then((response) => {
           if (!response.ok) {
             throw new Error("Failed to fetch event details")
@@ -1452,7 +1452,7 @@ You will receive an email notification once your registration is approved.
 
   // Add this new function to fetch team registrations
   function fetchTeamRegistrations(eventId) {
-    fetch(`http://localhost:5000/api/team-registrations?eventId=${eventId}`)
+    fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations?eventId=${eventId}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.success && data.teamRegistrations) {
@@ -1508,7 +1508,7 @@ You will receive an email notification once your registration is approved.
 
   // Add this function to open team details modal
   function openTeamDetailsModal(teamId) {
-    fetch(`http://localhost:5000/api/team-registrations/${teamId}`)
+    fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations/${teamId}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.success && data.teamRegistration) {

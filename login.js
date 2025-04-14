@@ -90,7 +90,7 @@ adminLoginForm.addEventListener("submit", async (e) => {
   }
 
   try {
-    const response = await fetch("http://localhost:5000/api/admin/login", {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -129,7 +129,7 @@ adminSignupForm.addEventListener("submit", async (e) => {
   }
 
   try {
-    const response = await fetch("http://localhost:5000/api/admin/signup", {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/admin/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password }),
@@ -165,7 +165,7 @@ deptLoginForm.addEventListener("submit", async (e) => {
   }
 
   try {
-    const response = await fetch("http://localhost:5000/api/department/login", {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/department/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ department, id, password }),

@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const toastClose = document.querySelector(".toast-close")
 
   // API Base URL
-  const API_BASE_URL = "http://localhost:5000/api"
+  const API_BASE_URL = "https://expensetracker-qppb.onrender.com/api"
 
   // Set admin name
   if (loggedInUser && loggedInUser.username) {
@@ -277,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchAllClubsData() {
     try {
-      const response = await fetch("http://localhost:5000/api/admin/club-data", {
+      const response = await fetch("https://expensetracker-qppb.onrender.com/api/admin/club-data", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -2113,7 +2113,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 async function fetchAllClubsData() {
   try {
-    const response = await fetch("http://localhost:5000/api/admin/club-data", {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/admin/club-data", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

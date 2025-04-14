@@ -720,7 +720,7 @@ async function deleteEvent(eventId) {
   const token = localStorage.getItem('authToken');
 
   try {
-    const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`, {
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
       method: 'DELETE',
       headers: {
         'x-auth-token': token,
@@ -925,7 +925,7 @@ function saveEventChanges(eventId) {
   };
 
   // Send PUT request to update the event
-  fetch(`http://localhost:5000/api/club-events/${eventId}`, {
+  fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -1041,7 +1041,7 @@ function addExpense() {
       const updatedBudget = (event.totalBudget || 0) + amount
 
       // Send PUT request to update the event
-      fetch(`http://localhost:5000/api/club-events/${eventId}`, {
+      fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1498,7 +1498,7 @@ async function createEvent() {
 
   try {
     // Save event to MongoDB - CHANGED ENDPOINT FROM /api/events to /api/club-events
-    const response = await fetch("http://localhost:5000/api/club-events", {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1530,7 +1530,7 @@ async function createEvent() {
 async function fetchEvents() {
   try {
     const token = localStorage.getItem("authToken")
-    const response = await fetch("http://localhost:5000/api/club-events", {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events", {
       headers: {
         "x-auth-token": token,
       },
@@ -2059,7 +2059,7 @@ function renderEvents(events) {
 async function fetchTeamRegistrations(eventId) {
   try {
     const token = localStorage.getItem("authToken")
-    const response = await fetch(`http://localhost:5000/api/team-registrations?eventId=${eventId}`, {
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations?eventId=${eventId}`, {
       headers: {
         "x-auth-token": token,
       },
@@ -2200,7 +2200,7 @@ async function loadRegisteredTeams(eventId) {
 
 async function fetchApprovedTeams(eventId) {
   const token = localStorage.getItem("authToken");
-  const response = await fetch(`http://localhost:5000/api/approved-teams?eventId=${eventId}`, {
+  const response = await fetch(`https://expensetracker-qppb.onrender.com/api/approved-teams?eventId=${eventId}`, {
     headers: {
       "x-auth-token": token
     }
@@ -2243,7 +2243,7 @@ async function openEventDetailModal(id) {
     console.log("Fetching details for Event ID:", eventId);
 
     const token = localStorage.getItem("authToken");
-    const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`, {
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
       headers: {
         "x-auth-token": token,
       },
@@ -2329,7 +2329,7 @@ async function deleteEvent(eventId) {
 
   try {
     // Send DELETE request to the backend
-    const response = await fetch(`http://localhost:5000/api/club-events/${eventId}`, {
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
       method: 'DELETE',
       headers: {
         'x-auth-token': token,
@@ -2418,7 +2418,7 @@ async function updateTeamStatus(teamId, newStatus) {
   const token = localStorage.getItem("authToken")
 
   try {
-    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/status`, {
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations/${teamId}/status`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -2519,7 +2519,7 @@ function renderTeamsList(container, teams, statusContext = "all") {
 async function approveTeamRegistration(teamId) {
   try {
     const token = localStorage.getItem("authToken")
-    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/approve`, {
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations/${teamId}/approve`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -2548,7 +2548,7 @@ async function approveTeamRegistration(teamId) {
 async function rejectTeamRegistration(teamId) {
   try {
     const token = localStorage.getItem("authToken")
-    const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/reject`, {
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations/${teamId}/reject`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
