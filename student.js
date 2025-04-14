@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const loader = document.getElementById(id)
     if (loader) loader.style.display = "flex"
   }
-  
+
   function hideLoader(id) {
     const loader = document.getElementById(id)
     if (loader) loader.style.display = "none"
@@ -823,11 +823,11 @@ You will receive an email notification once your registration is approved.
   // Fetch all events from the server
   async function fetchAllEvents() {
     showLoader("eventsLoader"); // 👈 Show loader at start
-  
+
     try {
       const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events")
       const data = await response.json()
-  
+
       if (data.success && Array.isArray(data.events) && data.events.length > 0) {
         renderEvents(data.events)
       } else {
@@ -840,7 +840,7 @@ You will receive an email notification once your registration is approved.
       hideLoader("eventsLoader") // 👈 Hide loader at end
     }
   }
-  
+
 
   // Render mock events when no real events are available
   function renderMockEvents() {
@@ -990,11 +990,11 @@ You will receive an email notification once your registration is approved.
   // Fetch event details by ID
   async function fetchEventDetails(eventId) {
     showLoader("detailLoader") // 👈 Show detail loader
-  
+
     try {
       const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
       const data = await response.json()
-  
+
       if (data.success && data.event) {
         displayEventDetails(data.event)
         const registrationModal = document.getElementById("registrationModal")
@@ -1017,7 +1017,7 @@ You will receive an email notification once your registration is approved.
       hideLoader("detailLoader") // 👈 Hide after fetch
     }
   }
-  
+
 
   // Display event details
   function displayEventDetails(event) {
@@ -1114,6 +1114,8 @@ You will receive an email notification once your registration is approved.
     document.body.style.overflow = "hidden"
 
     updateCountdownForEvent(event.startDate)
+    eventDetailView.classList.add("active")
+    document.body.style.overflow = "hidden"
   }
 
   // Update prizes tab with event prize data
@@ -1416,6 +1418,7 @@ You will receive an email notification once your registration is approved.
   // Replace or modify the event detail view opening function with this improved version:
 
   function fetchEventDetails(eventId) {
+    showLoader("detailLoader")
     try {
       // First try to fetch from the server
       fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
@@ -1456,6 +1459,8 @@ You will receive an email notification once your registration is approved.
     } catch (error) {
       console.error("Exception in fetchEventDetails:", error)
       showToast("Error", "An unexpected error occurred", "error")
+    }finally{
+      hideLoader("detailLoader");
     }
   }
 
