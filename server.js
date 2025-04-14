@@ -30,7 +30,7 @@ mongoose.connect(MONGODB_URI, {
 const corsOptions = {
   origin: [
     "https://unibux.vercel.app", // Your frontend URL
-    "http://localhost:5000", // Local development URL (if needed)
+    "http://localhost:3000", // Local development URL (if needed)
   ],
   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
   allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
