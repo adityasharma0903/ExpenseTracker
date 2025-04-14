@@ -3977,3 +3977,253 @@ function setupDetailModalListeners() {
   // Add your event detail modal listeners here
   console.log("Event ID:", eventId) // Add this to check the value
 }
+
+// Fetch events from server
+async function fetchEvents(clubId) {
+  try {
+    const token = localStorage.getItem("authToken");
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events?clubId=${clubId}`, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      return data.events;
+    } else {
+      console.error("Failed to fetch events:", data.message);
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return [];
+  }
+}
+
+// Fetch expenses directly from server
+async function fetchExpensesFromServer(clubId) {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    // First, get all events for this club
+    const events = await fetchEvents(clubId);
+
+    if (!events || events.length === 0) {
+      return [];
+    }
+
+    // Extract all expenses from events
+    let allExpenses = [];
+
+    events.forEach(event => {
+      if (event.expenses && event.expenses.length > 0) {
+        // Add eventId and clubId to each expense for reference
+        const eventExpenses = event.expenses.map(expense => ({
+          ...expense,
+          eventId: event._id || event.id,
+          clubId: event.clubId,
+          eventName: event.name,
+          date: expense.createdAt || new Date().toISOString()
+        }));
+
+        allExpenses = [...allExpenses, ...eventExpenses];
+      }
+    });
+
+    return allExpenses;
+  } catch (error) {
+    console.error("Error fetching expenses from server:", error);
+    return [];
+  }
+}
+
+// Get the logged-in club's ID
+function getLoggedInClubId() {
+  const loggedInClub = localStorage.getItem("loggedInClub");
+  if (loggedInClub) {
+    const clubData = JSON.parse(loggedInClub);
+    return clubData.id; // Assuming the ID is stored as 'id'
+  }
+  console.error("No logged-in club found");
+  return null;
+}
+
+// Load dashboard data
+async function loadDashboardData() {
+  showLoader();
+
+  try {
+    const clubId = getLoggedInClubId();
+
+    if (!clubId) {
+      console.error("No logged-in club ID found. Cannot load dashboard data.");
+      hideLoader();
+      return;
+    }
+
+    // Fetch events from server
+    const events = await fetchEvents(clubId);
+
+    // Fetch expenses from server
+    const expenses = await fetchExpensesFromServer(clubId);
+
+    // Calculate total expenses
+    const totalExpenses = expenses.reduce((total, expense) => total + (expense.amount || 0), 0);
+
+    // Get team registrations (if applicable)
+    const teams = []; // You would need to implement fetchTeams() if needed
+
+    // Calculate upcoming events
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcomingEvents = events.filter(event => {
+      const eventStartDate = new Date(event.startDate);
+      return eventStartDate >= today;
+    });
+
+    // Update dashboard stats with animation
+    animateCounter("total-events", events.length);
+    animateCounter("total-budget", totalExpenses, "₹");
+    animateCounter("total-registrations", teams.length);
+    animateCounter("upcoming-events", upcomingEvents.length);
+
+    // Render charts
+    renderBudgetChart(expenses);
+    renderTimelineChart(events);
+    renderUpcomingEvents(upcomingEvents);
+
+    hideLoader();
+  } catch (error) {
+    console.error("Error loading dashboard data:", error);
+    hideLoader();
+  }
+}
+
+// Load events
+async function loadEvents() {
+  showLoader();
+
+  try {
+    const clubId = getLoggedInClubId();
+
+    if (!clubId) {
+      console.error("No logged-in club ID found. Cannot load events.");
+      hideLoader();
+      return;
+    }
+
+    // Fetch events from server
+    const events = await fetchEvents(clubId);
+
+    // Render events
+    renderEvents(events);
+
+    // Render timeline chart
+    renderTimelineChart(events);
+
+    hideLoader();
+  } catch (error) {
+    console.error("Error loading events:", error);
+    hideLoader();
+  }
+}
+
+// Load budget data
+async function loadBudgetData() {
+  showLoader();
+
+  try {
+    const clubId = getLoggedInClubId();
+
+    if (!clubId) {
+      console.error("No logged-in club ID found. Cannot load budget data.");
+      hideLoader();
+      return;
+    }
+
+    // Fetch expenses from server
+    const expenses = await fetchExpensesFromServer(clubId);
+
+    // Calculate total expenses
+    const totalExpenses = expenses.reduce((total, expense) => total + (expense.amount || 0), 0);
+
+    // Update budget stats with animation
+    animateCounter("budget-total", totalExpenses, "₹");
+    animateCounter("expenses-total", totalExpenses, "₹");
+    animateCounter("budget-remaining", 0, "₹"); // This would need to be calculated based on your budget logic
+
+    // Fetch events for expense event chart
+    const events = await fetchEvents(clubId);
+
+    // Render expense charts
+    renderExpenseCategoryChart(expenses);
+    renderExpenseEventChart(expenses, events);
+
+    // Render expense table
+    renderExpenseTable(expenses, events);
+
+    hideLoader();
+  } catch (error) {
+    console.error("Error loading budget data:", error);
+    hideLoader();
+  }
+}
+
+// Render expense table
+function renderExpenseTable(expenses, events) {
+  const tableBody = document.getElementById("expense-table-body");
+  if (!tableBody) return;
+
+  tableBody.innerHTML = "";
+
+  if (expenses.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = '<td colspan="5">No expenses found</td>';
+    tableBody.appendChild(row);
+    return;
+  }
+
+  // Sort expenses by date (newest first)
+  expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  expenses.forEach((expense) => {
+    const event = events.find((e) => e._id === expense.eventId || e.id === expense.eventId);
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${event ? event.name : "Unknown Event"}</td>
+      <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
+      <td>${expense.description}</td>
+      <td>₹${expense.amount}</td>
+      <td>${formatDate(new Date(expense.date))}</td>
+    `;
+
+    tableBody.appendChild(row);
+  });
+}
+
+// Initialize the application
+document.addEventListener("DOMContentLoaded", () => {
+  // Add Chart.js script dynamically if not already included
+  if (typeof Chart === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    script.onload = () => {
+      console.log('Chart.js loaded successfully');
+      // Initialize charts after Chart.js is loaded
+      const clubId = getLoggedInClubId();
+      if (clubId) {
+        loadDashboardData();
+      }
+    };
+    document.head.appendChild(script);
+  } else {
+    // If Chart.js is already loaded, initialize dashboard data
+    const clubId = getLoggedInClubId();
+    if (clubId) {
+      loadDashboardData();
+    }
+  }
+});
