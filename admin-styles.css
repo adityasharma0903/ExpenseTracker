@@ -1386,3 +1386,219 @@ textarea {
   }
 }
 
+
+/* Clubs Grid Container */
+.club-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Club Cards */
+.club-card {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 250px; /* Fixed width for uniformity */
+  min-height: 200px; /* Ensures consistent height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.club-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Club Name */
+.club-card h3 {
+  font-size: 1.5em;
+  margin-bottom: 10px;
+  color: #333;
+  text-align: center;
+}
+
+/* Club Info */
+.club-card p {
+  font-size: 1em;
+  color: #666;
+  margin: 5px 0;
+  text-align: center;
+}
+
+/* Club Card Footer */
+.club-card-footer {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Club Stats */
+.club-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+
+.club-stats span {
+  font-size: 0.9em;
+  color: #444;
+  background: #f4f4f4;
+  padding: 5px 10px;
+  border-radius: 12px;
+}
+
+/* View Details Button */
+.club-card .view-details-btn {
+  background-color: #007bff;
+  color: #fff;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9em;
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+
+.club-card .view-details-btn:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+/* Club Details Section */
+.club-details {
+  background: linear-gradient(135deg, #f0f7ff, #d9e8ff);
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 300px; /* Ensures consistent height */
+  animation: fadeIn 0.5s ease-in-out;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Club Name */
+.club-details h3 {
+  font-size: 2.4em;
+  margin-bottom: 15px;
+  color: #2b3d63;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* Club Description */
+.club-details p {
+  font-size: 1.2em;
+  color: #4a5568;
+  margin-bottom: 25px;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* Club Stats Section */
+.club-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 25px;
+}
+
+.club-stats div {
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 15px 25px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-size: 1em;
+  color: #2b3d63;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.club-stats div:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.club-stats div span {
+  display: block;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #1e293b;
+}
+
+/* View More Button */
+.view-more-btn {
+  background: linear-gradient(135deg, #007bff, #0056d2);
+  color: #fff;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background-color 0.3s, transform 0.3s;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.view-more-btn:hover {
+  background: linear-gradient(135deg, #0056d2, #003a9f);
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Placeholder Message */
+.placeholder-message {
+  font-size: 1.3em;
+  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-top: 50px;
+}
+
+.placeholder-message i {
+  font-size: 4em;
+  color: #cbd5e1;
+  animation: pulse 1.5s infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}

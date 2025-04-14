@@ -306,6 +306,22 @@ function checkLoginStatus() {
   }
 }
 
+document.getElementById("login-btn").addEventListener("click", async () => {
+  const clubId = document.getElementById("club-id").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (clubId && password) {
+    // ✅ Save clubId in localStorage
+    localStorage.setItem("clubId", clubId);
+
+    // ✅ Redirect to dashboard page
+    window.location.href = "admin-dashboard.html";
+  } else {
+    document.getElementById("login-error").textContent = "Invalid credentials";
+  }
+});
+
+
 // Handle login form submission
 async function handleLogin() {
   const clubId = document.getElementById("club-id").value.trim()

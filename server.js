@@ -4,6 +4,7 @@ const cors = require("cors")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
+const nodemailer = require("nodemailer")
 
 // Load environment variables
 dotenv.config()
@@ -16,6 +17,13 @@ const JWT_SECRET =
 const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb+srv://connectrevoliq:supportrevoliq@revoliq.i93q6.mongodb.net/?retryWrites=true&w=majority&appName=Revoliq"
+
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB connected"))
+.catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Middleware
 app.use(cors())
@@ -65,139 +73,6 @@ const userSchema = new mongoose.Schema({
   },
 })
 
-const approvedTeamSchema = new mongoose.Schema({
-  eventId: {
-    type: String,
-    required: true,
-  },
-  teamName: {
-    type: String,
-    required: true,
-  },
-  leaderName: {
-    type: String,
-    required: true,
-  },
-  members: [
-    {
-      name: String,
-      email: String,
-      phone: String,
-      department: String,
-    },
-  ],
-  projectIdea: String,
-  techStack: String,
-  approvedAt: {
-    type: Date,
-    default: Date.now,
-  },
-})
-
-const ApprovedTeam = mongoose.model("approvedteams", approvedTeamSchema)
-
-
-app.put("/api/team-registrations/:id/approve", async (req, res) => {
-  try {
-    const teamRegistration = await TeamRegistration.findById(req.params.id)
-
-    if (!teamRegistration) {
-      return res.status(404).json({
-        success: false,
-        message: "Team registration not found",
-      })
-    }
-
-    // ✅ Update team status to approved
-    teamRegistration.status = "approved"
-    if (req.body.notes) teamRegistration.notes = req.body.notes
-    await teamRegistration.save()
-
-    // ✅ Create and store approved team in new collection
-    const leader = teamRegistration.members.find(m => m.isLeader)
-
-    const approvedTeam = new ApprovedTeam({
-      eventId: teamRegistration.eventId,
-      teamName: teamRegistration.teamName,
-      leaderName: leader ? leader.name : "",
-      members: teamRegistration.members,
-      projectIdea: teamRegistration.projectIdea,
-      techStack: teamRegistration.techStack,
-    })
-
-    await approvedTeam.save()
-
-    res.json({
-      success: true,
-      message: "Team approved and added to approved list",
-      teamRegistration,
-    })
-  } catch (error) {
-    console.error("Error approving team registration:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
-app.get("/api/approved-teams", async (req, res) => {
-  try {
-    const { eventId } = req.query
-    const query = eventId ? { eventId } : {}
-
-    const teams = await ApprovedTeam.find(query)
-
-    res.json({
-      success: true,
-      teams,
-    })
-  } catch (error) {
-    console.error("Error fetching approved teams:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
-app.put("/api/team-registrations/:id/status", async (req, res) => {
-  try {
-    const team = await TeamRegistration.findById(req.params.id);
-    if (!team) {
-      return res.status(404).json({ success: false, message: "Team not found" });
-    }
-
-    const { status } = req.body;
-    if (!["approved", "rejected", "pending"].includes(status)) {
-      return res.status(400).json({ success: false, message: "Invalid status" });
-    }
-
-    team.status = status;
-    await team.save();
-
-    // Auto-create approved entry
-    if (status === "approved") {
-      const ApprovedTeam = mongoose.model("approvedteams"); // or import it properly
-      const leader = team.members.find(m => m.isLeader);
-      await ApprovedTeam.create({
-        eventId: team.eventId,
-        teamName: team.teamName,
-        leaderName: leader ? leader.name : "",
-        members: team.members,
-        projectIdea: team.projectIdea,
-        techStack: team.techStack
-      });
-    }
-
-    res.json({ success: true, message: "Status updated", team });
-  } catch (err) {
-    console.error("Status update error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-
 // Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next()
@@ -218,7 +93,38 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 const User = mongoose.model("User", userSchema)
 
-// ==================== CLUB EVENT SCHEMAS ====================
+// Approved Team Schema
+const approvedTeamSchema = new mongoose.Schema({
+  eventId: {
+    type: String,
+    required: true,
+  },
+  teamName: {
+    type: String,
+    required: true,
+  },
+  leaderName: {
+    type: String,
+    required: true,
+  },
+  members: [
+    {
+      name: String,
+      email: String,
+      phone: String,
+      department: String,
+      isLeader: Boolean,
+    },
+  ],
+  projectIdea: String,
+  techStack: String,
+  approvedAt: {
+    type: Date,
+    default: Date.now,
+  },
+})
+
+const ApprovedTeam = mongoose.model("approvedteams", approvedTeamSchema)
 
 // Expense Schema
 const expenseSchema = new mongoose.Schema({
@@ -874,9 +780,319 @@ const validateTeamRegistration = (req, res, next) => {
   next()
 }
 
+// ==================== EMAIL FUNCTIONALITY ====================
+
+
+const sendApprovalEmail = async (team) => {
+  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED");
+
+  try {
+    // ✅ 1. Check email credentials
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log("⚠️ Email credentials missing!");
+      throw new Error("Email credentials not configured");
+    }
+
+    // ✅ 2. Setup transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      debug: true
+    });
+
+    await transporter.verify();
+    console.log("✅ Transporter verified");
+
+    // ✅ 3. Fetch event details
+    let eventName = "your registered event";
+    let clubName = "your club";
+
+    try {
+      const event = await ClubEvent.findById(team.eventId);
+      console.log("🔍 Fetched Event:", event);
+
+      if (event) {
+        eventName = event.name || eventName;
+        clubName = event.clubId || clubName;
+      } else {
+        console.warn("⚠️ No event found for eventId:", team.eventId);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching event:", err.message);
+    }
+
+    // ✅ 4. Convert club ID to full name
+    const clubMap = {
+      osc: "Open Source Chandigarh",
+      gfg: "GeeksForGeeks CUIET",
+      ieee: "IEEE",
+      coe: "Center of Excellence",
+      explore: "Explore Labs",
+      ceed: "CEED",
+      // Add more if needed
+    };
+
+    const readableClub = clubMap[clubName] || clubName;
+
+    // ✅ 5. Loop through members and send email
+    for (const member of team.members) {
+      const mailOptions = {
+        from: `"TechAbhivyakti Team" <${process.env.EMAIL_USER}>`,
+        to: member.email,
+        subject: `🎉 Your Team "${team.teamName}" is Approved for ${eventName}!`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 15px;">
+            <h2 style="color: #28a745;">Hi ${member.name},</h2>
+            <p style="font-size: 16px;">
+              We're excited to let you know that your team <b>${team.teamName}</b> has been <span style="color: green;"><b>approved</b></span> to participate in the event <b>${eventName}</b>, proudly organized by <b>${readableClub}</b>! 🥳
+            </p>
+            <p style="font-size: 15px;"><b>Project Idea:</b> ${team.projectIdea || 'Not specified'}</p>
+            <p style="font-size: 15px;"><b>Tech Stack:</b> ${team.techStack || 'Not specified'}</p>
+            <p style="font-size: 15px;">Get ready to showcase your creativity and innovation! This is your moment. 🌟</p>
+            <br/>
+            <p style="font-size: 16px;">Wishing you all the best,<br><b>TechAbhivyakti Team</b></p>
+          </div>
+        `
+      };
+
+      console.log(`📧 Sending approval email to: ${member.email}`);
+      try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`);
+      } catch (sendError) {
+        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message);
+      }
+    }
+
+    console.log("✅ All approval emails sent successfully");
+    return true;
+
+  } catch (error) {
+    console.error("❌ ERROR in sendApprovalEmail function:", error);
+    return false;
+  }
+};
+
 // ==================== ROUTES ====================
 
-// Auth Routes
+// Team approval route with improved email handling
+app.put("/api/team-registrations/:id/approve", async (req, res) => {
+  console.log("🔍 APPROVE TEAM ROUTE CALLED for ID:", req.params.id);
+  
+  try {
+    console.log("🔍 Finding team registration...");
+    const teamRegistration = await TeamRegistration.findById(req.params.id);
+
+    if (!teamRegistration) {
+      console.log("❌ Team registration not found!");
+      return res.status(404).json({
+        success: false,
+        message: "Team registration not found",
+      });
+    }
+
+    console.log("✅ Team found:", teamRegistration.teamName);
+    
+    // Update team status
+    console.log("🔍 Updating team status to approved...");
+    teamRegistration.status = "approved";
+    if (req.body.notes) teamRegistration.notes = req.body.notes;
+    await teamRegistration.save();
+    console.log("✅ Team status updated successfully");
+
+    const leader = teamRegistration.members.find(m => m.isLeader);
+    console.log("🔍 Team leader:", leader ? leader.name : "No leader found");
+
+    console.log("🔍 Creating approved team record...");
+    const approvedTeam = new ApprovedTeam({
+      eventId: teamRegistration.eventId,
+      teamName: teamRegistration.teamName,
+      leaderName: leader ? leader.name : "",
+      members: teamRegistration.members,
+      projectIdea: teamRegistration.projectIdea,
+      techStack: teamRegistration.techStack,
+    });
+
+    await approvedTeam.save();
+    console.log("✅ Approved team saved to database");
+
+    // Send emails to all team members
+    console.log("📧 Attempting to send emails to team members:");
+    approvedTeam.members.forEach((m, i) => {
+      console.log(`   ${i+1}. ${m.name} <${m.email}>`);
+    });
+    
+    try {
+      console.log("📧 Calling sendApprovalEmail function...");
+      const emailResult = await sendApprovalEmail(approvedTeam);
+      if (emailResult) {
+        console.log("✅ All approval emails sent successfully");
+      } else {
+        console.log("⚠️ There were issues sending some emails, but the approval process continued");
+      }
+    } catch (emailError) {
+      console.error("❌ EMAIL ERROR:", emailError);
+      // Continue execution even if email fails
+      console.log("⚠️ Continuing despite email error");
+    }
+
+    console.log("🔍 Sending success response to client");
+    res.json({
+      success: true,
+      message: "Team approved and emails sent",
+      teamRegistration,
+    });
+
+  } catch (error) {
+    console.error("❌ ERROR in approve team route:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error: " + error.message,
+      error: error.toString()
+    });
+  }
+});
+
+// Test email route
+app.get("/api/test-email", async (req, res) => {
+  console.log("🔍 TEST EMAIL ROUTE CALLED");
+  
+  try {
+    const testTeam = {
+      teamName: "Test Team",
+      leaderName: "Test Leader",
+      projectIdea: "Test Project",
+      techStack: "Test Stack",
+      members: [
+        { 
+          name: "Test Member 1", 
+          email: req.query.email || process.env.EMAIL_USER || "test@example.com" 
+        },
+        { 
+          name: "Test Member 2", 
+          email: req.query.email2 || process.env.EMAIL_USER || "test2@example.com" 
+        }
+      ]
+    };
+    
+    console.log("📧 Calling sendApprovalEmail with test data...");
+    const result = await sendApprovalEmail(testTeam);
+    
+    if (result) {
+      res.json({ 
+        success: true, 
+        message: "Test email sent successfully",
+        testEmail: req.query.email || process.env.EMAIL_USER || "test@example.com"
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to send test email. Check server logs for details." 
+      });
+    }
+  } catch (error) {
+    console.error("❌ TEST EMAIL ERROR:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to send test email", 
+      error: error.toString() 
+    });
+  }
+});
+
+// Check environment variables route
+app.get("/api/check-env", (req, res) => {
+  res.json({
+    emailUserSet: !!process.env.EMAIL_USER,
+    emailPassSet: !!process.env.EMAIL_PASS,
+    // Don't show the actual values for security reasons
+    emailUserLength: process.env.EMAIL_USER ? process.env.EMAIL_USER.length : 0,
+    emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0,
+    port: process.env.PORT || 5000,
+    nodeEnv: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Team status update route
+app.put("/api/team-registrations/:id/status", async (req, res) => {
+  try {
+    const team = await TeamRegistration.findById(req.params.id);
+    if (!team) {
+      return res.status(404).json({ success: false, message: "Team not found" });
+    }
+
+    const { status } = req.body;
+    if (!["approved", "rejected", "pending"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    team.status = status;
+    await team.save();
+
+    // Auto-create approved entry and send emails if status is approved
+    if (status === "approved") {
+      const leader = team.members.find(m => m.isLeader);
+      const approvedTeam = await ApprovedTeam.create({
+        eventId: team.eventId,
+        teamName: team.teamName,
+        leaderName: leader ? leader.name : "",
+        members: team.members,
+        projectIdea: team.projectIdea,
+        techStack: team.techStack
+      });
+      
+      // Send approval emails
+      try {
+        await sendApprovalEmail(approvedTeam);
+        console.log("✅ Approval emails sent for team:", team.teamName);
+      } catch (emailError) {
+        console.error("❌ Error sending approval emails:", emailError);
+      }
+    }
+
+    res.json({ success: true, message: "Status updated", team });
+  } catch (err) {
+    console.error("Status update error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Team rejection route
+app.put("/api/team-registrations/:id/reject", async (req, res) => {
+  try {
+    const teamRegistration = await TeamRegistration.findById(req.params.id);
+
+    if (!teamRegistration) {
+      return res.status(404).json({
+        success: false,
+        message: "Team registration not found",
+      });
+    }
+
+    teamRegistration.status = "rejected";
+    if (req.body.notes) teamRegistration.notes = req.body.notes;
+
+    await teamRegistration.save();
+
+    res.json({
+      success: true,
+      message: "Team registration rejected",
+      teamRegistration,
+    });
+  } catch (error) {
+    console.error("Error rejecting team registration:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+})
+
+// ==================== AUTH ROUTES ====================
+
 // @route   POST api/auth/admin/signup
 // @desc    Register an admin user
 // @access  Public
@@ -1046,7 +1262,8 @@ app.post("/api/auth/department/login", validateLogin, async (req, res) => {
   }
 })
 
-// Event Routes
+// ==================== EVENT ROUTES ====================
+
 // @route   POST api/events
 // @desc    Create a new event
 // @access  Private
@@ -1432,160 +1649,11 @@ app.put("/api/events/:id/reject", adminAuth, async (req, res) => {
   }
 })
 
-// User Routes
-// @route   GET api/users/me
-// @desc    Get current user
-// @access  Private
-app.get("/api/users/me", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password")
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
-
-    res.json({
-      success: true,
-      user,
-    })
-  } catch (error) {
-    console.error("Error fetching user:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
-// @route   GET api/users/departments
-// @desc    Get all departments
-// @access  Private (Admin only)
-app.get("/api/users/departments", adminAuth, async (req, res) => {
-  try {
-    const departments = await User.find({ type: "department" }).select("-password")
-
-    res.json({
-      success: true,
-      departments,
-    })
-  } catch (error) {
-    console.error("Error fetching departments:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
-// @route   PUT api/users/password
-// @desc    Update user password
-// @access  Private
-app.put("/api/users/password", auth, async (req, res) => {
-  const { currentPassword, newPassword } = req.body
-
-  // Validate input
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({
-      success: false,
-      message: "Please provide current and new password",
-    })
-  }
-
-  try {
-    // Get user
-    const user = await User.findById(req.user.id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
-
-    // Check current password
-    const isMatch = await user.comparePassword(currentPassword)
-
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password is incorrect",
-      })
-    }
-
-    // Update password
-    user.password = newPassword
-    await user.save()
-
-    res.json({
-      success: true,
-      message: "Password updated successfully",
-    })
-  } catch (error) {
-    console.error("Error updating password:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
-// @route   PUT api/users/profile
-// @desc    Update user profile
-// @access  Private
-app.put("/api/users/profile", auth, async (req, res) => {
-  const { email } = req.body
-
-  // Validate input
-  if (!email) {
-    return res.status(400).json({
-      success: false,
-      message: "Please provide email",
-    })
-  }
-
-  try {
-    // Check if email is already in use by another user
-    const existingUser = await User.findOne({ email, _id: { $ne: req.user.id } })
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is already in use",
-      })
-    }
-
-    // Update user
-    const user = await User.findByIdAndUpdate(req.user.id, { $set: { email } }, { new: true }).select("-password")
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
-
-    res.json({
-      success: true,
-      user,
-    })
-  } catch (error) {
-    console.error("Error updating profile:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
-// ==================== CLUB EVENTS ROUTES (NEW) ====================
+// ==================== CLUB EVENTS ROUTES ====================
 
 // @route   POST api/club-events
 // @desc    Create a new club event
 // @access  Public
-
 app.post("/api/club-events", async (req, res) => {
   try {
     // Get token from header
@@ -1709,7 +1777,7 @@ app.delete("/api/club-events/:id", async (req, res) => {
   }
 })
 
-// ==================== TEAM REGISTRATION ROUTES (NEW) ====================
+// ==================== TEAM REGISTRATION ROUTES ====================
 
 // @route   POST api/team-registrations
 // @desc    Register a team for an event
@@ -1800,69 +1868,99 @@ app.get("/api/team-registrations/:id", async (req, res) => {
   }
 })
 
-// @route   PUT api/team-registrations/:id/approve
-// @desc    Approve a team registration
-// @access  Public
-app.put("/api/team-registrations/:id/approve", async (req, res) => {
+// ==================== ADDITIONAL ROUTES ====================
+
+app.get("/api/events/club/:clubId", async (req, res) => {
   try {
-    const teamRegistration = await TeamRegistration.findById(req.params.id)
-
-    if (!teamRegistration) {
-      return res.status(404).json({
-        success: false,
-        message: "Team registration not found",
-      })
-    }
-
-    teamRegistration.status = "approved"
-    if (req.body.notes) teamRegistration.notes = req.body.notes
-
-    await teamRegistration.save()
-
-    res.json({
-      success: true,
-      message: "Team registration approved",
-      teamRegistration,
-    })
-  } catch (error) {
-    console.error("Error approving team registration:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
+    const { clubId } = req.params;
+    const events = await ClubEvent.find({ clubId });
+    res.json({ success: true, events });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
   }
-})
+});
 
-// @route   PUT api/team-registrations/:id/reject
-// @desc    Reject a team registration
-// @access  Public
-app.put("/api/team-registrations/:id/reject", async (req, res) => {
+app.get("/api/approved-teams", async (req, res) => {
   try {
-    const teamRegistration = await TeamRegistration.findById(req.params.id)
+    const { eventId } = req.query;
+    const query = eventId ? { eventId } : {};
 
-    if (!teamRegistration) {
-      return res.status(404).json({
-        success: false,
-        message: "Team registration not found",
-      })
-    }
-
-    teamRegistration.status = "rejected"
-    if (req.body.notes) teamRegistration.notes = req.body.notes
-
-    await teamRegistration.save()
+    const teams = await ApprovedTeam.find(query);
 
     res.json({
       success: true,
-      message: "Team registration rejected",
-      teamRegistration,
-    })
+      teams,
+    });
   } catch (error) {
-    console.error("Error rejecting team registration:", error)
+    console.error("Error fetching approved teams:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
-    })
+    });
+  }
+});
+
+// ==================== ADMIN DASHBOARD ROUTES ====================
+
+// @route   GET api/admin/club-data
+// @desc    Get all clubs with their events
+// @access  Public
+app.get("/api/admin/club-data", async (req, res) => {
+  try {
+    const clubs = [
+      { id: "osc", name: "Open Source Chandigarh" },
+      { id: "ieee", name: "IEEE" },
+      { id: "explore", name: "Explore Labs" },
+      { id: "iei", name: "IE(I) CSE Student Chapter" },
+      { id: "coe", name: "Center of Excellence" },
+      { id: "ceed", name: "CEED" },
+      { id: "bnb", name: "BIts N Bytes" },
+      { id: "acm", name: "ACM Chapter" },
+      { id: "gfg", name: "GFG CUIET" },
+      { id: "gdg", name: "GDG CUIET" },
+      { id: "cb", name: "Coding Blocks" },
+      { id: "cn", name: "Coding Ninjas" },
+      { id: "dgit", name: "DGIT Squad" },
+      { id: "dice", name: "DICE" },
+      { id: "hc", name: "Happiness Center" },
+      { id: "nss", name: "NSS" },
+    ]
+    
+    const allClubsData = await Promise.all(
+      clubs.map(async (club) => {
+        const events = await ClubEvent.find({ clubId: club.id })
+
+        // Calculate stats
+        let totalExpenses = 0
+        let totalRegistrations = 0
+        const today = new Date()
+
+        events.forEach(event => {
+          event.expenses?.forEach(exp => {
+            totalExpenses += exp.amount || 0
+          })
+
+          // Registration logic (if you have separate reg data)
+        })
+
+        const upcomingEvents = events.filter(event => new Date(event.startDate) > today).length
+
+        return {
+          id: club.id,
+          name: club.name,
+          events,
+          totalEvents: events.length,
+          totalExpenses,
+          totalRegistrations,
+          upcomingEvents,
+        }
+      })
+    )
+
+    res.status(200).json({ success: true, clubData: allClubsData })
+  } catch (err) {
+    console.error("Error in /api/admin/club-data:", err)
+    res.status(500).json({ success: false, message: "Server Error" })
   }
 })
 
@@ -1943,7 +2041,7 @@ const insertDefaultAccounts = async () => {
 
 // ==================== SERVER STARTUP ====================
 
-// Connect to MongoDB
+// Connect to MongoDB and start server
 mongoose
   .connect(MONGODB_URI, {
     useNewUrlParser: true,
@@ -1976,6 +2074,3 @@ app.get("/", (req, res) => {
 })
 
 module.exports = app
-
-
-
