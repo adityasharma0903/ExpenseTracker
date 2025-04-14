@@ -2,1403 +2,812 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>College Club Management</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventPro AI - College Event & Budget Management Platform</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="landing.css">
 </head>
 
 <body>
-  <!-- Login Page -->
-  <div id="login-page" class="page active">
-    <div class="login-container">
-      <div class="login-header">
-        <div class="logo-container">
-          <div class="logo">CM</div>
-        </div>
-        <h1>Club Manager</h1>
-        <p>Manage your club events and activities</p>
-      </div>
-      <div class="login-form">
-        <div class="input-group">
-          <label for="club-id">Club ID</label>
-          <div class="input-with-icon">
-            <i class="fas fa-id-card"></i>
-            <input type="text" id="club-id" placeholder="Enter your club ID">
-          </div>
-        </div>
-        <div class="input-group">
-          <label for="password">Password</label>
-          <div class="input-with-icon">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="password" placeholder="Enter your password">
-          </div>
-        </div>
-        <button id="login-btn" class="btn-primary">
-          <span>Login</span>
-          <i class="fas fa-arrow-right"></i>
-        </button>
-        <div id="login-error" class="error-message"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Dashboard Page -->
-  <div id="dashboard-page" class="page">
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-container">
-          <div class="logo">CM</div>
-        </div>
-        <h2 id="club-name">Club Name</h2>
-      </div>
-      <nav class="sidebar-nav">
-        <ul>
-          <li data-page="dashboard" class="active"><i class="fas fa-chart-line"></i> Dashboard</li>
-          <li data-page="events"><i class="fas fa-calendar-alt"></i> Events</li>
-          <li data-page="budget"><i class="fas fa-wallet"></i> Budget</li>
-          <li data-page="profile"><i class="fas fa-user"></i> Profile</li>
-          <li id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</li>
-        </ul>
-      </nav>
-    </div>
-
-    <div class="main-content">
-      <div class="top-bar">
-        <div class="hamburger-menu">
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
-        </div>
-        <div class="search-bar">
-          <i class="fas fa-search"></i>
-          <input type="text" placeholder="Search...">
-        </div>
-        <div class="user-profile">
-          <div class="notification">
-            <i class="fas fa-bell"></i>
-            <span class="badge">3</span>
-          </div>
-          <div class="profile-pic">
-            <i class="fas fa-user"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dashboard Content -->
-      <div id="dashboard-content" class="content active">
-        <div class="content-header">
-          <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
-          <p class="date-display" id="current-date"></p>
-        </div>
-
-        <div class="stats-container">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-calendar-alt"></i>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <a href="#">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Event<span class="highlight">Pro</span> AI</span>
+                </a>
             </div>
-            <div class="stat-info">
-              <h3>Total Events</h3>
-              <p id="total-events">0</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-wallet"></i>
-            </div>
-            <div class="stat-info">
-              <h3>Total Expense</h3>
-              <p id="total-budget">₹0</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-info">
-              <h3>Total Registrations</h3>
-              <p id="total-registrations">0</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="stat-info">
-              <h3>Upcoming Events</h3>
-              <p id="upcoming-events">0</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="charts-container">
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3><i class="fas fa-chart-pie"></i> Budget Allocation</h3>
-              <div class="chart-actions">
-                <button class="chart-action-btn" id="refresh-budget-chart">
-                  <i class="fas fa-sync-alt"></i>
-                </button>
-              </div>
-            </div>
-            <div class="chart-container">
-              <canvas id="budget-chart"></canvas>
-              <div id="budget-chart-legend" class="chart-legend"></div>
-            </div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3><i class="fas fa-chart-line"></i> Event Timeline</h3>
-              <div class="chart-actions">
-                <button class="chart-action-btn" id="refresh-timeline-chart">
-                  <i class="fas fa-sync-alt"></i>
-                </button>
-              </div>
-            </div>
-            <div class="chart-container">
-              <canvas id="timeline-chart"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="recent-events-section">
-          <div class="section-header">
-            <h3><i class="fas fa-calendar-check"></i> Upcoming Events</h3>
-            <a href="#" class="view-all" id="view-all-events">View All <i class="fas fa-arrow-right"></i></a>
-          </div>
-          <div id="upcoming-events-list" class="events-list">
-            <!-- Events will be populated here -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Events Content -->
-      <div id="events-content" class="content">
-        <div class="content-header">
-          <h1><i class="fas fa-calendar-alt"></i> Events</h1>
-          <button id="create-event-btn" class="btn-primary">
-            <i class="fas fa-plus"></i> Create Event
-          </button>
-        </div>
-
-        <div class="events-filter">
-          <div class="filter-group">
-            <label for="event-filter"><i class="fas fa-filter"></i> Filter:</label>
-            <select id="event-filter">
-              <option value="all">All Events</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="past">Past</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label for="event-sort"><i class="fas fa-sort"></i> Sort By:</label>
-            <select id="event-sort">
-              <option value="date-desc">Date (Newest)</option>
-              <option value="date-asc">Date (Oldest)</option>
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="events-list" class="events-grid">
-          <!-- Events will be populated here -->
-        </div>
-      </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#roles">For Teams</a></li>
+                    <li><a href="#events">Events</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                </ul>
+            </nav>
+            <div class="header-buttons">
+                <a href="#" class="btn btn-outline">Log In</a>
+                <a href="#" class="btn btn-primary" id="getStartedBtn">Get Started</a>
 
 
-      <!-- Budget Content -->
-      <div id="budget-content" class="content">
-        <div class="content-header">
-          <h1><i class="fas fa-wallet"></i> Budget & Expenses</h1>
-          <button id="add-expense-btn-main" class="btn-primary">
-            <i class="fas fa-plus"></i> Add Expense
-          </button>
-        </div>
-        <!-- Add Input Field for Total Budget Here -->
-        <div class="form-group">
-          <label for="total-budget-input">Update Total Budget</label>
-          <div class="input-with-icon">
-            <i class="fas fa-wallet"></i>
-            <input type="number" id="total-budget-input" placeholder="Enter total budget" min="0">
-          </div>
-          <button id="update-total-budget-btn" class="btn-success">
-            <i class="fas fa-save"></i> Update Budget
-          </button>
-        </div>
-
-        <div class="budget-overview">
-          <!-- Your Existing Budget Overview Code -->
-        </div>
-
-        <div class="budget-overview">
-          <div class="budget-card">
-            <div class="budget-icon">
-              <i class="fas fa-wallet"></i>
             </div>
-            <div class="budget-info">
-              <h3>Total Budget</h3>
-              <p id="budget-total">₹0</p>
-            </div>
-          </div>
-          <div class="budget-card">
-            <div class="budget-icon">
-              <i class="fas fa-money-bill-wave"></i>
-            </div>
-            <div class="budget-info">
-              <h3>Total Expenses</h3>
-              <p id="expenses-total">₹0</p>
-            </div>
-          </div>
-          <div class="budget-card">
-            <div class="budget-icon">
-              <i class="fas fa-coins"></i>
-            </div>
-            <div class="budget-info">
-              <h3>Remaining</h3>
-              <p id="budget-remaining">₹0</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="charts-container">
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3><i class="fas fa-chart-pie"></i> Expenses by Category</h3>
-              <div class="chart-actions">
-                <button class="chart-action-btn" id="refresh-category-chart">
-                  <i class="fas fa-sync-alt"></i>
-                </button>
-              </div>
-            </div>
-            <div class="chart-container">
-              <canvas id="expenses-category-chart"></canvas>
-              <div id="category-chart-legend" class="chart-legend"></div>
-            </div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3><i class="fas fa-chart-bar"></i> Expenses by Event</h3>
-              <div class="chart-actions">
-                <button class="chart-action-btn" id="refresh-event-chart">
-                  <i class="fas fa-sync-alt"></i>
-                </button>
-              </div>
-            </div>
-            <div class="chart-container">
-              <canvas id="expenses-event-chart"></canvas>
-              <div id="event-chart-legend" class="chart-legend"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="budget-details">
-          <div class="section-header">
-            <h3><i class="fas fa-list"></i> Expense Details</h3>
-            <div class="expense-filter">
-              <label for="expense-filter"><i class="fas fa-filter"></i> Filter:</label>
-              <select id="expense-filter">
-                <option value="all">All Categories</option>
-                <option value="venue">Venue</option>
-                <option value="refreshments">Refreshments</option>
-                <option value="prizes">Prizes</option>
-                <option value="equipment">Equipment</option>
-                <option value="marketing">Marketing</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-          <div class="table-container">
-            <table class="expense-table">
-              <thead>
-                <tr>
-                  <th>Event</th>
-                  <th>Category</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="expense-table-body">
-                <!-- Expenses will be populated here -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Profile Content -->
-      <div id="profile-content" class="content">
-        <div class="content-header">
-          <h1><i class="fas fa-user"></i> Club Profile</h1>
-        </div>
-
-        <div class="profile-container">
-          <div class="profile-header">
-            <div class="profile-pic large">
-              <i class="fas fa-user"></i>
-            </div>
-            <div class="profile-info">
-              <h2 id="profile-club-name">Club Name</h2>
-              <p id="profile-club-id">Club ID: </p>
-            </div>
-          </div>
-
-          <div class="profile-details">
-            <div class="detail-group">
-              <h3><i class="fas fa-info-circle"></i> Club Information</h3>
-              <div class="detail-item">
-                <label>Club Name:</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-building"></i>
-                  <input type="text" id="profile-name" disabled>
-                </div>
-              </div>
-              <div class="detail-item">
-                <label>Club ID:</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-id-card"></i>
-                  <input type="text" id="profile-id" disabled>
-                </div>
-              </div>
-              <div class="detail-item">
-                <label>Email:</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-envelope"></i>
-                  <input type="email" id="profile-email" value="club@example.com">
-                </div>
-              </div>
-              <div class="detail-item">
-                <label>Contact:</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-phone"></i>
-                  <input type="tel" id="profile-contact" value="+91 9876543210">
-                </div>
-              </div>
-              <div class="detail-item">
-                <label>Description:</label>
-                <textarea id="profile-description">Club description goes here.</textarea>
-              </div>
-            </div>
-
-            <div class="detail-group">
-              <h3><i class="fas fa-lock"></i> Change Password</h3>
-              <div class="detail-item">
-                <label>Current Password:</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-lock"></i>
-                  <input type="password" id="current-password">
-                </div>
-              </div>
-              <div class="detail-item">
-                <label>New Password:</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-key"></i>
-                  <input type="password" id="new-password">
-                </div>
-              </div>
-              <div class="detail-item">
-                <label>Confirm Password:</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-check-circle"></i>
-                  <input type="password" id="confirm-password">
-                </div>
-              </div>
-              <button id="change-password-btn" class="btn-primary">
-                <i class="fas fa-save"></i> Change Password
-              </button>
-            </div>
-          </div>
-
-          <div class="profile-actions">
-            <button id="save-profile-btn" class="btn-primary">
-              <i class="fas fa-save"></i> Save Changes
+            <button class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
             </button>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
+    </header>
 
-  <!-- Create Event Modal -->
-  <!-- Modified Create Event Modal HTML -->
-  <div id="create-event-modal" class="modal">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
-        <h2><i class="fas fa-calendar-plus"></i> Create New Event</h2>
-        <span class="close-modal"><i class="fas fa-times"></i></span>
-      </div>
-      <div class="modal-body">
-        <div class="modal-tabs">
-          <div class="tab active" data-tab="event-details">
-            <i class="fas fa-info-circle"></i> Basic Details
-          </div>
-          <div class="tab" data-tab="event-overview">
-            <i class="fas fa-align-left"></i> Overview
-          </div>
-          <div class="tab" data-tab="event-prizes">
-            <i class="fas fa-trophy"></i> Prizes
-          </div>
-          <div class="tab" data-tab="event-schedule">
-            <i class="fas fa-calendar-alt"></i> Schedule
-          </div>
-          <div class="tab" data-tab="event-faq">
-            <i class="fas fa-question-circle"></i> FAQ
-          </div>
-          <div class="tab" data-tab="event-budget">
-            <i class="fas fa-wallet"></i> Budget
-          </div>
-        </div>
-
-        <!-- Basic Details Tab -->
-        <div id="event-details-tab" class="tab-content active">
-          <div class="form-group">
-            <label for="event-name">Event Name</label>
-            <div class="input-with-icon">
-              <i class="fas fa-signature"></i>
-              <input type="text" id="event-name" placeholder="Enter event name">
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <div class="logo">
+                <a href="#">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Event<span class="highlight">Pro</span> AI</span>
+                </a>
             </div>
-          </div>
-          <div class="form-group">
-            <label for="event-description">Event Description</label>
-            <textarea id="event-description" placeholder="Enter event description"></textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="event-start-date">Start Date</label>
-              <div class="input-with-icon">
-                <i class="fas fa-calendar"></i>
-                <input type="date" id="event-start-date">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="event-end-date">End Date</label>
-              <div class="input-with-icon">
-                <i class="fas fa-calendar"></i>
-                <input type="date" id="event-end-date">
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="event-start-time">Start Time</label>
-              <div class="input-with-icon">
-                <i class="fas fa-clock"></i>
-                <input type="time" id="event-start-time">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="event-end-time">End Time</label>
-              <div class="input-with-icon">
-                <i class="fas fa-clock"></i>
-                <input type="time" id="event-end-time">
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="event-venue">Venue</label>
-            <div class="input-with-icon">
-              <i class="fas fa-map-marker-alt"></i>
-              <input type="text" id="event-venue" placeholder="Enter venue">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="event-team-min">Min Team Size</label>
-              <div class="input-with-icon">
-                <i class="fas fa-users"></i>
-                <input type="number" id="event-team-min" min="1" value="1">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="event-team-max">Max Team Size</label>
-              <div class="input-with-icon">
-                <i class="fas fa-users"></i>
-                <input type="number" id="event-team-max" min="1" value="5">
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="event-dl">Registration Deadline</label>
-            <select id="event-dl">
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </div>
-          <div id="dl-options" class="form-group hidden">
-            <label for="dl-type">Deadline Type</label>
-            <select id="dl-type">
-              <option value="full-day">Full Day</option>
-              <option value="specific-hours">Specific Hours</option>
-            </select>
-          </div>
-          <div id="dl-hours" class="form-row hidden">
-            <div class="form-group">
-              <label for="dl-start-time">Start Time</label>
-              <div class="input-with-icon">
-                <i class="fas fa-clock"></i>
-                <input type="time" id="dl-start-time">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="dl-end-time">End Time</label>
-              <div class="input-with-icon">
-                <i class="fas fa-clock"></i>
-                <input type="time" id="dl-end-time">
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="event-poster">Event Poster</label>
-            <div class="file-input-container">
-              <input type="file" id="event-poster" accept="image/*">
-              <label for="event-poster" class="file-input-label">
-                <i class="fas fa-upload"></i> Choose Image
-              </label>
-              <span class="file-name">No file chosen</span>
-            </div>
-            <div id="poster-preview" class="poster-preview">
-              <i class="fas fa-image"></i>
-              <span>No image selected</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Overview Tab -->
-        <div id="event-overview-tab" class="tab-content">
-          <div class="form-group">
-            <label for="event-about">About the Event</label>
-            <textarea id="event-about" placeholder="Detailed description about the event" rows="5"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="event-theme">Event Theme</label>
-            <div class="input-with-icon">
-              <i class="fas fa-lightbulb"></i>
-              <input type="text" id="event-theme" placeholder="Enter event theme (leave blank if no specific theme)">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>What to Expect</label>
-            <div id="expect-items-container">
-              <div class="expect-item">
-                <div class="input-with-icon">
-                  <i class="fas fa-star"></i>
-                  <input type="text" class="expect-input" placeholder="Enter an expectation item">
-                </div>
-                <button class="remove-expect-item"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-expect-item" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Item
+            <button class="menu-close" id="menuClose">
+                <i class="fa-solid fa-xmark"></i>
             </button>
-          </div>
-          <div class="form-group">
-            <label>Eligibility Criteria</label>
-            <div id="eligibility-items-container">
-              <div class="eligibility-item">
-                <div class="input-with-icon">
-                  <i class="fas fa-check-circle"></i>
-                  <input type="text" class="eligibility-input" placeholder="Enter eligibility criteria">
-                </div>
-                <button class="remove-eligibility-item"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-eligibility-item" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Criteria
-            </button>
-          </div>
-          <div class="form-group">
-            <label for="event-duty-leave">Duty Leave Available</label>
-            <div class="form-row">
-              <div class="form-group checkbox-group">
-                <input type="checkbox" id="event-duty-leave">
-                <label for="event-duty-leave">Available</label>
-              </div>
-              <div class="form-group">
-                <div class="input-with-icon">
-                  <i class="fas fa-calendar-day"></i>
-                  <input type="number" id="event-duty-leave-days" min="0" value="0" placeholder="Number of days">
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
+        <nav class="mobile-nav">
+            <ul>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#roles">For Teams</a></li>
+                <li><a href="#events">Events</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+            </ul>
+        </nav>
+        <div class="mobile-buttons">
+            <a href="#" class="btn btn-outline">Log In</a>
+            <a href="#" class="btn btn-primary" id="mobileGetStartedBtn">Get Started</a>
 
-        <!-- Prizes Tab -->
-        <div id="event-prizes-tab" class="tab-content">
-          <div class="form-group">
-            <label for="event-prize-pool">Total Prize Pool (₹)</label>
-            <div class="input-with-icon">
-              <i class="fas fa-rupee-sign"></i>
-              <input type="number" id="event-prize-pool" min="0" value="0">
-            </div>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-trophy"></i> Main Prizes</h3>
-
-            <div class="prize-item">
-              <div class="prize-header">
-                <h4><i class="fas fa-medal" style="color: gold;"></i> First Prize</h4>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Amount (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="first-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Description</label>
-                  <textarea id="first-prize-description" placeholder="Describe the first prize"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="prize-item">
-              <div class="prize-header">
-                <h4><i class="fas fa-medal" style="color: silver;"></i> Second Prize</h4>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Amount (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="second-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Description</label>
-                  <textarea id="second-prize-description" placeholder="Describe the second prize"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="prize-item">
-              <div class="prize-header">
-                <h4><i class="fas fa-medal" style="color: #cd7f32;"></i> Third Prize</h4>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Amount (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="third-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Description</label>
-                  <textarea id="third-prize-description" placeholder="Describe the third prize"></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-star"></i> Special Awards</h3>
-            <div id="special-awards-container">
-              <!-- Special awards will be added here -->
-            </div>
-            <button id="add-special-award" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Special Award
-            </button>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-gift"></i> For All Participants</h3>
-            <div id="participant-perks-container">
-              <div class="participant-perk">
-                <div class="input-with-icon">
-                  <i class="fas fa-gift"></i>
-                  <input type="text" class="perk-input" placeholder="Enter perk (e.g., T-shirts, Certificates)">
-                </div>
-                <button class="remove-perk"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-participant-perk" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Perk
-            </button>
-          </div>
-
-          <div class="prize-section">
-            <h3><i class="fas fa-building"></i> Sponsored By</h3>
-            <div id="sponsors-container">
-              <div class="sponsor-item">
-                <div class="input-with-icon">
-                  <i class="fas fa-building"></i>
-                  <input type="text" class="sponsor-name" placeholder="Sponsor name">
-                </div>
-                <div class="file-input-container">
-                  <input type="file" class="sponsor-logo" accept="image/*">
-                  <label for="sponsor-logo" class="file-input-label">
-                    <i class="fas fa-upload"></i> Upload Logo
-                  </label>
-                </div>
-                <button class="remove-sponsor"><i class="fas fa-trash-alt"></i></button>
-              </div>
-            </div>
-            <button id="add-sponsor" class="btn-secondary">
-              <i class="fas fa-plus"></i> Add Sponsor
-            </button>
-          </div>
         </div>
-
-        <!-- Schedule Tab -->
-        <div id="event-schedule-tab" class="tab-content">
-          <div id="schedule-days-container">
-            <!-- Schedule days will be added here -->
-            <div class="schedule-day" data-day="1">
-              <div class="day-header">
-                <h3>Day 1</h3>
-                <div class="input-with-icon">
-                  <i class="fas fa-calendar"></i>
-                  <input type="date" class="day-date">
-                </div>
-              </div>
-              <div class="schedule-items-container">
-                <!-- Schedule items will be added here -->
-              </div>
-              <button class="add-schedule-item btn-secondary">
-                <i class="fas fa-plus"></i> Add Schedule Item
-              </button>
-            </div>
-          </div>
-          <button id="add-schedule-day" class="btn-secondary">
-            <i class="fas fa-plus"></i> Add Day
-          </button>
-        </div>
-
-        <!-- FAQ Tab -->
-        <div id="event-faq-tab" class="tab-content">
-          <div id="faq-items-container">
-            <div class="faq-item">
-              <div class="form-group">
-                <label>Question</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-question-circle"></i>
-                  <input type="text" class="faq-question" placeholder="Enter a frequently asked question">
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Answer</label>
-                <textarea class="faq-answer" placeholder="Enter the answer to the question"></textarea>
-              </div>
-              <button class="remove-faq"><i class="fas fa-trash-alt"></i></button>
-            </div>
-          </div>
-          <button id="add-faq-item" class="btn-secondary">
-            <i class="fas fa-plus"></i> Add FAQ
-          </button>
-        </div>
-
-        <!-- Budget Tab -->
-        <div id="event-budget-tab" class="tab-content">
-          <div class="form-group">
-            <label for="event-teams">Number of Teams</label>
-            <div class="input-with-icon">
-              <i class="fas fa-users"></i>
-              <input type="number" id="event-teams" min="1" value="1">
-            </div>
-          </div>
-
-          <h3><i class="fas fa-money-bill-wave"></i> Expenses</h3>
-          <div id="expenses-container">
-            <div class="expense-item">
-              <div class="form-group">
-                <label for="expense-category-1">Category</label>
-                <select id="expense-category-1" class="expense-category">
-                  <option value="venue">Venue</option>
-                  <option value="refreshments">Refreshments</option>
-                  <option value="prizes">Prizes</option>
-                  <option value="equipment">Equipment</option>
-                  <option value="marketing">Marketing</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="expense-description-1">Description</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-align-left"></i>
-                  <input type="text" id="expense-description-1" class="expense-description"
-                    placeholder="Enter description">
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="expense-amount-1">Amount (₹)</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-rupee-sign"></i>
-                  <input type="number" id="expense-amount-1" class="expense-amount" min="0" value="0">
-                </div>
-              </div>
-              <button class="remove-expense" data-id="1"><i class="fas fa-trash-alt"></i></button>
-            </div>
-          </div>
-          <button id="add-expense-btn" class="btn-secondary">
-            <i class="fas fa-plus"></i> Add Expense
-          </button>
-          <div class="total-budget">
-            <h3>Total Budget: <span id="event-total-budget">₹0</span></h3>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="prev-tab-btn" class="btn-secondary">
-          <i class="fas fa-arrow-left"></i> Previous
-        </button>
-        <button id="next-tab-btn" class="btn-primary">
-          Next <i class="fas fa-arrow-right"></i>
-        </button>
-        <button id="create-event-submit" class="btn-primary hidden">
-          <i class="fas fa-check"></i> Create Event
-        </button>
-      </div>
     </div>
-  </div>
 
-  <!-- View Event Modal -->
-  <div id="view-event-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="view-event-title">Event Title</h2>
-        <span class="close-modal"><i class="fas fa-times"></i></span>
-      </div>
-      <div class="modal-body">
-        <div class="event-details">
-          <div class="event-poster">
-            <img id="view-event-poster" src="/placeholder.svg" alt="Event Poster">
-          </div>
-          <div class="event-info">
-            <p id="view-event-description"></p>
-            <div class="event-meta">
-              <div class="meta-item">
-                <i class="fas fa-calendar-alt"></i>
-                <span id="view-event-date"></span>
-              </div>
-              <div class="meta-item">
-                <i class="fas fa-clock"></i>
-                <span id="view-event-time"></span>
-              </div>
-              <div class="meta-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span id="view-event-venue"></span>
-              </div>
-              <div class="meta-item">
-                <i class="fas fa-users"></i>
-                <span id="view-event-teams"></span>
-              </div>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge">
+                    <i class="fa-solid fa-sparkles"></i>
+                    <span>AI-Powered Platform</span>
+                </div>
+                <h1>Transform College Events with Intelligent Management</h1>
+                <p>Streamline planning, automate budgeting, and enhance student engagement with our AI-powered platform
+                    designed specifically for higher education.</p>
+                <div class="hero-buttons">
+                    <a href="#" class="btn btn-primary btn-lg">Start Free Trial</a>
+                    <a href="#" class="btn btn-outline btn-lg">Watch Demo <i class="fa-solid fa-play"></i></a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Colleges</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">10,000+</span>
+                        <span class="stat-label">Events Managed</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">98%</span>
+                        <span class="stat-label">Satisfaction</span>
+                    </div>
+                </div>
             </div>
-          </div>
+            <div class="hero-image">
+                <img src="https://placeholder.pics/svg/800x600/EAEAEA/CCCCCC/Dashboard%20Preview"
+                    alt="Platform Dashboard">
+                <div class="floating-card card-1">
+                    <div class="card-icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="card-content">
+                        <span>Budget Optimization</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 85%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="floating-card card-2">
+                    <div class="card-icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="card-content">
+                        <span>Attendance Prediction</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 92%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="event-tabs">
-          <div class="tab active" data-tab="registrations">
-            <i class="fas fa-users"></i> Registrations
-          </div>
-          <div class="tab" data-tab="budget">
-            <i class="fas fa-wallet"></i> Budget
-          </div>
+        <div class="hero-shape">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+                <path fill="#f8fafc" fill-opacity="1"
+                    d="M0,288L48,272C96,256,192,224,288,197.3C384,171,480,149,576,165.3C672,181,768,235,864,250.7C960,267,1056,245,1152,224C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
+                </path>
+            </svg>
         </div>
+    </section>
 
-        <div id="registrations-tab" class="tab-content active">
-          <div class="registrations-header">
-            <h3><i class="fas fa-users"></i> Team Registrations</h3>
-            <div class="filter-group">
-              <label for="registration-status"><i class="fas fa-filter"></i> Status:</label>
-              <select id="registration-status">
-                <option value="all">All</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
+    <!-- Trusted By Section -->
+    <section class="trusted">
+        <div class="container">
+            <h2>Trusted by Leading Institutions</h2>
+            <div class="logos">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%201" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%202" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%203" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%204" alt="University Logo">
+                <img src="https://placeholder.pics/svg/150x60/EAEAEA/CCCCCC/University%205" alt="University Logo">
             </div>
-          </div>
-          <div id="event-registrations" class="registrations-list">
-            <!-- Registrations will be populated here -->
-          </div>
         </div>
+    </section>
 
-        <div id="budget-tab" class="tab-content">
-          <div class="budget-overview">
-            <div class="budget-card">
-              <div class="budget-icon">
-                <i class="fas fa-wallet"></i>
-              </div>
-              <div class="budget-info">
-                <h3>Total Budget</h3>
-                <p id="view-event-budget">₹0</p>
-              </div>
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Powerful Features</span>
+                <h2>Everything You Need to Manage College Events</h2>
+                <p>Our platform combines powerful event management tools with intelligent budget optimization to create
+                    seamless experiences.</p>
             </div>
-          </div>
-          <div class="expense-details">
-            <h3><i class="fas fa-list"></i> Expense Details</h3>
-            <div class="table-container">
-              <table class="expense-table">
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody id="view-expense-table">
-                  <!-- Expenses will be populated here -->
-                </tbody>
-              </table>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <h3>AI-Powered Planning</h3>
+                    <p>Leverage artificial intelligence to optimize event schedules, predict attendance, and suggest
+                        improvements.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h3>Smart Budget Management</h3>
+                    <p>Automatically track expenses, allocate resources efficiently, and generate detailed financial
+                        reports.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <h3>Seamless Registration</h3>
+                    <p>Create custom registration forms, manage attendees, and send automated confirmations and
+                        reminders.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h3>Multi-Channel Promotion</h3>
+                    <p>Promote events across social media, email, and campus platforms with integrated marketing tools.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Gain insights from comprehensive dashboards showing attendance, engagement, and financial
+                        metrics.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <h3>Mobile Experience</h3>
+                    <p>Provide attendees with a seamless mobile experience for registration, check-in, and event
+                        participation.</p>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- View Team Modal -->
-  <div id="view-team-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="view-team-title">Team Details</h2>
-        <span class="close-modal"><i class="fas fa-times"></i></span>
-      </div>
-      <div class="modal-body">
-        <div class="team-info">
-          <div class="info-group">
-            <h3><i class="fas fa-info-circle"></i> Team Information</h3>
-            <div class="info-item">
-              <label>Team Name:</label>
-              <p id="view-team-name"></p>
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Simple Process</span>
+                <h2>How EventPro AI Works</h2>
+                <p>Our platform simplifies event management from planning to execution with just a few steps.</p>
             </div>
-            <div class="info-item">
-              <label>Event:</label>
-              <p id="view-team-event"></p>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Create Your Event</h3>
+                        <p>Set up your event details, create a budget, and define your goals with our intuitive
+                            interface.</p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%201" alt="Create Event">
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>AI Optimization</h3>
+                        <p>Our AI analyzes your event and suggests optimizations for budget, scheduling, and resources.
+                        </p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%202" alt="AI Optimization">
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Promote & Register</h3>
+                        <p>Launch registration, promote across channels, and track sign-ups in real-time.</p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%203"
+                            alt="Promote and Register">
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Execute & Analyze</h3>
+                        <p>Run your event with our tools and get comprehensive analytics to improve future events.</p>
+                    </div>
+                    <div class="step-image">
+                        <img src="https://placeholder.pics/svg/300x200/EAEAEA/CCCCCC/Step%204"
+                            alt="Execute and Analyze">
+                    </div>
+                </div>
             </div>
-            <div class="info-item">
-              <label>Registration Date:</label>
-              <p id="view-team-date"></p>
-            </div>
-            <div class="info-item">
-              <label>Status:</label>
-              <p id="view-team-status"></p>
-            </div>
-          </div>
-
-          <div class="info-group">
-            <h3><i class="fas fa-users"></i> Team Members</h3>
-            <div id="team-members-list" class="team-members">
-              <!-- Team members will be populated here -->
-            </div>
-          </div>
         </div>
+    </section>
 
-        <div class="team-actions">
-          <button id="approve-team-btn" class="btn-success">
-            <i class="fas fa-check"></i> Approve Team
-          </button>
-          <button id="reject-team-btn" class="btn-danger">
-            <i class="fas fa-times"></i> Reject Team
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add Expense Modal -->
-  <div id="add-expense-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2><i class="fas fa-plus"></i> Add Expense</h2>
-        <span class="close-modal"><i class="fas fa-times"></i></span>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="expense-event">Event</label>
-          <select id="expense-event">
-            <!-- Events will be populated here -->
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="expense-category">Category</label>
-          <select id="expense-category">
-            <option value="venue">Venue</option>
-            <option value="refreshments">Refreshments</option>
-            <option value="prizes">Prizes</option>
-            <option value="equipment">Equipment</option>
-            <option value="marketing">Marketing</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="expense-description">Description</label>
-          <div class="input-with-icon">
-            <i class="fas fa-align-left"></i>
-            <input type="text" id="expense-description" placeholder="Enter description">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="expense-amount">Amount (₹)</label>
-          <div class="input-with-icon">
-            <i class="fas fa-rupee-sign"></i>
-            <input type="number" id="expense-amount" min="0" value="0">
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="add-expense-submit" class="btn-primary">
-          <i class="fas fa-plus"></i> Add Expense
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add this at the end of your body tag, before the script tag -->
-  <!-- Event Detail Modal -->
-  <div id="event-detail-modal" class="event-detail-modal">
-    <div class="event-detail-content">
-      <!-- Add tabs for event details and team registrations -->
-      <div class="event-detail-header">
-        <h2 id="detail-event-title">Event Title</h2>
-        <button class="close-detail-modal"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="event-detail-tabs">
-        <div class="tab active" data-tab="event-info">Event Info</div>
-        <div class="tab" data-tab="registered-teams">Registered Teams</div>
-        <div class="tab" data-tab="accepted-teams">Accepted Teams</div>
-      </div>
-      <div class="event-detail-body">
-        <!-- Event Info Tab -->
-        <div id="event-info-tab" class="tab-content active">
-          <!-- View Container -->
-          <div id="event-view-container" class="event-view-container">
-            <div class="event-detail-grid">
-              <div class="event-detail-image">
-                <img id="detail-event-poster" src="/placeholder.svg" alt="Event Poster">
-              </div>
-              <div class="event-detail-info">
-                <div class="event-detail-section">
-                  <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
-                  <div class="detail-item">
-                    <div class="detail-label">Description:</div>
-                    <div id="detail-event-description" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">Date:</div>
-                    <div id="detail-event-date" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">Time:</div>
-                    <div id="detail-event-time" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">Venue:</div>
-                    <div id="detail-event-venue" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">Team Size:</div>
-                    <div id="detail-event-team-size" class="detail-value"></div>
-                  </div>
-                </div>
-
-                <div class="event-detail-section">
-                  <h3><i class="fas fa-align-left"></i> Overview</h3>
-                  <div class="detail-item">
-                    <div class="detail-label">About:</div>
-                    <div id="detail-event-about" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">Theme:</div>
-                    <div id="detail-event-theme" class="detail-value"></div>
-                  </div>
-                </div>
-
-                <div class="event-detail-section">
-                  <h3><i class="fas fa-trophy"></i> Prizes</h3>
-                  <div class="detail-item">
-                    <div class="detail-label">Prize Pool:</div>
-                    <div id="detail-event-prize-pool" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">First Prize:</div>
-                    <div id="detail-event-first-prize" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">Second Prize:</div>
-                    <div id="detail-event-second-prize" class="detail-value"></div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="detail-label">Third Prize:</div>
-                    <div id="detail-event-third-prize" class="detail-value"></div>
-                  </div>
-                </div>
-
-                <div class="event-detail-section">
-                  <h3><i class="fas fa-wallet"></i> Budget</h3>
-                  <div class="detail-item">
-                    <div class="detail-label">Total Budget:</div>
-                    <div id="detail-event-budget" class="detail-value"></div>
-                  </div>
-                </div>
-              </div>
+    <!-- Roles Section -->
+    <section id="roles" class="roles">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">For Every Team Member</span>
+                <h2>Tailored Solutions for Different Roles</h2>
+                <p>Our platform provides specialized features for each stakeholder in the event management process.</p>
             </div>
-
-            <div class="event-detail-actions">
-              <button id="btn-edit-event" class="btn-primary-action btn-edit-detail">
-                <i class="fas fa-edit"></i> Edit Event
-              </button>
-              <button id="btn-delete-event" class="btn-primary-action btn-delete-detail">
-                <i class="fas fa-trash"></i> Delete Event
-              </button>
+            <div class="roles-tabs">
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="students">
+                        <i class="fa-solid fa-user-graduate"></i>
+                        <span>Students</span>
+                    </button>
+                    <button class="tab-btn" data-tab="clubs">
+                        <i class="fa-solid fa-people-group"></i>
+                        <span>Clubs</span>
+                    </button>
+                    <button class="tab-btn" data-tab="faculty">
+                        <i class="fa-solid fa-id-badge"></i>
+                        <span>Faculty/HR</span>
+                    </button>
+                    <button class="tab-btn" data-tab="admin">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>Admins</span>
+                    </button>
+                </div>
+                <div class="tabs-content">
+                    <div class="tab-content active" id="students-tab">
+                        <div class="role-info">
+                            <h3>For Students</h3>
+                            <p>Discover events, register with ease, and track your participation across campus
+                                activities.</p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Personalized event recommendations</li>
+                                <li><i class="fa-solid fa-check"></i> One-click registration</li>
+                                <li><i class="fa-solid fa-check"></i> Digital tickets and QR codes</li>
+                                <li><i class="fa-solid fa-check"></i> Participation certificates</li>
+                                <li><i class="fa-solid fa-check"></i> Event reminders and updates</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Student%20Dashboard"
+                                alt="Student Dashboard">
+                        </div>
+                    </div>
+                    <div class="tab-content" id="clubs-tab">
+                        <div class="role-info">
+                            <h3>For Clubs & Organizations</h3>
+                            <p>Plan, budget, and execute events with powerful tools designed for student organizations.
+                            </p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Collaborative planning tools</li>
+                                <li><i class="fa-solid fa-check"></i> Budget templates and tracking</li>
+                                <li><i class="fa-solid fa-check"></i> Member management</li>
+                                <li><i class="fa-solid fa-check"></i> Approval workflows</li>
+                                <li><i class="fa-solid fa-check"></i> Post-event reporting</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Club%20Dashboard"
+                                alt="Club Dashboard">
+                        </div>
+                    </div>
+                    <div class="tab-content" id="faculty-tab">
+                        <div class="role-info">
+                            <h3>For Faculty & HR</h3>
+                            <p>Oversee events, approve budgets, and ensure compliance with institutional policies.</p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Approval dashboards</li>
+                                <li><i class="fa-solid fa-check"></i> Budget oversight</li>
+                                <li><i class="fa-solid fa-check"></i> Resource allocation</li>
+                                <li><i class="fa-solid fa-check"></i> Policy compliance checks</li>
+                                <li><i class="fa-solid fa-check"></i> Department-level reporting</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Faculty%20Dashboard"
+                                alt="Faculty Dashboard">
+                        </div>
+                    </div>
+                    <div class="tab-content" id="admin-tab">
+                        <div class="role-info">
+                            <h3>For Administrators</h3>
+                            <p>Gain complete oversight of all campus events, budgets, and activities with powerful admin
+                                tools.</p>
+                            <ul class="role-features">
+                                <li><i class="fa-solid fa-check"></i> Institution-wide analytics</li>
+                                <li><i class="fa-solid fa-check"></i> Financial oversight</li>
+                                <li><i class="fa-solid fa-check"></i> User management</li>
+                                <li><i class="fa-solid fa-check"></i> Custom permissions</li>
+                                <li><i class="fa-solid fa-check"></i> Audit trails and compliance</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                        <div class="role-image">
+                            <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Admin%20Dashboard"
+                                alt="Admin Dashboard">
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
+        </div>
+    </section>
 
-          <!-- Edit Form Container -->
-          <div id="edit-form-container" class="edit-form-container">
-            <form id="edit-event-form">
-              <div class="form-group">
-                <label for="edit-event-name">Event Name</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-signature"></i>
-                  <input type="text" id="edit-event-name" required>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="edit-event-description">Event Description</label>
-                <textarea id="edit-event-description" required></textarea>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="edit-event-start-date">Start Date</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-calendar"></i>
-                    <input type="date" id="edit-event-start-date" required>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="edit-event-end-date">End Date</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-calendar"></i>
-                    <input type="date" id="edit-event-end-date" required>
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="edit-event-start-time">Start Time</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-clock"></i>
-                    <input type="time" id="edit-event-start-time" required>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="edit-event-end-time">End Time</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-clock"></i>
-                    <input type="time" id="edit-event-end-time" required>
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="edit-event-venue">Venue</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-map-marker-alt"></i>
-                  <input type="text" id="edit-event-venue" required>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="edit-event-team-min">Min Team Size</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-users"></i>
-                    <input type="number" id="edit-event-team-min" min="1" value="1" required>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="edit-event-team-max">Max Team Size</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-users"></i>
-                    <input type="number" id="edit-event-team-max" min="1" value="5" required>
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="edit-event-about">About the Event</label>
-                <textarea id="edit-event-about" rows="3"></textarea>
-              </div>
-
-              <div class="form-group">
-                <label for="edit-event-theme">Event Theme</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-lightbulb"></i>
-                  <input type="text" id="edit-event-theme">
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="edit-event-prize-pool">Prize Pool (₹)</label>
-                <div class="input-with-icon">
-                  <i class="fas fa-rupee-sign"></i>
-                  <input type="number" id="edit-event-prize-pool" min="0" value="0">
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="edit-first-prize-amount">First Prize (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="edit-first-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="edit-first-prize-description">First Prize Description</label>
-                  <input type="text" id="edit-first-prize-description">
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="edit-second-prize-amount">Second Prize (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="edit-second-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="edit-second-prize-description">Second Prize Description</label>
-                  <input type="text" id="edit-second-prize-description">
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="edit-third-prize-amount">Third Prize (₹)</label>
-                  <div class="input-with-icon">
-                    <i class="fas fa-rupee-sign"></i>
-                    <input type="number" id="edit-third-prize-amount" min="0" value="0">
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="edit-third-prize-description">Third Prize Description</label>
-                  <input type="text" id="edit-third-prize-description">
-                </div>
-              </div>
-
-              <div class="edit-form-actions">
-                <button type="button" id="btn-cancel-edit" class="btn-primary-action btn-cancel">
-                  <i class="fas fa-times"></i> Cancel
+    <!-- Events Section -->
+    <section id="events" class="events">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Live Showcase</span>
+                <h2>Events Powered by EventPro AI</h2>
+                <p>See how institutions are using our platform to create exceptional campus experiences.</p>
+            </div>
+            <div class="events-slider">
+                <button class="slider-arrow prev" id="sliderPrev">
+                    <i class="fa-solid fa-chevron-left"></i>
                 </button>
-                <button type="submit" id="btn-save-event" class="btn-primary-action btn-save">
-                  <i class="fas fa-save"></i> Save Changes
+                <div class="slider-container">
+                    <div class="slider-track" id="sliderTrack">
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="https://placeholder.pics/svg/400x250/EAEAEA/CCCCCC/Tech%20Conference"
+                                    alt="Tech Conference">
+                                <div class="event-badge">Technology</div>
+                            </div>
+                            <div class="event-content">
+                                <h3>Annual Tech Conference</h3>
+                                <p>A showcase of innovation and technology featuring industry speakers and hands-on
+                                    workshops.</p>
+                                <div class="event-meta">
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span>Oct 15-17, 2023</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        <span>Stanford University</span>
+                                    </div>
+                                </div>
+                                <div class="event-stats">
+                                    <div class="event-stat">
+                                        <span class="stat-number">1,200+</span>
+                                        <span class="stat-label">Attendees</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">45+</span>
+                                        <span class="stat-label">Speakers</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">30+</span>
+                                        <span class="stat-label">Workshops</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="https://placeholder.pics/svg/400x250/EAEAEA/CCCCCC/Cultural%20Festival"
+                                    alt="Cultural Festival">
+                                <div class="event-badge">Cultural</div>
+                            </div>
+                            <div class="event-content">
+                                <h3>International Cultural Festival</h3>
+                                <p>A celebration of global cultures with performances, food, and interactive exhibits.
+                                </p>
+                                <div class="event-meta">
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span>Nov 5-7, 2023</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        <span>NYU Campus</span>
+                                    </div>
+                                </div>
+                                <div class="event-stats">
+                                    <div class="event-stat">
+                                        <span class="stat-number">3,500+</span>
+                                        <span class="stat-label">Attendees</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">25+</span>
+                                        <span class="stat-label">Countries</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">50+</span>
+                                        <span class="stat-label">Performances</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="https://placeholder.pics/svg/400x250/EAEAEA/CCCCCC/Career%20Fair"
+                                    alt="Career Fair">
+                                <div class="event-badge">Career</div>
+                            </div>
+                            <div class="event-content">
+                                <h3>Spring Career Fair</h3>
+                                <p>Connect students with top employers for internships and full-time opportunities.</p>
+                                <div class="event-meta">
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span>Mar 12, 2023</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        <span>UC Berkeley</span>
+                                    </div>
+                                </div>
+                                <div class="event-stats">
+                                    <div class="event-stat">
+                                        <span class="stat-number">2,000+</span>
+                                        <span class="stat-label">Students</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">150+</span>
+                                        <span class="stat-label">Companies</span>
+                                    </div>
+                                    <div class="event-stat">
+                                        <span class="stat-number">500+</span>
+                                        <span class="stat-label">Interviews</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="slider-arrow next" id="sliderNext">
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <!-- Registered Teams Tab -->
-        <div id="registered-teams-tab" class="tab-content">
-          <div class="teams-container">
-            <div class="teams-header">
-              <h3><i class="fas fa-users"></i> Registered Teams</h3>
-              <div class="teams-filter">
-                <select id="teams-status-filter">
-                  <option value="all">All Teams</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
             </div>
-            <div id="registered-teams-list" class="teams-list">
-              <!-- Teams will be loaded here -->
-              <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i> Loading teams...
-              </div>
+            <div class="slider-dots" id="sliderDots">
+                <span class="dot active" data-index="0"></span>
+                <span class="dot" data-index="1"></span>
+                <span class="dot" data-index="2"></span>
             </div>
-          </div>
+            <div class="events-cta">
+                <a href="#" class="btn btn-primary btn-lg">Explore All Events</a>
+            </div>
         </div>
+    </section>
 
-        <!-- Accepted Teams Tab -->
-        <div id="accepted-teams-tab" class="tab-content">
-          <div class="teams-container">
-            <div class="teams-header">
-              <h3><i class="fas fa-check-circle"></i> Accepted Teams</h3>
-              <div class="teams-actions">
-                <button id="export-teams-excel" class="btn-primary-action">
-                  <i class="fas fa-file-excel"></i> Export to Excel
+    <!-- Testimonials Section -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Success Stories</span>
+                <h2>What Our Users Say</h2>
+                <p>Hear from institutions that have transformed their event management with EventPro AI.</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="quote-icon">
+                        <i class="fa-solid fa-quote-left"></i>
+                    </div>
+                    <p>EventPro AI has revolutionized how we manage student events. The AI-powered budget optimization
+                        alone saved us 30% on our annual events budget.</p>
+                    <div class="testimonial-author">
+                        <img src="https://placeholder.pics/svg/60x60/EAEAEA/CCCCCC/Person" alt="Dr. Sarah Johnson">
+                        <div>
+                            <h4>Dr. Sarah Johnson</h4>
+                            <p>Dean of Student Affairs, Stanford University</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="quote-icon">
+                        <i class="fa-solid fa-quote-left"></i>
+                    </div>
+                    <p>As a student club leader, I can now focus on creating amazing experiences instead of drowning in
+                        spreadsheets and paperwork. The platform is intuitive and powerful.</p>
+                    <div class="testimonial-author">
+                        <img src="https://placeholder.pics/svg/60x60/EAEAEA/CCCCCC/Person" alt="Michael Chen">
+                        <div>
+                            <h4>Michael Chen</h4>
+                            <p>President, Engineering Society, MIT</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="quote-icon">
+                        <i class="fa-solid fa-quote-left"></i>
+                    </div>
+                    <p>The analytics and reporting features have given us unprecedented insights into student
+                        engagement. We've increased attendance by 45% since implementing EventPro AI.</p>
+                    <div class="testimonial-author">
+                        <img src="https://placeholder.pics/svg/60x60/EAEAEA/CCCCCC/Person" alt="Jennifer Martinez">
+                        <div>
+                            <h4>Jennifer Martinez</h4>
+                            <p>Director of Campus Activities, UCLA</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Flexible Plans</span>
+                <h2>Choose the Right Plan for Your Institution</h2>
+                <p>Transparent pricing with no hidden fees. All plans include core features.</p>
+            </div>
+            <div class="pricing-toggle">
+                <span>Monthly</span>
+                <label class="switch">
+                    <input type="checkbox" id="pricingToggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Annual</span>
+                <span class="discount">Save 20%</span>
+            </div>
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <div class="card-header">
+                        <h3>Starter</h3>
+                        <div class="price">
+                            <span class="price-monthly">$299</span>
+                            <span class="price-annual">$239</span>
+                            <span>/month</span>
+                        </div>
+                        <p>Perfect for small colleges or individual departments</p>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Up to 50 events per year</li>
+                            <li><i class="fa-solid fa-check"></i> Basic AI recommendations</li>
+                            <li><i class="fa-solid fa-check"></i> Standard analytics</li>
+                            <li><i class="fa-solid fa-check"></i> Email support</li>
+                            <li><i class="fa-solid fa-check"></i> 5 admin users</li>
+                        </ul>
+                    </div>
+                    <div class="card-action">
+                        <a href="#" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+                <div class="pricing-card popular">
+                    <div class="popular-badge">Most Popular</div>
+                    <div class="card-header">
+                        <h3>Professional</h3>
+                        <div class="price">
+                            <span class="price-monthly">$599</span>
+                            <span class="price-annual">$479</span>
+                            <span>/month</span>
+                        </div>
+                        <p>Ideal for mid-sized institutions with multiple departments</p>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Unlimited events</li>
+                            <li><i class="fa-solid fa-check"></i> Advanced AI optimization</li>
+                            <li><i class="fa-solid fa-check"></i> Comprehensive analytics</li>
+                            <li><i class="fa-solid fa-check"></i> Priority support</li>
+                            <li><i class="fa-solid fa-check"></i> 20 admin users</li>
+                            <li><i class="fa-solid fa-check"></i> Custom branding</li>
+                            <li><i class="fa-solid fa-check"></i> API access</li>
+                        </ul>
+                    </div>
+                    <div class="card-action">
+                        <a href="#" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+                <div class="pricing-card">
+                    <div class="card-header">
+                        <h3>Enterprise</h3>
+                        <div class="price">
+                            <span class="price-custom">Custom</span>
+                        </div>
+                        <p>For large universities with complex requirements</p>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Everything in Professional</li>
+                            <li><i class="fa-solid fa-check"></i> Dedicated account manager</li>
+                            <li><i class="fa-solid fa-check"></i> Custom integrations</li>
+                            <li><i class="fa-solid fa-check"></i> Advanced security features</li>
+                            <li><i class="fa-solid fa-check"></i> Unlimited admin users</li>
+                            <li><i class="fa-solid fa-check"></i> On-site training</li>
+                            <li><i class="fa-solid fa-check"></i> 24/7 premium support</li>
+                        </ul>
+                    </div>
+                    <div class="card-action">
+                        <a href="#" class="btn btn-outline">Contact Sales</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Transform Your Campus Events?</h2>
+                <p>Join hundreds of institutions already using EventPro AI to create exceptional experiences.</p>
+                <div class="cta-buttons">
+                    <a href="#" class="btn btn-primary btn-lg">Start Free Trial</a>
+                    <a href="#" class="btn btn-outline btn-lg">Schedule Demo</a>
+                </div>
+            </div>
+            <div class="cta-image">
+                <img src="https://placeholder.pics/svg/500x300/EAEAEA/CCCCCC/Platform%20Preview"
+                    alt="EventPro AI Platform">
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-logo">
+                    <a href="#">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Event<span class="highlight">Pro</span> AI</span>
+                    </a>
+                    <p>Transforming campus events with artificial intelligence</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h3>Product</h3>
+                        <ul>
+                            <li><a href="#">Features</a></li>
+                            <li><a href="#">Pricing</a></li>
+                            <li><a href="#">Case Studies</a></li>
+                            <li><a href="#">Reviews</a></li>
+                            <li><a href="#">Updates</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h3>Solutions</h3>
+                        <ul>
+                            <li><a href="#">For Students</a></li>
+                            <li><a href="#">For Clubs</a></li>
+                            <li><a href="#">For Faculty</a></li>
+                            <li><a href="#">For Administrators</a></li>
+                            <li><a href="#">For Alumni</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h3>Company</h3>
+                        <ul>
+                            <li><a href="#">About Us</a></li>
+                            <li><a href="#">Careers</a></li>
+                            <li><a href="#">Blog</a></li>
+                            <li><a href="#">Press</a></li>
+                            <li><a href="#">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h3>Resources</h3>
+                        <ul>
+                            <li><a href="#">Help Center</a></li>
+                            <li><a href="#">Documentation</a></li>
+                            <li><a href="#">API</a></li>
+                            <li><a href="#">Community</a></li>
+                            <li><a href="#">Webinars</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-middle">
+                <div class="newsletter">
+                    <h3>Subscribe to our newsletter</h3>
+                    <p>Get the latest updates, news and product offers sent directly to your inbox.</p>
+                    <form class="newsletter-form">
+                        <input type="email" placeholder="Enter your email" required>
+                        <button type="submit" class="btn btn-primary">Subscribe</button>
+                    </form>
+                </div>
+                <div class="social-links">
+                    <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 EventPro AI. All rights reserved.</p>
+                <div class="legal-links">
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Cookie Policy</a>
+                    <a href="#">Security</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- Role Selection Modal -->
+    <!-- Role Selection Modal -->
+    <div class="modal" id="roleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Your Role</h3>
+                <button class="modal-close" id="modalClose">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-              </div>
             </div>
-            <div id="accepted-teams-list" class="teams-list">
-              <!-- Accepted teams will be loaded here -->
-              <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i> Loading teams...
-              </div>
+            <div class="modal-body">
+                <p>Please select your role to continue:</p>
+                <div class="role-options">
+                    <a href="#" class="role-option" data-role="student">
+                        <i class="fa-solid fa-user-graduate"></i>
+                        <span>Student</span>
+                    </a>
+                    <a href="#" class="role-option" data-role="club">
+                        <i class="fa-solid fa-people-group"></i>
+                        <span>Club</span>
+                    </a>
+                    <a href="#" class="role-option" data-role="admin">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>Admin</span>
+                    </a>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
 
-  <div id="team-details-modal" class="team-details-modal">
-    <div class="team-details-content">
-      <div class="team-details-header">
-        <h3 id="team-details-title">Team Details</h3>
-        <button class="close-team-details"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="team-details-body">
-        <div class="team-info-section">
-          <div class="team-info-item">
-            <div class="info-label">Team Name:</div>
-            <div id="team-details-name" class="info-value"></div>
-          </div>
-          <div class="team-info-item">
-            <div class="info-label">Registration Date:</div>
-            <div id="team-details-date" class="info-value"></div>
-          </div>
-          <div class="team-info-item">
-            <div class="info-label">Status:</div>
-            <div id="team-details-status" class="info-value"></div>
-          </div>
-        </div>
-
-        <div class="team-members-section">
-          <h4><i class="fas fa-users"></i> Team Members</h4>
-          <div id="team-members-list" class="team-members-list">
-            <!-- Team members will be loaded here -->
-          </div>
-        </div>
-
-        <div class="team-actions">
-          <button id="approve-team-btn" class="btn-primary-action btn-approve">
-            <i class="fas fa-check"></i> Approve Team
-          </button>
-          <button id="reject-team-btn" class="btn-primary-action btn-reject">
-            <i class="fas fa-times"></i> Reject Team
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Global Loader -->
-  <div id="global-loader" class="loader-overlay hidden">
-    <div class="loader"></div>
-  </div>
-
-
-  <!-- Toast Notification -->
-  <div id="toast-container" class="toast-container"></div>
-
-  <script src="script.js"></script>
+    <!-- Custom JS -->
+    <script src="landing.js"></script>
 </body>
 
 </html>
