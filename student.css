@@ -1940,6 +1940,234 @@ ul {
 .modal-body {
     padding: 1.75rem;
 }
+/* Schedule Tab */
+.schedule-date {
+    margin-bottom: 1rem;
+}
+
+.schedule-date h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding-bottom: 0.625rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0.9375rem;
+    height: 100%;
+    width: 2px;
+    background-color: var(--border-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.25rem;
+}
+
+.timeline-time {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.375rem;
+}
+
+.timeline-content {
+    display: flex;
+    gap: 1rem;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: -2rem;
+    width: 1.875rem;
+    height: 1.875rem;
+    background-color: white;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 0.75rem;
+}
+
+.timeline-details {
+    background-color: white;
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+    flex: 1;
+    border: 1px solid var(--border-color);
+}
+
+.timeline-details h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.375rem;
+    color: var(--text-primary);
+}
+
+.timeline-details p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+/* Prizes Tab */
+.prizes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.prize-card {
+    display: flex;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    background-color: #f9fafb;
+    border-radius: var(--radius-md);
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.prize-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-sm);
+}
+
+.prize-medal {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.first-prize .prize-medal {
+    background-color: rgba(249, 199, 79, 0.1);
+    color: #f59e0b;
+}
+
+.second-prize .prize-medal {
+    background-color: rgba(200, 200, 200, 0.1);
+    color: #9ca3af;
+}
+
+.third-prize .prize-medal {
+    background-color: rgba(183, 129, 74, 0.1);
+    color: #b45309;
+}
+
+.special-prize .prize-medal {
+    background-color: rgba(236, 72, 153, 0.1);
+    color: var(--secondary-color);
+}
+
+.prize-details {
+    flex: 1;
+}
+
+.prize-details h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 0.375rem;
+    color: var(--text-primary);
+}
+
+.prize-amount {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.625rem;
+}
+
+.prize-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.participation-goodies {
+    padding: 1.25rem;
+    background-color: #f9fafb;
+    border-radius: var(--radius-md);
+    margin-top: 0.625rem;
+}
+
+.participation-goodies h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.goodies-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 1rem;
+}
+
+.goodie-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.goodie-item i {
+    color: var(--primary-color);
+}
+
+.goodie-item span {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.sponsors-section {
+    margin-top: 2rem;
+}
+
+.sponsors-section h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.sponsors-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: center;
+}
+
+.sponsor-logo {
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem;
+    background-color: white;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.sponsor-logo img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
 
 /* Enhanced Form Styles */
 .form-group {
