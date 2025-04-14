@@ -26,8 +26,19 @@ mongoose.connect(MONGODB_URI, {
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Middleware
-app.use(cors())
-app.use(express.json({ limit: "50mb" }))
+// Configure CORS
+const corsOptions = {
+  origin: [
+    "https://unibux.vercel.app", // Your frontend URL
+    "http://localhost:5000", // Local development URL (if needed)
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+};
+
+// Apply CORS middleware with options
+app.use(cors(corsOptions));app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ extended: true, limit: "50mb" }))
 
 // ==================== SCHEMAS & MODELS ====================
