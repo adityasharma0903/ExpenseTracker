@@ -252,8 +252,6 @@ document.addEventListener("DOMContentLoaded", () => {
             case "admin":
               window.location.href = "login.html";
               break;
-            default:
-              window.location.href = "login.html";
           }
         }
       });

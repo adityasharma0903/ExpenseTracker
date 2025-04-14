@@ -329,7 +329,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
     localStorage.setItem("clubId", clubId);
 
     // ✅ Redirect to dashboard page
-    window.location.href = "admin-dashboard.html";
+    // window.location.href = "admin-dashboard.html";
   } else {
     document.getElementById("login-error").textContent = "Invalid credentials";
   }
