@@ -989,18 +989,14 @@ You will receive an email notification once your registration is approved.
 
   // Fetch event details by ID
   async function fetchEventDetails(eventId) {
-    showLoader("detailLoader") // 👈 Show detail loader
-
+    showLoader("detailLoader")
+  
     try {
       const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
       const data = await response.json()
-
+  
       if (data.success && data.event) {
         displayEventDetails(data.event)
-        const registrationModal = document.getElementById("registrationModal")
-        if (registrationModal) {
-          registrationModal.setAttribute("data-event-id", eventId)
-        }
       } else {
         const mockEvent = eventData[eventId]
         if (mockEvent) {
@@ -1014,9 +1010,10 @@ You will receive an email notification once your registration is approved.
         displayEventDetails(mockEvent)
       }
     } finally {
-      hideLoader("detailLoader") // 👈 Hide after fetch
+      hideLoader("detailLoader")
     }
   }
+  
 
 
   // Display event details
