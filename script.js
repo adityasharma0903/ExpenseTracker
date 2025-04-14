@@ -1,18 +1,21 @@
 // import { Chart } from "@/components/ui/chart"
 // Initialize the application when the DOM is loaded
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  showLoader(); // 👈 loader starts
+
   // Initialize club data if not exists
-  initializeClubData()
+  initializeClubData();
 
   // Setup event listeners
-  setupEventListeners()
+  setupEventListeners();
 
   // Check if user is logged in
-  checkLoginStatus()
+  await checkLoginStatus(); // agar ye async hai, warna hata do await
 
   // Display current date
-  displayCurrentDate()
+  displayCurrentDate();
 
+  // Mutation observer for modal
   const observer = new MutationObserver(() => {
     const modal = document.getElementById("event-detail-modal");
     if (modal && modal.style.display === "block") {
@@ -21,9 +24,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   observer.observe(document.body, { attributes: true, childList: true, subtree: true });
-})
+
+  hideLoader(); // 👈 loader ends
+});
+
 let eventId = null;
 // Display current date
+
+function showLoader() {
+  document.getElementById("global-loader").classList.remove("hidden");
+}
+
+function hideLoader() {
+  document.getElementById("global-loader").classList.add("hidden");
+}
 function displayCurrentDate() {
   const dateElement = document.getElementById("current-date")
   if (dateElement) {
@@ -1917,20 +1931,25 @@ function renderUpcomingEvents(events) {
 
 // Load events - Modified to use MongoDB
 async function loadEvents() {
-  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
+  showLoader(); // ⏳ Show loader while fetching
+
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
 
   // Fetch events from MongoDB
-  const events = await fetchEvents()
+  const events = await fetchEvents();
 
   // Filter events for the logged-in club
-  const clubEvents = events.filter((event) => event.clubId === loggedInClub.id)
+  const clubEvents = events.filter((event) => event.clubId === loggedInClub.id);
 
   // Render events
-  renderEvents(clubEvents)
+  renderEvents(clubEvents);
 
   // Render timeline chart with fetched events
-  renderTimelineChart(clubEvents)
+  renderTimelineChart(clubEvents);
+
+  hideLoader(); // ✅ Hide loader after rendering
 }
+
 
 // Render events
 function renderEvents(events) {
@@ -2141,24 +2160,42 @@ async function loadRegisteredTeams(eventId) {
     });
 
     // Approve & Reject
-    registeredTeamsList.querySelectorAll(".approve-team").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
-        await updateTeamStatus(id, "approved");
-      });
-    });
+    registeredTeamsList.querySelectorAll(".approve-team").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault() // Prevent default button behavior
+        const id = btn.getAttribute("data-id")
+        // Disable all approve/reject buttons to prevent multiple clicks
+        registeredTeamsList.querySelectorAll(".approve-team, .reject-team").forEach((button) => {
+          button.disabled = true
+        })
+        await updateTeamStatus(id, "approved")
+        // Re-enable buttons after operation completes
+        registeredTeamsList.querySelectorAll(".approve-team, .reject-team").forEach((button) => {
+          button.disabled = false
+        })
+      })
+    })
 
-    registeredTeamsList.querySelectorAll(".reject-team").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
-        await updateTeamStatus(id, "rejected");
-      });
-    });
-
-  } catch (err) {
-    console.error("Error loading teams:", err);
-    document.getElementById("registered-teams-list").innerHTML = `<p>Error loading teams.</p>`;
+    registeredTeamsList.querySelectorAll(".reject-team").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault() // Prevent default button behavior
+        const id = btn.getAttribute("data-id")
+        // Disable all approve/reject buttons to prevent multiple clicks
+        registeredTeamsList.querySelectorAll(".approve-team, .reject-team").forEach((button) => {
+          button.disabled = true
+        })
+        await updateTeamStatus(id, "rejected")
+        // Re-enable buttons after operation completes
+        registeredTeamsList.querySelectorAll(".approve-team, .reject-team").forEach((button) => {
+          button.disabled = false
+        })
+      })
+    })
   }
+  catch (err) {
+  console.error("Error loading teams:", err);
+  document.getElementById("registered-teams-list").innerHTML = `<p>Error loading teams.</p>`;
+}
 }
 
 async function fetchApprovedTeams(eventId) {
@@ -2192,11 +2229,14 @@ async function loadApprovedTeams(eventId) {
 }
 
 async function openEventDetailModal(id) {
+  showLoader(); // 🌀 Show loader before anything
+
   eventId = id;
   try {
     if (!eventId) {
       console.error("Invalid event ID:", eventId);
       showToast("Error", "Invalid event ID", "error");
+      hideLoader();
       return;
     }
 
@@ -2209,26 +2249,25 @@ async function openEventDetailModal(id) {
       },
     });
 
-    // Log response status for debugging
     console.log("Response Status:", response.status);
 
     if (!response.ok) {
-      const errorText = await response.text(); // Get the response body for debugging
+      const errorText = await response.text();
       console.error("Error Response Body:", errorText);
       throw new Error(`Failed to fetch event details. Status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("API Response:", data); // Debugging log
+    console.log("API Response:", data);
 
     if (!data || !data.success || !data.event) {
       showToast("Error", "Event not found or invalid response", "error");
+      hideLoader();
       return;
     }
 
-    const event = data.event; // Correctly access the event object
+    const event = data.event;
 
-    // Populate modal with event details
     const modal = document.getElementById("event-detail-modal");
     modal.setAttribute("data-event-id", eventId);
     document.getElementById("detail-event-title").textContent = event.name;
@@ -2254,32 +2293,29 @@ async function openEventDetailModal(id) {
       : "None";
     document.getElementById("detail-event-budget").textContent = `₹${event.totalBudget || 0}`;
 
-    // Fetch and load team registrations
-    fetchTeamRegistrations(eventId);
+    await fetchTeamRegistrations(eventId);
     loadTeamRegistrations(eventId);
-    loadRegisteredTeams(eventId)
-    loadApprovedTeams(eventId)
+    loadRegisteredTeams(eventId);
+    loadApprovedTeams(eventId);
 
-    // Show the first tab (event info)
     switchModalTab('event-info');
 
     document.getElementById("btn-delete-event").addEventListener("click", () => {
       deleteEvent(eventId);
     });
 
-    // Show modal
     modal.style.display = "block";
-
-    // Add event listeners
     setupDetailModalListeners(eventId);
-
 
     console.log("Setup completed, modal should be visible now");
   } catch (error) {
     console.error("Error fetching event details:", error);
     showToast("Error", `Failed to fetch event details: ${error.message}`, "error");
+  } finally {
+    hideLoader(); // ✅ Always hide loader
   }
 }
+
 
 
 
@@ -2378,31 +2414,34 @@ async function loadTeamRegistrations(eventId) {
 }
 
 async function updateTeamStatus(teamId, newStatus) {
-  const token = localStorage.getItem("authToken");
+  showLoader() // Show loader when starting the operation
+  const token = localStorage.getItem("authToken")
 
   try {
     const response = await fetch(`http://localhost:5000/api/team-registrations/${teamId}/status`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "x-auth-token": token
+        "x-auth-token": token,
       },
-      body: JSON.stringify({ status: newStatus })
-    });
+      body: JSON.stringify({ status: newStatus }),
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (data.success) {
-      showToast("Status Updated", `Team marked as ${newStatus}`, "success");
+      showToast("Status Updated", `Team marked as ${newStatus}`, "success")
       // Optionally refresh team list
-      const eventId = document.getElementById("btn-edit-event").getAttribute("data-id");
-      loadRegisteredTeams(eventId);
+      const eventId = document.getElementById("btn-edit-event").getAttribute("data-id")
+      loadRegisteredTeams(eventId)
     } else {
-      showToast("Error", data.message || "Failed to update team", "error");
+      showToast("Error", data.message || "Failed to update team", "error")
     }
   } catch (error) {
-    console.error("Error updating status:", error);
-    showToast("Error", "Server issue", "error");
+    console.error("Error updating status:", error)
+    showToast("Error", "Server issue", "error")
+  } finally {
+    hideLoader() // Always hide loader when operation completes
   }
 }
 
@@ -2419,10 +2458,12 @@ function renderTeamsList(container, teams, statusContext = "all") {
     const teamCard = document.createElement("div");
     teamCard.className = "team-card";
 
+    // Add status tag to the team summary
     teamCard.innerHTML = `
       <div class="team-summary" data-index="${index}">
         <strong>${team.teamName}</strong> 
         <span style="color: #555;">(Leader: ${team.leaderName || "N/A"})</span>
+        <span class="status-tag status-${team.status}">${team.status}</span>
         <i class="fas fa-chevron-down toggle-icon" style="float:right;"></i>
       </div>
 
@@ -2435,8 +2476,10 @@ function renderTeamsList(container, teams, statusContext = "all") {
         </ul>
 
         <div class="team-actions">
-          <button class="approve-team" data-id="${team._id}"><i class="fas fa-check"></i> Approve</button>
-          <button class="reject-team" data-id="${team._id}"><i class="fas fa-times"></i> Reject</button>
+          ${team.status === "pending" ? `
+            <button class="approve-team" data-id="${team._id}"><i class="fas fa-check"></i> Approve</button>
+            <button class="reject-team" data-id="${team._id}"><i class="fas fa-times"></i> Reject</button>
+          ` : ''}
         </div>
       </div>
     `;
@@ -2444,7 +2487,7 @@ function renderTeamsList(container, teams, statusContext = "all") {
     container.appendChild(teamCard);
   });
 
-  // Toggle dropdown on click
+  // Dropdown toggle
   container.querySelectorAll(".team-summary").forEach(summary => {
     summary.addEventListener("click", () => {
       const details = summary.nextElementSibling;
@@ -2455,7 +2498,7 @@ function renderTeamsList(container, teams, statusContext = "all") {
     });
   });
 
-  // Approve & Reject functionality
+  // Approve & Reject
   container.querySelectorAll(".approve-team").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
