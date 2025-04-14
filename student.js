@@ -806,7 +806,7 @@ You will receive an email notification once your registration is approved.
 
     // Show a welcome toast
     setTimeout(() => {
-      showToast("Welcome to TechEvents! Explore the latest hackathons and events.")
+      showToast("Welcome to UNIBUX! Explore the latest hackathons and events.")
     }, 1000)
   }
 
