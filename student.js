@@ -974,7 +974,7 @@ You will receive an email notification once your registration is approved.
               <span class="status-tag">${isUpcoming(event.startDate) ? "UPCOMING" : "ONGOING"}</span>
               <span class="status-tag">STARTS ${formatDate(event.startDate)}</span>
             </div>
-            <a href="#" class="btn-notify">Notify me</a>
+            <a href="#" class="btn-notify">Register Now</a>
           </div>
         `
 
