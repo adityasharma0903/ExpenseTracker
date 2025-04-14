@@ -3,6 +3,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileDropdownTrigger = document.getElementById("profileDropdownTrigger")
   const profileDropdown = document.getElementById("profileDropdown")
 
+  function showLoader(id) {
+    const loader = document.getElementById(id)
+    if (loader) loader.style.display = "flex"
+  }
+  
+  function hideLoader(id) {
+    const loader = document.getElementById(id)
+    if (loader) loader.style.display = "none"
+  }
+
   if (profileDropdownTrigger && profileDropdown) {
     profileDropdownTrigger.addEventListener("click", (e) => {
       e.stopPropagation()
@@ -806,27 +816,31 @@ You will receive an email notification once your registration is approved.
 
     // Show a welcome toast
     setTimeout(() => {
-      showToast("Welcome to UNIBUX! Explore the latest hackathons and events.")
+      showToast("Welcome to TechEvents! Explore the latest hackathons and events.")
     }, 1000)
   }
 
   // Fetch all events from the server
   async function fetchAllEvents() {
+    showLoader("eventsLoader"); // 👈 Show loader at start
+  
     try {
       const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events")
       const data = await response.json()
-
+  
       if (data.success && Array.isArray(data.events) && data.events.length > 0) {
-        renderEvents(data.events) // Render events with fetched data
+        renderEvents(data.events)
       } else {
-        console.warn("No events found. Using mock data.")
-        renderMockEvents() // Fallback to mock data
+        renderMockEvents()
       }
     } catch (error) {
       console.error("Error fetching events:", error)
-      renderMockEvents() // Fallback to mock data on error
+      renderMockEvents()
+    } finally {
+      hideLoader("eventsLoader") // 👈 Hide loader at end
     }
   }
+  
 
   // Render mock events when no real events are available
   function renderMockEvents() {
@@ -975,26 +989,19 @@ You will receive an email notification once your registration is approved.
 
   // Fetch event details by ID
   async function fetchEventDetails(eventId) {
+    showLoader("detailLoader") // 👈 Show detail loader
+  
     try {
       const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
-      if (!response.ok) {
-        throw new Error("Failed to fetch event details")
-      }
-
       const data = await response.json()
-      console.log("API response:", data)
-
+  
       if (data.success && data.event) {
-        displayEventDetails(data.event) // Render event details
-
-        // Store the event ID in the registration modal for later use
+        displayEventDetails(data.event)
         const registrationModal = document.getElementById("registrationModal")
         if (registrationModal) {
           registrationModal.setAttribute("data-event-id", eventId)
         }
       } else {
-        console.warn(`Event with ID ${eventId} not found.`)
-        // Fallback to mock data if available
         const mockEvent = eventData[eventId]
         if (mockEvent) {
           displayEventDetails(mockEvent)
@@ -1002,13 +1009,15 @@ You will receive an email notification once your registration is approved.
       }
     } catch (error) {
       console.error("Error fetching event details:", error)
-      // Fallback to mock data if available
       const mockEvent = eventData[eventId]
       if (mockEvent) {
         displayEventDetails(mockEvent)
       }
+    } finally {
+      hideLoader("detailLoader") // 👈 Hide after fetch
     }
   }
+  
 
   // Display event details
   function displayEventDetails(event) {
