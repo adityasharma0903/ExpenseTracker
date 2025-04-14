@@ -1,42 +1,44 @@
-// import { Chart } from "@/components/ui/chart"
+
 // Initialize the application when the DOM is loaded
-document.addEventListener("DOMContentLoaded", async () => {
-  showLoader(); // 👈 loader starts
+document.addEventListener("DOMContentLoaded", async () =>
+{
+  showLoader() // 👈 loader starts
 
   // Initialize club data if not exists
-  initializeClubData();
+  initializeClubData()
 
   // Setup event listeners
-  setupEventListeners();
+  setupEventListeners()
 
   // Check if user is logged in
-  await checkLoginStatus(); // agar ye async hai, warna hata do await
+  await checkLoginStatus() // agar ye async hai, warna hata do await
 
   // Display current date
-  displayCurrentDate();
+  displayCurrentDate()
 
   // Mutation observer for modal
   const observer = new MutationObserver(() => {
-    const modal = document.getElementById("event-detail-modal");
+    const modal = document.getElementById("event-detail-modal")
     if (modal && modal.style.display === "block") {
-      activateEventModalTabs();
+      activateEventModalTabs()
     }
-  });
+  })
 
-  observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+  observer.observe(document.body, { attributes: true, childList: true, subtree: true })
 
-  hideLoader(); // 👈 loader ends
-});
+  hideLoader() // 👈 loader ends
+}
+)
 
-let eventId = null;
+let eventId = null
 // Display current date
 
 function showLoader() {
-  document.getElementById("global-loader").classList.remove("hidden");
+  document.getElementById("global-loader").classList.remove("hidden")
 }
 
 function hideLoader() {
-  document.getElementById("global-loader").classList.add("hidden");
+  document.getElementById("global-loader").classList.add("hidden")
 }
 function displayCurrentDate() {
   const dateElement = document.getElementById("current-date")
@@ -124,8 +126,6 @@ function setupEventListeners() {
       setupDetailModalListeners()
     })
   }
-
-
 
   // Logout button
   document.getElementById("logout-btn").addEventListener("click", handleLogout)
@@ -321,20 +321,19 @@ function checkLoginStatus() {
 }
 
 document.getElementById("login-btn").addEventListener("click", async () => {
-  const clubId = document.getElementById("club-id").value.trim();
-  const password = document.getElementById("password").value;
+  const clubId = document.getElementById("club-id").value.trim()
+  const password = document.getElementById("password").value
 
   if (clubId && password) {
     // ✅ Save clubId in localStorage
-    localStorage.setItem("clubId", clubId);
+    localStorage.setItem("clubId", clubId)
 
     // ✅ Redirect to dashboard page
     // window.location.href = "admin-dashboard.html";
   } else {
-    document.getElementById("login-error").textContent = "Invalid credentials";
+    document.getElementById("login-error").textContent = "Invalid credentials"
   }
-});
-
+})
 
 // Handle login form submission
 async function handleLogin() {
@@ -366,11 +365,11 @@ async function handleLogin() {
     }
 
     // Generate a simple token (in a real app, this would come from your backend)
-    const token = btoa(`${clubId}:${Date.now()}`);
+    const token = btoa(`${clubId}:${Date.now()}`)
 
     // Login successful
     localStorage.setItem("loggedInClub", JSON.stringify(club))
-    localStorage.setItem("authToken", token);
+    localStorage.setItem("authToken", token)
 
     // Update UI elements
     document.getElementById("club-name").textContent = club.name
@@ -519,29 +518,29 @@ function openCreateEventModal() {
 // Function to set up event card functionality
 function setupEventCardFunctionality() {
   // Get all event cards
-  const eventCards = document.querySelectorAll('.event-card');
+  const eventCards = document.querySelectorAll(".event-card")
 
   // Add click event to each card
-  eventCards.forEach(card => {
+  eventCards.forEach((card) => {
     // Add event listener for click on the card
-    card.addEventListener('click', function (e) {
+    card.addEventListener("click", function (e) {
       // Prevent click if the action buttons were clicked
-      if (e.target.closest('.event-actions') || e.target.closest('.btn-action')) {
-        return;
+      if (e.target.closest(".event-actions") || e.target.closest(".btn-action")) {
+        return
       }
 
       // Get the event ID from the view button inside this card
-      const viewButton = this.querySelector('.view-event');
-      const eventId = viewButton ? viewButton.getAttribute('data-id') : null;
+      const viewButton = this.querySelector(".view-event")
+      const eventId = viewButton ? viewButton.getAttribute("data-id") : null
 
       if (eventId) {
-        openEventDetailModal(eventId);
+        openEventDetailModal(eventId)
       }
-    });
+    })
 
     // Add hover functionality for action buttons
-    const actionButtons = document.createElement('div');
-    actionButtons.className = 'event-actions';
+    const actionButtons = document.createElement("div")
+    actionButtons.className = "event-actions"
     actionButtons.innerHTML = `
       <button class="btn-action btn-edit" title="Edit Event">
         <i class="fas fa-edit"></i>
@@ -549,33 +548,33 @@ function setupEventCardFunctionality() {
       <button class="btn-action btn-delete" title="Delete Event">
         <i class="fas fa-trash"></i>
       </button>
-    `;
+    `
 
     // Add the action buttons to the card if they don't already exist
-    if (!card.querySelector('.event-actions')) {
-      card.appendChild(actionButtons);
+    if (!card.querySelector(".event-actions")) {
+      card.appendChild(actionButtons)
     }
 
     // Add event listeners to the action buttons
-    const editButton = card.querySelector('.btn-edit');
-    const deleteButton = card.querySelector('.btn-delete');
+    const editButton = card.querySelector(".btn-edit")
+    const deleteButton = card.querySelector(".btn-delete")
 
     if (editButton) {
-      editButton.addEventListener('click', function (e) {
-        e.stopPropagation(); // Prevent card click
-        const eventId = card.querySelector('.view-event').getAttribute('data-id');
-        openEventEditForm(eventId);
-      });
+      editButton.addEventListener("click", (e) => {
+        e.stopPropagation() // Prevent card click
+        const eventId = card.querySelector(".view-event").getAttribute("data-id")
+        openEventEditForm(eventId)
+      })
     }
 
     if (deleteButton) {
-      deleteButton.addEventListener('click', function (e) {
-        e.stopPropagation(); // Prevent card click
-        const eventId = card.querySelector('.view-event').getAttribute('data-id');
-        confirmDeleteEvent(eventId);
-      });
+      deleteButton.addEventListener("click", (e) => {
+        e.stopPropagation() // Prevent card click
+        const eventId = card.querySelector(".view-event").getAttribute("data-id")
+        confirmDeleteEvent(eventId)
+      })
     }
-  });
+  })
 }
 
 // Function to open the event detail modal
@@ -597,7 +596,7 @@ function setupEventCardFunctionality() {
 //     document.getElementById('detail-event-title').textContent = event.name;
 //     document.getElementById('detail-event-poster').src = event.poster || "https://via.placeholder.com/300x250?text=Event";
 //     document.getElementById('detail-event-description').textContent = event.description;
-//     document.getElementById('detail-event-date').textContent = 
+//     document.getElementById('detail-event-date').textContent =
 //       `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
 //     document.getElementById('detail-event-time').textContent = `${event.startTime} - ${event.endTime}`;
 //     document.getElementById('detail-event-venue').textContent = event.venue;
@@ -612,17 +611,17 @@ function setupEventCardFunctionality() {
 //       document.getElementById('detail-event-prize-pool').textContent = `₹${event.prizes.pool || 0}`;
 
 //       if (event.prizes.first) {
-//         document.getElementById('detail-event-first-prize').textContent = 
+//         document.getElementById('detail-event-first-prize').textContent =
 //           `₹${event.prizes.first.amount || 0} ${event.prizes.first.description ? '- ' + event.prizes.first.description : ''}`;
 //       }
 
 //       if (event.prizes.second) {
-//         document.getElementById('detail-event-second-prize').textContent = 
+//         document.getElementById('detail-event-second-prize').textContent =
 //           `₹${event.prizes.second.amount || 0} ${event.prizes.second.description ? '- ' + event.prizes.second.description : ''}`;
 //       }
 
 //       if (event.prizes.third) {
-//         document.getElementById('detail-event-third-prize').textContent = 
+//         document.getElementById('detail-event-third-prize').textContent =
 //           `₹${event.prizes.third.amount || 0} ${event.prizes.third.description ? '- ' + event.prizes.third.description : ''}`;
 //       }
 //     }
@@ -710,118 +709,117 @@ function setupEventCardFunctionality() {
 
 // Function to confirm event deletion
 function confirmDeleteEvent(eventId) {
-  if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-    deleteEvent(eventId);
+  if (confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+    deleteEvent(eventId)
   }
 }
 
 // Function to delete an event
 async function deleteEvent(eventId) {
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem("authToken")
 
   try {
     const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'x-auth-token': token,
+        "x-auth-token": token,
       },
-    });
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (data.success) {
       // Close the modal
-      document.getElementById('event-detail-modal').style.display = 'none';
+      document.getElementById("event-detail-modal").style.display = "none"
 
       // Refresh the events list
-      loadEvents();
+      loadEvents()
 
       // Show success message
-      showToast('Event Deleted', 'The event has been successfully deleted', 'success');
+      showToast("Event Deleted", "The event has been successfully deleted", "success")
     } else {
-      showToast('Error', data.message || 'Failed to delete event', 'error');
+      showToast("Error", data.message || "Failed to delete event", "error")
     }
   } catch (error) {
-    console.error('Error deleting event:', error);
-    showToast('Error', 'Failed to connect to server', 'error');
+    console.error("Error deleting event:", error)
+    showToast("Error", "Failed to connect to server", "error")
   }
 }
 function activateEventModalTabs() {
-  const modal = document.getElementById("event-detail-modal");
+  const modal = document.getElementById("event-detail-modal")
 
   // Tabs and their content
-  const tabs = modal.querySelectorAll(".event-detail-tabs .tab");
-  const tabContents = modal.querySelectorAll(".event-detail-body .tab-content");
+  const tabs = modal.querySelectorAll(".event-detail-tabs .tab")
+  const tabContents = modal.querySelectorAll(".event-detail-body .tab-content")
 
-  tabs.forEach(tab => {
+  tabs.forEach((tab) => {
     tab.addEventListener("click", function () {
-      const selectedTab = this.getAttribute("data-tab");
-      const targetContentId = `${selectedTab}-tab`;
+      const selectedTab = this.getAttribute("data-tab")
+      const targetContentId = `${selectedTab}-tab`
 
       // Remove active class from all tabs and contents
-      tabs.forEach(t => t.classList.remove("active"));
-      tabContents.forEach(c => c.classList.remove("active"));
+      tabs.forEach((t) => t.classList.remove("active"))
+      tabContents.forEach((c) => c.classList.remove("active"))
 
       // Add active to current tab and its content
-      this.classList.add("active");
-      const contentToShow = document.getElementById(targetContentId);
+      this.classList.add("active")
+      const contentToShow = document.getElementById(targetContentId)
       if (contentToShow) {
-        contentToShow.classList.add("active");
+        contentToShow.classList.add("active")
       } else {
-        console.warn(`Tab content with ID '${targetContentId}' not found.`);
+        console.warn(`Tab content with ID '${targetContentId}' not found.`)
       }
-    });
-  });
+    })
+  })
 }
 // Function to set up event listeners for the detail modal
 function setupDetailModalListeners(eventId) {
-  const modal = document.getElementById("event-detail-modal");
+  const modal = document.getElementById("event-detail-modal")
 
   // Close modal
-  const closeButton = modal.querySelector(".close-detail-modal");
+  const closeButton = modal.querySelector(".close-detail-modal")
   if (closeButton) {
     closeButton.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
+      modal.style.display = "none"
+    })
   }
 
   // ✅ Tab Switching Logic
-  const tabs = modal.querySelectorAll(".event-detail-tabs .tab");
-  const tabContents = modal.querySelectorAll(".tab-content");
+  const tabs = modal.querySelectorAll(".event-detail-tabs .tab")
+  const tabContents = modal.querySelectorAll(".tab-content")
 
-  tabs.forEach(tab => {
+  tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      const tabId = tab.getAttribute("data-tab");
+      const tabId = tab.getAttribute("data-tab")
 
       // Remove active from all tabs
-      tabs.forEach(t => t.classList.remove("active"));
+      tabs.forEach((t) => t.classList.remove("active"))
       // Hide all contents
-      tabContents.forEach(content => content.classList.remove("active"));
+      tabContents.forEach((content) => content.classList.remove("active"))
 
       // Activate selected
-      tab.classList.add("active");
-      const contentToShow = document.getElementById(`${tabId}-tab`);
-      if (contentToShow) contentToShow.classList.add("active");
-    });
-  });
+      tab.classList.add("active")
+      const contentToShow = document.getElementById(`${tabId}-tab`)
+      if (contentToShow) contentToShow.classList.add("active")
+    })
+  })
 
   // Filter and export listeners (already there, keep as-is)
-  const statusFilter = document.getElementById('teams-status-filter');
+  const statusFilter = document.getElementById("teams-status-filter")
   if (statusFilter) {
-    statusFilter.addEventListener('change', function () {
-      filterTeamsByStatus(eventId, this.value);
-    });
+    statusFilter.addEventListener("change", function () {
+      filterTeamsByStatus(eventId, this.value)
+    })
   }
 
-  const exportButton = document.getElementById('export-teams-excel');
+  const exportButton = document.getElementById("export-teams-excel")
   if (exportButton) {
-    exportButton.addEventListener('click', () => {
-      const eventName = document.getElementById('detail-event-title').textContent;
-      exportTeamsToExcel(eventId, eventName);
-    });
+    exportButton.addEventListener("click", () => {
+      const eventName = document.getElementById("detail-event-title").textContent
+      exportTeamsToExcel(eventId, eventName)
+    })
   }
 }
-
 
 // Add this function to filter teams by status
 async function filterTeamsByStatus(eventId, status) {
@@ -869,30 +867,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Function to save event changes
 function saveEventChanges(eventId) {
-  const token = localStorage.getItem('authToken');
-  const loggedInClub = JSON.parse(localStorage.getItem('loggedInClub'));
+  const token = localStorage.getItem("authToken")
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
 
   // Get form values
-  const name = document.getElementById('edit-event-name').value.trim();
-  const description = document.getElementById('edit-event-description').value.trim();
-  const startDate = document.getElementById('edit-event-start-date').value;
-  const endDate = document.getElementById('edit-event-end-date').value;
-  const startTime = document.getElementById('edit-event-start-time').value;
-  const endTime = document.getElementById('edit-event-end-time').value;
-  const venue = document.getElementById('edit-event-venue').value.trim();
-  const teamMin = Number.parseInt(document.getElementById('edit-event-team-min').value) || 1;
-  const teamMax = Number.parseInt(document.getElementById('edit-event-team-max').value) || 5;
-  const about = document.getElementById('edit-event-about').value.trim();
-  const theme = document.getElementById('edit-event-theme').value.trim();
+  const name = document.getElementById("edit-event-name").value.trim()
+  const description = document.getElementById("edit-event-description").value.trim()
+  const startDate = document.getElementById("edit-event-start-date").value
+  const endDate = document.getElementById("edit-event-end-date").value
+  const startTime = document.getElementById("edit-event-start-time").value
+  const endTime = document.getElementById("edit-event-end-time").value
+  const venue = document.getElementById("edit-event-venue").value.trim()
+  const teamMin = Number.parseInt(document.getElementById("edit-event-team-min").value) || 1
+  const teamMax = Number.parseInt(document.getElementById("edit-event-team-max").value) || 5
+  const about = document.getElementById("edit-event-about").value.trim()
+  const theme = document.getElementById("edit-event-theme").value.trim()
 
   // Get prize details
-  const prizePool = Number.parseInt(document.getElementById('edit-event-prize-pool').value) || 0;
-  const firstPrizeAmount = Number.parseInt(document.getElementById('edit-first-prize-amount').value) || 0;
-  const firstPrizeDescription = document.getElementById('edit-first-prize-description').value.trim();
-  const secondPrizeAmount = Number.parseInt(document.getElementById('edit-second-prize-amount').value) || 0;
-  const secondPrizeDescription = document.getElementById('edit-second-prize-description').value.trim();
-  const thirdPrizeAmount = Number.parseInt(document.getElementById('edit-third-prize-amount').value) || 0;
-  const thirdPrizeDescription = document.getElementById('edit-third-prize-description').value.trim();
+  const prizePool = Number.parseInt(document.getElementById("edit-event-prize-pool").value) || 0
+  const firstPrizeAmount = Number.parseInt(document.getElementById("edit-first-prize-amount").value) || 0
+  const firstPrizeDescription = document.getElementById("edit-first-prize-description").value.trim()
+  const secondPrizeAmount = Number.parseInt(document.getElementById("edit-second-prize-amount").value) || 0
+  const secondPrizeDescription = document.getElementById("edit-second-prize-description").value.trim()
+  const thirdPrizeAmount = Number.parseInt(document.getElementById("edit-third-prize-amount").value) || 0
+  const thirdPrizeDescription = document.getElementById("edit-third-prize-description").value.trim()
 
   // Create updated event object
   const updatedEvent = {
@@ -911,47 +909,47 @@ function saveEventChanges(eventId) {
       pool: prizePool,
       first: {
         amount: firstPrizeAmount,
-        description: firstPrizeDescription
+        description: firstPrizeDescription,
       },
       second: {
         amount: secondPrizeAmount,
-        description: secondPrizeDescription
+        description: secondPrizeDescription,
       },
       third: {
         amount: thirdPrizeAmount,
-        description: thirdPrizeDescription
-      }
-    }
-  };
+        description: thirdPrizeDescription,
+      },
+    },
+  }
 
   // Send PUT request to update the event
   fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
-      'x-auth-token': token
+      "Content-Type": "application/json",
+      "x-auth-token": token,
     },
-    body: JSON.stringify(updatedEvent)
+    body: JSON.stringify(updatedEvent),
   })
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
         // Refresh the events list
-        loadEvents();
+        loadEvents()
 
         // Update the detail view with new data
-        openEventDetailModal(eventId);
+        openEventDetailModal(eventId)
 
         // Show success message
-        showToast('Event Updated', 'The event has been successfully updated', 'success');
+        showToast("Event Updated", "The event has been successfully updated", "success")
       } else {
-        showToast('Error', data.message || 'Failed to update event', 'error');
+        showToast("Error", data.message || "Failed to update event", "error")
       }
     })
-    .catch(error => {
-      console.error('Error updating event:', error);
-      showToast('Error', 'Failed to connect to server', 'error');
-    });
+    .catch((error) => {
+      console.error("Error updating event:", error)
+      showToast("Error", "Failed to connect to server", "error")
+    })
 }
 
 // Add this to your existing loadEvents function
@@ -960,17 +958,17 @@ function loadEvents() {
 
   // After rendering events, set up the event card functionality
   setTimeout(() => {
-    setupEventCardFunctionality();
-  }, 600); // Slightly longer than your animation delay to ensure all cards are rendered
+    setupEventCardFunctionality()
+  }, 600) // Slightly longer than your animation delay to ensure all cards are rendered
 }
 
 // Call this when the DOM is loaded to set up the initial event listeners
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", () => {
   // Your existing DOMContentLoaded code...
 
   // Set up the event detail modal listeners
-  setupDetailModalListeners();
-});
+  setupDetailModalListeners()
+})
 
 // Open add expense modal
 function openAddExpenseModal() {
@@ -1622,6 +1620,51 @@ function animateCounter(elementId, targetValue, prefix = "") {
 function renderBudgetChart(expenses) {
   const ctx = document.getElementById("budget-chart").getContext("2d")
 
+  // Check if expenses exist and have length
+  if (!expenses || expenses.length === 0) {
+    // No data case - draw empty chart with message
+    if (window.budgetChart) {
+      window.budgetChart.destroy()
+    }
+
+    window.budgetChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["No Data"],
+        datasets: [
+          {
+            data: [1],
+            backgroundColor: ["#e5e7eb"],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            enabled: false,
+          },
+        },
+      },
+    })
+
+    // Draw "No data available" text in the center
+    const width = ctx.canvas.width
+    const height = ctx.canvas.height
+    ctx.font = "14px Arial"
+    ctx.fillStyle = "#64748b"
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText("No expense data available", width / 2, height / 2)
+
+    return
+  }
+
   // Group expenses by category
   const categories = {}
   expenses.forEach((expense) => {
@@ -1931,25 +1974,24 @@ function renderUpcomingEvents(events) {
 
 // Load events - Modified to use MongoDB
 async function loadEvents() {
-  showLoader(); // ⏳ Show loader while fetching
+  showLoader() // ⏳ Show loader while fetching
 
-  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
 
   // Fetch events from MongoDB
-  const events = await fetchEvents();
+  const events = await fetchEvents()
 
   // Filter events for the logged-in club
-  const clubEvents = events.filter((event) => event.clubId === loggedInClub.id);
+  const clubEvents = events.filter((event) => event.clubId === loggedInClub.id)
 
   // Render events
-  renderEvents(clubEvents);
+  renderEvents(clubEvents)
 
   // Render timeline chart with fetched events
-  renderTimelineChart(clubEvents);
+  renderTimelineChart(clubEvents)
 
-  hideLoader(); // ✅ Hide loader after rendering
+  hideLoader() // ✅ Hide loader after rendering
 }
-
 
 // Render events
 function renderEvents(events) {
@@ -2021,40 +2063,40 @@ function renderEvents(events) {
   // Add event listeners
   setTimeout(() => {
     // Event card click to view details
-    const eventCards = document.querySelectorAll('.event-card');
-    eventCards.forEach(card => {
-      card.addEventListener('click', function (e) {
-        if (!e.target.closest('.btn-action')) {
-          const eventId = this.dataset.id || this.querySelector('.view-event').getAttribute('data-id');
+    const eventCards = document.querySelectorAll(".event-card")
+    eventCards.forEach((card) => {
+      card.addEventListener("click", function (e) {
+        if (!e.target.closest(".btn-action")) {
+          const eventId = this.dataset.id || this.querySelector(".view-event").getAttribute("data-id")
           if (eventId) {
-            openEventDetailModal(eventId);
+            openEventDetailModal(eventId)
           } else {
-            console.error("Event ID is undefined");
+            console.error("Event ID is undefined")
           }
         }
-      });
-    });
+      })
+    })
 
     // Edit button click
-    const editButtons = document.querySelectorAll('.btn-edit');
-    editButtons.forEach(button => {
-      button.addEventListener('click', function (e) {
-        e.stopPropagation(); // Prevent event card click
-        const eventId = this.getAttribute('data-id');
-        openEventDetailModal(eventId, true); // Open in edit mode
-      });
-    });
+    const editButtons = document.querySelectorAll(".btn-edit")
+    editButtons.forEach((button) => {
+      button.addEventListener("click", function (e) {
+        e.stopPropagation() // Prevent event card click
+        const eventId = this.getAttribute("data-id")
+        openEventDetailModal(eventId, true) // Open in edit mode
+      })
+    })
 
     // Delete button click
-    const deleteButtons = document.querySelectorAll('.btn-delete');
-    deleteButtons.forEach(button => {
-      button.addEventListener('click', function (e) {
-        e.stopPropagation(); // Prevent event card click
-        const eventId = this.getAttribute('data-id');
-        confirmDeleteEvent(eventId);
-      });
-    });
-  }, 500);
+    const deleteButtons = document.querySelectorAll(".btn-delete")
+    deleteButtons.forEach((button) => {
+      button.addEventListener("click", function (e) {
+        e.stopPropagation() // Prevent event card click
+        const eventId = this.getAttribute("data-id")
+        confirmDeleteEvent(eventId)
+      })
+    })
+  }, 500)
 }
 async function fetchTeamRegistrations(eventId) {
   try {
@@ -2079,49 +2121,48 @@ async function fetchTeamRegistrations(eventId) {
   }
 }
 function switchModalTab(tabId) {
-  const tabContents = document.querySelectorAll(".event-detail-tab-content");
+  const tabContents = document.querySelectorAll(".event-detail-tab-content")
   tabContents.forEach((content) => {
-    content.classList.remove("active");
-  });
+    content.classList.remove("active")
+  })
 
-  const selectedContent = document.getElementById(`${tabId}-tab`);
+  const selectedContent = document.getElementById(`${tabId}-tab`)
   if (selectedContent) {
-    selectedContent.classList.add("active");
+    selectedContent.classList.add("active")
   }
 
-  const tabs = document.querySelectorAll(".event-detail-tabs .tab");
+  const tabs = document.querySelectorAll(".event-detail-tabs .tab")
   tabs.forEach((tab) => {
-    tab.classList.remove("active");
-  });
+    tab.classList.remove("active")
+  })
 
-  const activeTab = document.querySelector(`.event-detail-tabs .tab[data-tab="${tabId}"]`);
+  const activeTab = document.querySelector(`.event-detail-tabs .tab[data-tab="${tabId}"]`)
   if (activeTab) {
-    activeTab.classList.add("active");
+    activeTab.classList.add("active")
   }
 }
 
-
 async function loadRegisteredTeams(eventId) {
   try {
-    const teams = await fetchTeamRegistrations(eventId);
-    const registeredTeamsList = document.getElementById("registered-teams-list");
+    const teams = await fetchTeamRegistrations(eventId)
+    const registeredTeamsList = document.getElementById("registered-teams-list")
 
     if (!registeredTeamsList) {
-      console.warn("registered-teams-list element not found");
-      return;
+      console.warn("registered-teams-list element not found")
+      return
     }
 
     if (teams.length === 0) {
-      registeredTeamsList.innerHTML = `<p>No teams registered yet.</p>`;
-      return;
+      registeredTeamsList.innerHTML = `<p>No teams registered yet.</p>`
+      return
     }
 
     // Render each team card
-    registeredTeamsList.innerHTML = ""; // clear previous list
+    registeredTeamsList.innerHTML = "" // clear previous list
 
     teams.forEach((team, index) => {
-      const teamCard = document.createElement("div");
-      teamCard.className = "team-card";
+      const teamCard = document.createElement("div")
+      teamCard.className = "team-card"
 
       teamCard.innerHTML = `
         <div class="team-summary" data-index="${index}">
@@ -2135,7 +2176,7 @@ async function loadRegisteredTeams(eventId) {
           <p><strong>Status:</strong> ${team.status}</p>
           <p><strong>Members:</strong></p>
           <ul>
-            ${team.members.map(member => `<li>${member.name} (${member.email})</li>`).join("")}
+            ${team.members.map((member) => `<li>${member.name} (${member.email})</li>`).join("")}
           </ul>
 
           <div class="team-actions">
@@ -2143,21 +2184,21 @@ async function loadRegisteredTeams(eventId) {
             <button class="reject-team" data-id="${team._id}"><i class="fas fa-times"></i> Reject</button>
           </div>
         </div>
-      `;
+      `
 
-      registeredTeamsList.appendChild(teamCard);
-    });
+      registeredTeamsList.appendChild(teamCard)
+    })
 
     // Dropdown toggle
-    registeredTeamsList.querySelectorAll(".team-summary").forEach(summary => {
+    registeredTeamsList.querySelectorAll(".team-summary").forEach((summary) => {
       summary.addEventListener("click", () => {
-        const details = summary.nextElementSibling;
-        const icon = summary.querySelector(".toggle-icon");
-        details.classList.toggle("hidden");
-        icon.classList.toggle("fa-chevron-down");
-        icon.classList.toggle("fa-chevron-up");
-      });
-    });
+        const details = summary.nextElementSibling
+        const icon = summary.querySelector(".toggle-icon")
+        details.classList.toggle("hidden")
+        icon.classList.toggle("fa-chevron-down")
+        icon.classList.toggle("fa-chevron-up")
+      })
+    })
 
     // Approve & Reject
     registeredTeamsList.querySelectorAll(".approve-team").forEach((btn) => {
@@ -2191,178 +2232,178 @@ async function loadRegisteredTeams(eventId) {
         })
       })
     })
+  } catch (err) {
+    console.error("Error loading teams:", err)
+    document.getElementById("registered-teams-list").innerHTML = `<p>Error loading teams.</p>`
   }
-  catch (err) {
-  console.error("Error loading teams:", err);
-  document.getElementById("registered-teams-list").innerHTML = `<p>Error loading teams.</p>`;
-}
 }
 
 async function fetchApprovedTeams(eventId) {
-  const token = localStorage.getItem("authToken");
+  const token = localStorage.getItem("authToken")
   const response = await fetch(`https://expensetracker-qppb.onrender.com/api/approved-teams?eventId=${eventId}`, {
     headers: {
-      "x-auth-token": token
-    }
-  });
+      "x-auth-token": token,
+    },
+  })
 
-  const data = await response.json();
-  return data.success ? data.teams : [];
+  const data = await response.json()
+  return data.success ? data.teams : []
 }
 async function loadApprovedTeams(eventId) {
-  const teams = await fetchApprovedTeams(eventId);
-  const approvedList = document.getElementById("accepted-teams-list");
+  const teams = await fetchApprovedTeams(eventId)
+  const approvedList = document.getElementById("accepted-teams-list")
 
-  if (!approvedList) return;
+  if (!approvedList) return
 
   if (teams.length === 0) {
-    approvedList.innerHTML = "<p>No approved teams yet.</p>";
-    return;
+    approvedList.innerHTML = "<p>No approved teams yet.</p>"
+    return
   }
 
-  approvedList.innerHTML = teams.map(team => `
+  approvedList.innerHTML = teams
+    .map(
+      (team) => `
     <div class="team-card">
       <strong>${team.teamName}</strong> (Leader: ${team.leaderName})
-      <p>${team.members.map(m => m.name).join(", ")}</p>
+      <p>${team.members.map((m) => m.name).join(", ")}</p>
     </div>
-  `).join("");
+  `,
+    )
+    .join("")
 }
 
 async function openEventDetailModal(id) {
-  showLoader(); // 🌀 Show loader before anything
+  showLoader() // 🌀 Show loader before anything
 
-  eventId = id;
+  eventId = id
   try {
     if (!eventId) {
-      console.error("Invalid event ID:", eventId);
-      showToast("Error", "Invalid event ID", "error");
-      hideLoader();
-      return;
+      console.error("Invalid event ID:", eventId)
+      showToast("Error", "Invalid event ID", "error")
+      hideLoader()
+      return
     }
 
-    console.log("Fetching details for Event ID:", eventId);
+    console.log("Fetching details for Event ID:", eventId)
 
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("authToken")
     const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
       headers: {
         "x-auth-token": token,
       },
-    });
+    })
 
-    console.log("Response Status:", response.status);
+    console.log("Response Status:", response.status)
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Error Response Body:", errorText);
-      throw new Error(`Failed to fetch event details. Status: ${response.status}`);
+      const errorText = await response.text()
+      console.error("Error Response Body:", errorText)
+      throw new Error(`Failed to fetch event details. Status: ${response.status}`)
     }
 
-    const data = await response.json();
-    console.log("API Response:", data);
+    const data = await response.json()
+    console.log("API Response:", data)
 
     if (!data || !data.success || !data.event) {
-      showToast("Error", "Event not found or invalid response", "error");
-      hideLoader();
-      return;
+      showToast("Error", "Event not found or invalid response", "error")
+      hideLoader()
+      return
     }
 
-    const event = data.event;
+    const event = data.event
 
-    const modal = document.getElementById("event-detail-modal");
-    modal.setAttribute("data-event-id", eventId);
-    document.getElementById("detail-event-title").textContent = event.name;
+    const modal = document.getElementById("event-detail-modal")
+    modal.setAttribute("data-event-id", eventId)
+    document.getElementById("detail-event-title").textContent = event.name
     document.getElementById("detail-event-poster").src =
-      event.poster || "https://via.placeholder.com/300x250?text=Event";
-    document.getElementById("detail-event-description").textContent = event.description;
+      event.poster || "https://via.placeholder.com/300x250?text=Event"
+    document.getElementById("detail-event-description").textContent = event.description
     document.getElementById("detail-event-date").textContent =
-      `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
-    document.getElementById("detail-event-time").textContent = `${event.startTime} - ${event.endTime}`;
-    document.getElementById("detail-event-venue").textContent = event.venue;
-    document.getElementById("detail-event-team-size").textContent = `${event.teamMin} - ${event.teamMax} members`;
-    document.getElementById("detail-event-about").textContent = event.about || "No details provided";
-    document.getElementById("detail-event-theme").textContent = event.theme || "No theme specified";
-    document.getElementById("detail-event-prize-pool").textContent = `₹${event.prizes?.pool || 0}`;
+      `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`
+    document.getElementById("detail-event-time").textContent = `${event.startTime} - ${event.endTime}`
+    document.getElementById("detail-event-venue").textContent = event.venue
+    document.getElementById("detail-event-team-size").textContent = `${event.teamMin} - ${event.teamMax} members`
+    document.getElementById("detail-event-about").textContent = event.about || "No details provided"
+    document.getElementById("detail-event-theme").textContent = event.theme || "No theme specified"
+    document.getElementById("detail-event-prize-pool").textContent = `₹${event.prizes?.pool || 0}`
     document.getElementById("detail-event-first-prize").textContent = event.prizes?.first?.amount
       ? `₹${event.prizes.first.amount} - ${event.prizes.first.description || ""}`
-      : "None";
+      : "None"
     document.getElementById("detail-event-second-prize").textContent = event.prizes?.second?.amount
       ? `₹${event.prizes.second.amount} - ${event.prizes.second.description || ""}`
-      : "None";
+      : "None"
     document.getElementById("detail-event-third-prize").textContent = event.prizes?.third?.amount
       ? `₹${event.prizes.third.amount} - ${event.prizes.third.description || ""}`
-      : "None";
-    document.getElementById("detail-event-budget").textContent = `₹${event.totalBudget || 0}`;
+      : "None"
+    document.getElementById("detail-event-budget").textContent = `₹${event.totalBudget || 0}`
 
-    await fetchTeamRegistrations(eventId);
-    loadTeamRegistrations(eventId);
-    loadRegisteredTeams(eventId);
-    loadApprovedTeams(eventId);
+    await fetchTeamRegistrations(eventId)
+    loadTeamRegistrations(eventId)
+    loadRegisteredTeams(eventId)
+    loadApprovedTeams(eventId)
 
-    switchModalTab('event-info');
+    switchModalTab("event-info")
 
     document.getElementById("btn-delete-event").addEventListener("click", () => {
-      deleteEvent(eventId);
-    });
+      deleteEvent(eventId)
+    })
 
-    modal.style.display = "block";
-    setupDetailModalListeners(eventId);
+    modal.style.display = "block"
+    setupDetailModalListeners(eventId)
 
-    console.log("Setup completed, modal should be visible now");
+    console.log("Setup completed, modal should be visible now")
   } catch (error) {
-    console.error("Error fetching event details:", error);
-    showToast("Error", `Failed to fetch event details: ${error.message}`, "error");
+    console.error("Error fetching event details:", error)
+    showToast("Error", `Failed to fetch event details: ${error.message}`, "error")
   } finally {
-    hideLoader(); // ✅ Always hide loader
+    hideLoader() // ✅ Always hide loader
   }
 }
 
-
-
-
 // Function to close event detail modal
 function closeEventDetailModal() {
-  document.getElementById('event-detail-modal').style.display = 'none';
+  document.getElementById("event-detail-modal").style.display = "none"
 }
 
 async function deleteEvent(eventId) {
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem("authToken")
 
   try {
     // Send DELETE request to the backend
     const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'x-auth-token': token,
+        "x-auth-token": token,
       },
-    });
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (data.success) {
       // Close the modal
-      closeEventDetailModal();
+      closeEventDetailModal()
 
       // Refresh the events list
-      loadEvents();
+      loadEvents()
 
       // Refresh dashboard data
-      loadDashboardData();
+      loadDashboardData()
 
       // Show success message
-      showToast('Success', `Event has been deleted successfully`, 'success');
+      showToast("Success", `Event has been deleted successfully`, "success")
     } else {
-      showToast('Error', data.message || 'Failed to delete event', 'error');
+      showToast("Error", data.message || "Failed to delete event", "error")
     }
   } catch (error) {
-    console.error('Error deleting event:', error);
-    showToast('Error', 'Failed to connect to server', 'error');
+    console.error("Error deleting event:", error)
+    showToast("Error", "Failed to connect to server", "error")
   }
 }
 
 // Function to confirm delete event
 function confirmDeleteEvent(eventId) {
-  if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-    deleteEvent(eventId);
+  if (confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+    deleteEvent(eventId)
   }
 }
 
@@ -2445,18 +2486,17 @@ async function updateTeamStatus(teamId, newStatus) {
   }
 }
 
-
 function renderTeamsList(container, teams, statusContext = "all") {
   if (!teams || teams.length === 0) {
-    container.innerHTML = `<p>No teams found.</p>`;
-    return;
+    container.innerHTML = `<p>No teams found.</p>`
+    return
   }
 
-  container.innerHTML = ""; // Clear old content
+  container.innerHTML = "" // Clear old content
 
   teams.forEach((team, index) => {
-    const teamCard = document.createElement("div");
-    teamCard.className = "team-card";
+    const teamCard = document.createElement("div")
+    teamCard.className = "team-card"
 
     // Add status tag to the team summary
     teamCard.innerHTML = `
@@ -2472,48 +2512,51 @@ function renderTeamsList(container, teams, statusContext = "all") {
         <p><strong>Status:</strong> ${team.status}</p>
         <p><strong>Members:</strong></p>
         <ul>
-          ${team.members.map(member => `<li>${member.name} (${member.email})</li>`).join("")}
+          ${team.members.map((member) => `<li>${member.name} (${member.email})</li>`).join("")}
         </ul>
 
         <div class="team-actions">
-          ${team.status === "pending" ? `
+          ${
+            team.status === "pending"
+              ? `
             <button class="approve-team" data-id="${team._id}"><i class="fas fa-check"></i> Approve</button>
             <button class="reject-team" data-id="${team._id}"><i class="fas fa-times"></i> Reject</button>
-          ` : ''}
+          `
+              : ""
+          }
         </div>
       </div>
-    `;
+    `
 
-    container.appendChild(teamCard);
-  });
+    container.appendChild(teamCard)
+  })
 
   // Dropdown toggle
-  container.querySelectorAll(".team-summary").forEach(summary => {
+  container.querySelectorAll(".team-summary").forEach((summary) => {
     summary.addEventListener("click", () => {
-      const details = summary.nextElementSibling;
-      const icon = summary.querySelector(".toggle-icon");
-      details.classList.toggle("hidden");
-      icon.classList.toggle("fa-chevron-down");
-      icon.classList.toggle("fa-chevron-up");
-    });
-  });
+      const details = summary.nextElementSibling
+      const icon = summary.querySelector(".toggle-icon")
+      details.classList.toggle("hidden")
+      icon.classList.toggle("fa-chevron-down")
+      icon.classList.toggle("fa-chevron-up")
+    })
+  })
 
   // Approve & Reject
-  container.querySelectorAll(".approve-team").forEach(btn => {
+  container.querySelectorAll(".approve-team").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
-      await updateTeamStatus(id, "approved");
-    });
-  });
+      const id = btn.getAttribute("data-id")
+      await updateTeamStatus(id, "approved")
+    })
+  })
 
-  container.querySelectorAll(".reject-team").forEach(btn => {
+  container.querySelectorAll(".reject-team").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
-      await updateTeamStatus(id, "rejected");
-    });
-  });
+      const id = btn.getAttribute("data-id")
+      await updateTeamStatus(id, "rejected")
+    })
+  })
 }
-
 
 // Function to approve team registration
 async function approveTeamRegistration(teamId) {
@@ -2650,7 +2693,6 @@ function exportTeamsToExcel(teams, eventName) {
 }
 
 // Function to switch between modal tabs
-
 
 // Filter events - Modified to use MongoDB
 async function filterEvents() {
@@ -3021,6 +3063,51 @@ function filterExpenses() {
 function renderExpenseCategoryChart(expenses) {
   const ctx = document.getElementById("expenses-category-chart").getContext("2d")
 
+  // Check if expenses exist and have length
+  if (!expenses || expenses.length === 0) {
+    // No data case - draw empty chart with message
+    if (window.expenseCategoryChart) {
+      window.expenseCategoryChart.destroy()
+    }
+
+    window.expenseCategoryChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["No Data"],
+        datasets: [
+          {
+            data: [1],
+            backgroundColor: ["#e5e7eb"],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            enabled: false,
+          },
+        },
+      },
+    })
+
+    // Draw "No data available" text in the center
+    const width = ctx.canvas.width
+    const height = ctx.canvas.height
+    ctx.font = "14px Arial"
+    ctx.fillStyle = "#64748b"
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText("No expense data available", width / 2, height / 2)
+
+    return
+  }
+
   // Group expenses by category
   const categories = {}
   expenses.forEach((expense) => {
@@ -3105,6 +3192,67 @@ function renderExpenseCategoryChart(expenses) {
 // Render expense event chart
 function renderExpenseEventChart(expenses, events) {
   const ctx = document.getElementById("expenses-event-chart").getContext("2d")
+
+  // Check if expenses exist and have length
+  if (!expenses || expenses.length === 0 || !events || events.length === 0) {
+    // No data case - draw empty chart with message
+    if (window.expenseEventChart) {
+      window.expenseEventChart.destroy()
+    }
+
+    window.expenseEventChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["No Data"],
+        datasets: [
+          {
+            data: [0],
+            backgroundColor: ["#e5e7eb"],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              display: false,
+            },
+            grid: {
+              display: false,
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
+          },
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            enabled: false,
+          },
+        },
+      },
+    })
+
+    // Draw "No data available" text in the center
+    const width = ctx.canvas.width
+    const height = ctx.canvas.height
+    ctx.font = "14px Arial"
+    ctx.fillStyle = "#64748b"
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText("No expense data available", width / 2, height / 2)
+
+    return
+  }
 
   // Group expenses by event
   const eventExpenses = {}
@@ -3695,7 +3843,7 @@ function addScheduleItem(dayElement, dayNumber) {
   animateNewElement(newItem)
 }
 
-// Add FAQ Item
+// Add FAQ
 function addFaq() {
   const container = document.getElementById("faq-items-container")
   const newItem = document.createElement("div")
@@ -3827,5 +3975,5 @@ document.getElementById("create-event-btn").addEventListener("click", () => {
 // Declare setupDetailModalListeners
 function setupDetailModalListeners() {
   // Add your event detail modal listeners here
-  console.log("Event ID:", eventId); // Add this to check the value
+  console.log("Event ID:", eventId) // Add this to check the value
 }
