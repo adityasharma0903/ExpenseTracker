@@ -768,37 +768,36 @@ const validateClubEventCreation = (req, res, next) => {
 
 // Validate team registration
 const validateTeamRegistration = (req, res, next) => {
-  const { eventId, teamName, members, projectIdea, techStack } = req.body
+  const { eventId, teamName, members, projectIdea, techStack } = req.body;
 
-  // Check if all required fields are provided
   if (!eventId || !teamName || !members || !Array.isArray(members) || members.length === 0) {
     return res.status(400).json({
       success: false,
       message: "Please provide all required fields",
-    })
+    });
   }
 
-  // Validate team members
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$/;
+
   for (const member of members) {
     if (!member.name || !member.email || !member.phone || !member.department) {
       return res.status(400).json({
         success: false,
         message: "Each team member must have a name, email, phone, and department",
-      })
+      });
+    }
+
+    if (!emailPattern.test(member.email)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid email: ${member.email}. Only @chitkara.edu.in emails are allowed.`,
+      });
     }
   }
-  // Ensure email is from chitkara.edu.in domain
-  const emailPattern = /^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$/;
-  if (!emailPattern.test(member.email)) {
-    return res.status(400).json({
-      success: false,
-      message: `Invalid email: ${member.email}. Only @chitkara.edu.in emails are allowed.`,
-    });
-  }
 
+  next();
+};
 
-  next()
-}
 
 // ==================== EMAIL FUNCTIONALITY ====================
 
