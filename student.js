@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Profile Dropdown Toggle
   const profileDropdownTrigger = document.getElementById("profileDropdownTrigger")
   const profileDropdown = document.getElementById("profileDropdown")
+  document.getElementById("prizeFilter").addEventListener("change", applyFilters);
+  document.getElementById("dlFilter").addEventListener("change", applyFilters);
 
   function showLoader(id) {
     const loader = document.getElementById(id)
@@ -929,6 +931,8 @@ You will receive an email notification once your registration is approved.
 
   // Render events from the server
   function renderEvents(events) {
+    window.allEvents = events;
+    applyFilters(); // apply filters initially
     const container = document.querySelector("#dynamic-events")
     if (!container) return
 
@@ -991,6 +995,78 @@ You will receive an email notification once your registration is approved.
       })
     })
   }
+
+  function applyFilters() {
+    const prizeFilter = document.getElementById("prizeFilter")?.value || "all";
+    const dlFilter = document.getElementById("dlFilter")?.value || "all";
+
+    const container = document.querySelector("#dynamic-events");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const filtered = window.allEvents.filter((event) => {
+      const hasPrize = event.prizes && event.prizes.length > 0;
+      const hasDL = event.dutyLeave && event.dutyLeave.toLowerCase().includes("available");
+
+      let prizeMatch =
+        prizeFilter === "all" ||
+        (prizeFilter === "withPrize" && hasPrize) ||
+        (prizeFilter === "noPrize" && !hasPrize);
+
+      let dlMatch =
+        dlFilter === "all" ||
+        (dlFilter === "withDL" && hasDL) ||
+        (dlFilter === "noDL" && !hasDL);
+
+      return prizeMatch && dlMatch;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="text-muted">No matching events found.</p>';
+      return;
+    }
+
+    filtered.forEach((event) => {
+      const card = document.createElement("div");
+      card.className = "event-card";
+      const eventId = event._id || event.id || "event-" + Math.random().toString(36).substr(2, 9);
+      card.setAttribute("data-event-id", eventId);
+
+      card.innerHTML = `
+        <div class="event-card-header">
+          <h3>${event.name}</h3>
+          <p class="event-type">${event.club || "Hackathon"}</p>
+        </div>
+        <div class="event-card-actions">
+          <a href="#" class="btn-link"><i class="fas fa-link"></i></a>
+          <a href="#" class="btn-social"><i class="fab fa-twitter"></i></a>
+        </div>
+        <div class="event-card-content">
+          <div class="event-themes">
+            <span class="theme-label">THEME</span>
+            <div class="theme-tags">
+              <span class="theme-tag">${event.department || "TECH"}</span>
+              <span class="theme-tag">${event.club || "INNOVATION"}</span>
+            </div>
+          </div>
+          <div class="event-status-tags">
+            <span class="status-tag">${event.venue}</span>
+            <span class="status-tag">${isUpcoming(event.startDate) ? "UPCOMING" : "ONGOING"}</span>
+            <span class="status-tag">STARTS ${formatDate(event.startDate)}</span>
+          </div>
+          <a href="#" class="btn-notify">Register Now</a>
+        </div>
+      `;
+
+      card.addEventListener("click", () => {
+        fetchEventDetails(eventId);
+      });
+
+      container.appendChild(card);
+    });
+  }
+
 
   // Fetch event details by ID
   async function fetchEventDetails(eventId) {

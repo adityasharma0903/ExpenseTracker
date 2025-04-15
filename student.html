@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,17 +11,19 @@
 </head>
 <style>
     .events-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
     }
+
     .event-card {
-      border: 1px solid #ccc;
-      padding: 16px;
-      border-radius: 8px;
-      background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        padding: 16px;
+        border-radius: 8px;
+        background-color: #f9f9f9;
     }
-  </style>
+</style>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -103,7 +106,8 @@
             <section class="featured-event-section">
                 <div class="featured-event-card">
                     <div class="featured-badge">FEATURED</div>
-                    <img src="https://cdn.dribbble.com/userupload/9870059/file/original-c507641484744da5b9238dbc2ae1d8e3.png?resize=1504x846" alt="Featured Event" class="featured-event-image">
+                    <img src="https://cdn.dribbble.com/userupload/9870059/file/original-c507641484744da5b9238dbc2ae1d8e3.png?resize=1504x846"
+                        alt="Featured Event" class="featured-event-image">
                     <div class="featured-event-content">
                         <h2 class="featured-event-title">Bio × AI Hackathon 2023</h2>
                         <div class="featured-event-actions">
@@ -126,10 +130,23 @@
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
+                <div class="filters" style="margin-bottom: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <select id="prizeFilter">
+                        <option value="all">All</option>
+                        <option value="withPrize">With Prize</option>
+                        <option value="noPrize">No Prize</option>
+                    </select>
+
+                    <select id="dlFilter">
+                        <option value="all">All</option>
+                        <option value="withDL">With DL</option>
+                        <option value="noDL">No DL</option>
+                    </select>
+                </div>
                 <div class="events-grid" id="dynamic-events">
                     <!-- Dynamic events will be loaded here -->
                 </div>
-                
+
             </section>
 
             <!-- Upcoming Events Section -->
@@ -166,10 +183,13 @@
                             </div>
                             <div class="event-participants">
                                 <div class="participant-avatars">
-                                    <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Participant" onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
+                                    <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Participant"
+                                        onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
 
-                                    <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Participant" onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
-                                    <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Participant" onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
+                                    <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Participant"
+                                        onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
+                                    <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Participant"
+                                        onerror="this.src='https://via.placeholder.com/150x150?text=Avatar';">
                                 </div>
                                 <span class="participant-count">+200 interested</span>
                             </div>
@@ -231,12 +251,13 @@
             <button class="btn-back" id="backToEvents">
                 <i class="fas fa-arrow-left"></i> Back to events
             </button>
-            
+
             <div class="event-detail-content">
                 <!-- Event Hero Section -->
                 <section class="event-hero">
                     <div class="event-banner">
-                        <img src="https://source.unsplash.com/random/1200x400/?hackathon" alt="Event Banner" id="eventBanner">
+                        <img src="https://source.unsplash.com/random/1200x400/?hackathon" alt="Event Banner"
+                            id="eventBanner">
                         <div class="event-bookmark">
                             <button class="btn-bookmark" id="bookmarkBtn" title="Bookmark this event">
                                 <i class="far fa-bookmark"></i>
@@ -246,7 +267,8 @@
                     <div class="event-header">
                         <div class="event-meta">
                             <div class="event-organizer">
-                                <img src="https://avatars.githubusercontent.com/u/110965119?s=200&v=4" alt="Organizer Logo" class="organizer-logo" id="organizerLogo">
+                                <img src="https://avatars.githubusercontent.com/u/110965119?s=200&v=4"
+                                    alt="Organizer Logo" class="organizer-logo" id="organizerLogo">
                                 <span id="organizerName">Tech Club</span>
                             </div>
                             <div class="event-tags" id="eventTags">
@@ -302,12 +324,19 @@
                                             <h2>About the Event</h2>
                                         </div>
                                         <div class="card-body" id="eventDescription">
-                                            <p>Join us for TechFest 2023's flagship Hackathon Challenge! This 24-hour coding marathon brings together the brightest minds to solve real-world problems through technology.</p>
-                                            
-                                            <p>Whether you're a seasoned developer or just starting your coding journey, this hackathon offers a platform to showcase your skills, collaborate with like-minded individuals, and create innovative solutions that can make a difference.</p>
-                                            
-                                            <p>This year's theme is <strong>"Sustainable Technology Solutions"</strong> - focusing on how technology can address environmental challenges and promote sustainability.</p>
-                                            
+                                            <p>Join us for TechFest 2023's flagship Hackathon Challenge! This 24-hour
+                                                coding marathon brings together the brightest minds to solve real-world
+                                                problems through technology.</p>
+
+                                            <p>Whether you're a seasoned developer or just starting your coding journey,
+                                                this hackathon offers a platform to showcase your skills, collaborate
+                                                with like-minded individuals, and create innovative solutions that can
+                                                make a difference.</p>
+
+                                            <p>This year's theme is <strong>"Sustainable Technology Solutions"</strong>
+                                                - focusing on how technology can address environmental challenges and
+                                                promote sustainability.</p>
+
                                             <h3>What to Expect:</h3>
                                             <ul>
                                                 <li>24-hour coding challenge</li>
@@ -316,15 +345,16 @@
                                                 <li>Workshops and tech talks</li>
                                                 <li>Amazing prizes for winning teams</li>
                                             </ul>
-                                            
+
                                             <h3>Eligibility Criteria:</h3>
                                             <ul>
                                                 <li>Open to all students of the university</li>
                                                 <li>Teams of 2-4 members</li>
-                                                <li>At least one team member must have intermediate coding experience</li>
+                                                <li>At least one team member must have intermediate coding experience
+                                                </li>
                                                 <li>All participants must bring their own laptops</li>
                                             </ul>
-                                            
+
                                             <div class="duty-leave-info">
                                                 <i class="fas fa-file-alt"></i>
                                                 <span>Duty Leave Available: Full Day (May 15-16, 2023)</span>
@@ -351,7 +381,7 @@
                                                         <!-- <p class="prize-description">The winning team will receive a cash prize of ₹50,000, along with internship opportunities at our partner companies and mentorship from industry experts.</p> -->
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="prize-card second-prize">
                                                     <div class="prize-medal">
                                                         <i class="fas fa-medal"></i>
@@ -362,7 +392,7 @@
                                                         <!-- <p class="prize-description">The runner-up team will receive a cash prize of ₹30,000 and exclusive tech gadgets from our sponsors.</p> -->
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="prize-card third-prize">
                                                     <div class="prize-medal">
                                                         <i class="fas fa-award"></i>
@@ -373,7 +403,7 @@
                                                         <!-- <p class="prize-description">The third-place team will receive a cash prize of ₹15,000 and tech accessories from our sponsors.</p> -->
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="prize-card special-prize">
                                                     <div class="prize-medal">
                                                         <i class="fas fa-star"></i>
@@ -384,7 +414,7 @@
                                                         <!-- <p class="prize-description">A special prize for the most innovative solution, regardless of overall ranking.</p> -->
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="participation-goodies">
                                                     <h3>For All Participants</h3>
                                                     <div class="goodies-list">
@@ -407,7 +437,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            
+
                                             <!-- <div class="sponsors-section">
                                                 <h3>Sponsored By</h3>
                                                 <div class="sponsors-list">
@@ -452,7 +482,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="timeline-item">
                                                     <div class="timeline-time">10:00 AM</div>
                                                     <div class="timeline-content">
@@ -461,11 +491,12 @@
                                                         </div>
                                                         <div class="timeline-details">
                                                             <h4>Opening Ceremony</h4>
-                                                            <p>Welcome address by the Dean and introduction to the hackathon theme</p>
+                                                            <p>Welcome address by the Dean and introduction to the
+                                                                hackathon theme</p>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="timeline-item">
                                                     <div class="timeline-time">11:00 AM</div>
                                                     <div class="timeline-content">
@@ -478,7 +509,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="timeline-item">
                                                     <div class="timeline-time">12:00 PM</div>
                                                     <div class="timeline-content">
@@ -491,7 +522,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="timeline-item">
                                                     <div class="timeline-time">01:00 PM</div>
                                                     <div class="timeline-content">
@@ -505,7 +536,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            
+
                                             <div class="schedule-date">
                                                 <h3>Day 2: May 16, 2023</h3>
                                             </div>
@@ -522,7 +553,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="timeline-item">
                                                     <div class="timeline-time">12:00 PM</div>
                                                     <div class="timeline-content">
@@ -535,7 +566,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="timeline-item">
                                                     <div class="timeline-time">04:00 PM</div>
                                                     <div class="timeline-content">
@@ -567,37 +598,49 @@
                                                         <i class="fas fa-chevron-down"></i>
                                                     </div>
                                                     <div class="faq-answer">
-                                                        <p>While at least one team member should have intermediate coding experience, beginners are absolutely welcome! The hackathon is a learning experience, and we'll have mentors available to help you throughout the event.</p>
+                                                        <p>While at least one team member should have intermediate
+                                                            coding experience, beginners are absolutely welcome! The
+                                                            hackathon is a learning experience, and we'll have mentors
+                                                            available to help you throughout the event.</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="faq-item">
                                                     <div class="faq-question">
                                                         <h3>What should I bring to the hackathon?</h3>
                                                         <i class="fas fa-chevron-down"></i>
                                                     </div>
                                                     <div class="faq-answer">
-                                                        <p>You should bring your laptop, charger, any necessary adapters, and your student ID. We'll provide food, drinks, and a comfortable workspace. You might also want to bring a change of clothes and toiletries for the overnight stay.</p>
+                                                        <p>You should bring your laptop, charger, any necessary
+                                                            adapters, and your student ID. We'll provide food, drinks,
+                                                            and a comfortable workspace. You might also want to bring a
+                                                            change of clothes and toiletries for the overnight stay.</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="faq-item">
                                                     <div class="faq-question">
                                                         <h3>How are the projects judged?</h3>
                                                         <i class="fas fa-chevron-down"></i>
                                                     </div>
                                                     <div class="faq-answer">
-                                                        <p>Projects will be judged based on innovation, technical complexity, adherence to the theme, user experience, and presentation. The judging panel will consist of faculty members and industry professionals.</p>
+                                                        <p>Projects will be judged based on innovation, technical
+                                                            complexity, adherence to the theme, user experience, and
+                                                            presentation. The judging panel will consist of faculty
+                                                            members and industry professionals.</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="faq-item">
                                                     <div class="faq-question">
                                                         <h3>How do I get duty leave for the event?</h3>
                                                         <i class="fas fa-chevron-down"></i>
                                                     </div>
                                                     <div class="faq-answer">
-                                                        <p>Duty leave certificates will be provided to all registered participants. You can collect them at the registration desk on the day of the event or download them from your profile after the event.</p>
+                                                        <p>Duty leave certificates will be provided to all registered
+                                                            participants. You can collect them at the registration desk
+                                                            on the day of the event or download them from your profile
+                                                            after the event.</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -629,7 +672,8 @@
                                         <i class="fas fa-map-marker-alt"></i>
                                         <div class="detail-content">
                                             <span class="detail-label">Venue</span>
-                                            <span class="detail-value" id="eventVenue">Main Auditorium, University Campus</span>
+                                            <span class="detail-value" id="eventVenue">Main Auditorium, University
+                                                Campus</span>
                                         </div>
                                     </div>
                                     <div class="detail-item">
@@ -657,12 +701,14 @@
                                 <div class="registration-actions">
                                     <button class="btn-register" id="registerBtn">Register Now</button>
                                     <div class="registration-info">
-                                        <span class="registration-count" id="registrationCount"><i class="fas fa-user-check"></i> 128 Registered</span>
-                                        <span class="registration-deadline" id="registrationDeadline"><i class="fas fa-hourglass-half"></i> Closes May 10</span>
+                                        <span class="registration-count" id="registrationCount"><i
+                                                class="fas fa-user-check"></i> 128 Registered</span>
+                                        <span class="registration-deadline" id="registrationDeadline"><i
+                                                class="fas fa-hourglass-half"></i> Closes May 10</span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="sidebar-card">
                                 <div class="card-header">
                                     <h3>Share This Event</h3>
@@ -672,10 +718,11 @@
                                     <a href="#" class="social-btn twitter"><i class="fab fa-twitter"></i></a>
                                     <a href="#" class="social-btn linkedin"><i class="fab fa-linkedin-in"></i></a>
                                     <a href="#" class="social-btn whatsapp"><i class="fab fa-whatsapp"></i></a>
-                                    <button class="social-btn copy-link" id="copyLinkBtn"><i class="fas fa-link"></i></button>
+                                    <button class="social-btn copy-link" id="copyLinkBtn"><i
+                                            class="fas fa-link"></i></button>
                                 </div>
                             </div>
-                            
+
                             <!-- <div class="sidebar-card">
                                 <div class="card-header">
                                     <h3>Contact Organizers</h3>
@@ -699,7 +746,7 @@
                                     </div>
                                 </div>
                             </div> -->
-                            
+
                             <!-- <div class="feedback-btn-container">
                                 <button class="btn-feedback" id="feedbackBtn">
                                     <i class="fas fa-comment-alt"></i> Give Feedback
@@ -725,7 +772,7 @@
                         <label for="teamName">Team Name*</label>
                         <input type="text" id="teamName" placeholder="Enter your team name" required>
                     </div>
-                    
+
                     <div class="team-members-section">
                         <h3>Team Members</h3>
                         <div class="team-member-inputs">
@@ -735,7 +782,9 @@
                             </div>
                             <div class="form-group">
                                 <label for="memberEmail1">Email*</label>
-                                <input type="email" id="memberEmail1" required pattern="^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$" placeholder="Email Address" required>
+                                <input type="email" id="memberEmail1" required
+                                    pattern="^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$" placeholder="Email Address"
+                                    required>
                             </div>
                             <div class="form-group">
                                 <label for="memberPhone1">Phone*</label>
@@ -746,7 +795,7 @@
                                 <input type="text" id="memberDepartment1" placeholder="Department" required>
                             </div>
                         </div>
-                        
+
                         <div class="team-member-inputs">
                             <div class="form-group">
                                 <label for="memberName2">Member 2*</label>
@@ -754,7 +803,9 @@
                             </div>
                             <div class="form-group">
                                 <label for="memberEmail2">Email*</label>
-                                <input type="email" id="memberEmail2" required pattern="^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$" placeholder="Email Address" required>
+                                <input type="email" id="memberEmail2" required
+                                    pattern="^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$" placeholder="Email Address"
+                                    required>
                             </div>
                             <div class="form-group">
                                 <label for="memberPhone2">Phone*</label>
@@ -765,34 +816,35 @@
                                 <input type="text" id="memberDepartment2" placeholder="Department" required>
                             </div>
                         </div>
-                        
+
                         <div id="additionalMembers"></div>
-                        
+
                         <button type="button" class="btn-add-member" id="addMemberBtn">
                             <i class="fas fa-plus"></i> Add Team Member
                         </button>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="projectIdea">Project Idea (Brief Description)*</label>
                         <textarea id="projectIdea" placeholder="Describe your project idea briefly" required></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="techStack">Technologies You Plan to Use*</label>
                         <input type="text" id="techStack" placeholder="e.g., React, Node.js, MongoDB" required>
                     </div>
-                    
+
                     <div class="form-group checkbox-group">
                         <input type="checkbox" id="termsAgree" required>
-                        <label for="termsAgree">I agree to the <a href="#">terms and conditions</a> of the hackathon</label>
+                        <label for="termsAgree">I agree to the <a href="#">terms and conditions</a> of the
+                            hackathon</label>
                     </div>
-                    
+
                     <div class="form-group checkbox-group">
                         <input type="checkbox" id="dutyLeaveRequest">
                         <label for="dutyLeaveRequest">I would like to request duty leave for this event</label>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="button" class="btn-outline" id="cancelRegistration">Cancel</button>
                         <button type="submit" class="btn-primary">Complete Registration</button>
@@ -858,12 +910,12 @@
                             <i class="far fa-star" data-rating="5"></i>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="feedbackComments">Comments</label>
                         <textarea id="feedbackComments" placeholder="Share your thoughts about the event"></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>What aspects of the event did you enjoy the most?</label>
                         <div class="checkbox-group">
@@ -883,12 +935,12 @@
                             <label for="enjoyPrizes">Prizes & Rewards</label>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="improvementSuggestions">How can we improve future events?</label>
                         <textarea id="improvementSuggestions" placeholder="Your suggestions for improvement"></textarea>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="button" class="btn-outline" id="cancelFeedback">Cancel</button>
                         <button type="submit" class="btn-primary">Submit Feedback</button>
@@ -900,13 +952,14 @@
 
     <div id="eventsLoader" class="loader-overlay" style="display: none;">
         <div class="spinner"></div>
-      </div>
-      
-      <!-- Loader for event detail -->
-      <div id="detailLoader" class="loader-overlay" style="display: none;">
+    </div>
+
+    <!-- Loader for event detail -->
+    <div id="detailLoader" class="loader-overlay" style="display: none;">
         <div class="spinner"></div>
-      </div>
+    </div>
 
     <script src="student.js"></script>
 </body>
+
 </html>
