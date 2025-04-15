@@ -4276,7 +4276,7 @@ ${eventName} Team`
 }
 
 // Function to open email customization modal
-function openEmailCustomizationModal(team, event, teamId) {
+function openEmailCustomizationModal(team, event, teamId, eventId) {
   const modal = document.getElementById("email-customization-modal");
   const emailContent = document.getElementById("email-content");
   const attachmentsList = document.getElementById("attachments-list");
@@ -4372,8 +4372,7 @@ function openEmailCustomizationModal(team, event, teamId) {
       showToast("Success", "Team approved with custom email", "success");
 
       // Refresh the teams list
-      const eventId = event.id; // Ensure eventId is correctly passed
-      loadRegisteredTeams(eventId);
+      loadRegisteredTeams(eventId); // Pass the correct eventId here
     } catch (error) {
       console.error("Error approving team with custom email:", error);
       showToast("Error", "Failed to send custom email", "error");
