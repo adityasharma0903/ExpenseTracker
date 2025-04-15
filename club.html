@@ -1389,6 +1389,50 @@
     </div>
   </div>
 
+  <!-- Email Customization Modal -->
+  <div id="email-customization-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-envelope"></i> Customize Approval Email</h2>
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="email-subject">Email Subject</label>
+          <div class="input-with-icon">
+            <i class="fas fa-heading"></i>
+            <input type="text" id="email-subject" value="🎉 Your Team is Approved!">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email-content">Email Content</label>
+          <textarea id="email-content" rows="10"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="email-attachments">Attachments</label>
+          <div class="file-input-container">
+            <input type="file" id="email-attachments" multiple>
+            <label for="email-attachments" class="file-input-label">
+              <i class="fas fa-upload"></i> Choose Files
+            </label>
+            <span class="file-name">No files chosen</span>
+          </div>
+        </div>
+        <div id="attachments-list" class="attachments-list"></div>
+      </div>
+      <div class="modal-footer">
+        <div class="email-options">
+          <button id="use-default-email" class="btn-secondary">
+            <i class="fas fa-check-circle"></i> Use Default Template
+          </button>
+          <button id="send-custom-email" class="btn-primary">
+            <i class="fas fa-paper-plane"></i> Send Custom Email
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Global Loader -->
   <div id="global-loader" class="loader-overlay hidden">
     <div class="loader"></div>

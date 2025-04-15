@@ -18,12 +18,13 @@ const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb+srv://connectrevoliq:supportrevoliq@revoliq.i93q6.mongodb.net/?retryWrites=true&w=majority&appName=Revoliq"
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ MongoDB connected"))
-.catch((err) => console.error("❌ MongoDB connection error:", err));
+mongoose
+  .connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err))
 
 // Middleware
 // Configure CORS
@@ -35,10 +36,11 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
   allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-};
+}
 
 // Apply CORS middleware with options
-app.use(cors(corsOptions));app.use(express.json({ limit: "50mb" }))
+app.use(cors(corsOptions))
+app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ extended: true, limit: "50mb" }))
 
 // ==================== SCHEMAS & MODELS ====================
@@ -768,48 +770,46 @@ const validateClubEventCreation = (req, res, next) => {
 
 // Validate team registration
 const validateTeamRegistration = (req, res, next) => {
-  const { eventId, teamName, members, projectIdea, techStack } = req.body;
+  const { eventId, teamName, members, projectIdea, techStack } = req.body
 
   if (!eventId || !teamName || !members || !Array.isArray(members) || members.length === 0) {
     return res.status(400).json({
       success: false,
       message: "Please provide all required fields",
-    });
+    })
   }
 
-  const emailPattern = /^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$/;
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$/
 
   for (const member of members) {
     if (!member.name || !member.email || !member.phone || !member.department) {
       return res.status(400).json({
         success: false,
         message: "Each team member must have a name, email, phone, and department",
-      });
+      })
     }
 
     if (!emailPattern.test(member.email)) {
       return res.status(400).json({
         success: false,
         message: `Invalid email: ${member.email}. Only @chitkara.edu.in emails are allowed.`,
-      });
+      })
     }
   }
 
-  next();
-};
-
+  next()
+}
 
 // ==================== EMAIL FUNCTIONALITY ====================
 
-
-const sendApprovalEmail = async (team) => {
-  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED");
+const sendApprovalEmail = async (team, customEmail = null) => {
+  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED")
 
   try {
     // ✅ 1. Check email credentials
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Email credentials missing!");
-      throw new Error("Email credentials not configured");
+      console.log("⚠️ Email credentials missing!")
+      throw new Error("Email credentials not configured")
     }
 
     // ✅ 2. Setup transporter
@@ -817,30 +817,30 @@ const sendApprovalEmail = async (team) => {
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS,
       },
-      debug: true
-    });
+      debug: true,
+    })
 
-    await transporter.verify();
-    console.log("✅ Transporter verified");
+    await transporter.verify()
+    console.log("✅ Transporter verified")
 
     // ✅ 3. Fetch event details
-    let eventName = "your registered event";
-    let clubName = "your club";
+    let eventName = "your registered event"
+    let clubName = "your club"
 
     try {
-      const event = await ClubEvent.findById(team.eventId);
-      console.log("🔍 Fetched Event:", event);
+      const event = await ClubEvent.findById(team.eventId)
+      console.log("🔍 Fetched Event:", event)
 
       if (event) {
-        eventName = event.name || eventName;
-        clubName = event.clubId || clubName;
+        eventName = event.name || eventName
+        clubName = event.clubId || clubName
       } else {
-        console.warn("⚠️ No event found for eventId:", team.eventId);
+        console.warn("⚠️ No event found for eventId:", team.eventId)
       }
     } catch (err) {
-      console.error("❌ Error fetching event:", err.message);
+      console.error("❌ Error fetching event:", err.message)
     }
 
     // ✅ 4. Convert club ID to full name
@@ -852,80 +852,101 @@ const sendApprovalEmail = async (team) => {
       explore: "Explore Labs",
       ceed: "CEED",
       // Add more if needed
-    };
+    }
 
-    const readableClub = clubMap[clubName] || clubName;
+    const readableClub = clubMap[clubName] || clubName
 
     // ✅ 5. Loop through members and send email
     for (const member of team.members) {
+      // Determine email content - use custom if provided, otherwise default
+      let emailSubject = "🎉 Your Team is Approved!"
+      let emailHtml = `
+        <div style="font-family: Arial, sans-serif; padding: 15px;">
+          <h2 style="color: #28a745;">Hi ${member.name},</h2>
+          <p style="font-size: 16px;">
+            We're excited to let you know that your team <b>${team.teamName}</b> has been <span style="color: green;"><b>approved</b></span> to participate in the event <b>${eventName}</b>, proudly organized by <b>${readableClub}</b>! 🥳
+          </p>
+          <p style="font-size: 15px;"><b>Project Idea:</b> ${team.projectIdea || "Not specified"}</p>
+          <p style="font-size: 15px;"><b>Tech Stack:</b> ${team.techStack || "Not specified"}</p>
+          <p style="font-size: 15px;">Get ready to showcase your creativity and innovation! This is your moment. 🌟</p>
+          <br/>
+          <p style="font-size: 16px;">Wishing you all the best,<br><b>${eventName} Team</b></p>
+        </div>
+      `
+
+      // If custom email content is provided, use it
+      if (customEmail) {
+        if (customEmail.subject) emailSubject = customEmail.subject
+        if (customEmail.content) {
+          // Convert plain text to HTML
+          emailHtml = `
+            <div style="font-family: Arial, sans-serif; padding: 15px;">
+              ${customEmail.content.replace(/\n/g, "<br>")}
+            </div>
+          `
+        }
+      }
+
       const mailOptions = {
         from: `"Unibux" <${process.env.EMAIL_USER}>`,
         to: member.email,
-        subject: `🎉 Your Team "${team.teamName}" is Approved for ${eventName}!`,
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 15px;">
-            <h2 style="color: #28a745;">Hi ${member.name},</h2>
-            <p style="font-size: 16px;">
-              We're excited to let you know that your team <b>${team.teamName}</b> has been <span style="color: green;"><b>approved</b></span> to participate in the event <b>${eventName}</b>, proudly organized by <b>${readableClub}</b>! 🥳
-            </p>
-            <p style="font-size: 15px;"><b>Project Idea:</b> ${team.projectIdea || 'Not specified'}</p>
-            <p style="font-size: 15px;"><b>Tech Stack:</b> ${team.techStack || 'Not specified'}</p>
-            <p style="font-size: 15px;">Get ready to showcase your creativity and innovation! This is your moment. 🌟</p>
-            <br/>
-            <p style="font-size: 16px;">Wishing you all the best,<br><b>${eventName} Team</b></p>
-          </div>
-        `
-      };
+        subject: emailSubject,
+        html: emailHtml,
+      }
 
-      console.log(`📧 Sending approval email to: ${member.email}`);
+      // Add attachments if provided
+      if (customEmail && customEmail.attachments && customEmail.attachments.length > 0) {
+        mailOptions.attachments = customEmail.attachments
+      }
+
+      console.log(`📧 Sending approval email to: ${member.email}`)
       try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`);
+        const info = await transporter.sendMail(mailOptions)
+        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`)
       } catch (sendError) {
-        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message);
+        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message)
       }
     }
 
-    console.log("✅ All approval emails sent successfully");
-    return true;
-
+    console.log("✅ All approval emails sent successfully")
+    return true
   } catch (error) {
-    console.error("❌ ERROR in sendApprovalEmail function:", error);
-    return false;
+    console.error("❌ ERROR in sendApprovalEmail function:", error)
+    return false
   }
-};
+}
 
 // ==================== ROUTES ====================
 
 // Team approval route with improved email handling
 app.put("/api/team-registrations/:id/approve", async (req, res) => {
-  console.log("🔍 APPROVE TEAM ROUTE CALLED for ID:", req.params.id);
-  
+  console.log("🔍 APPROVE TEAM ROUTE CALLED for ID:", req.params.id)
+
   try {
-    console.log("🔍 Finding team registration...");
-    const teamRegistration = await TeamRegistration.findById(req.params.id);
+    console.log("🔍 Finding team registration...")
+    const teamRegistration = await TeamRegistration.findById(req.params.id)
 
     if (!teamRegistration) {
-      console.log("❌ Team registration not found!");
+      console.log("❌ Team registration not found!")
       return res.status(404).json({
         success: false,
         message: "Team registration not found",
-      });
+      })
     }
 
-    console.log("✅ Team found:", teamRegistration.teamName);
-    
+    console.log("✅ Team found:", teamRegistration.teamName)
+
     // Update team status
-    console.log("🔍 Updating team status to approved...");
-    teamRegistration.status = "approved";
-    if (req.body.notes) teamRegistration.notes = req.body.notes;
-    await teamRegistration.save();
-    console.log("✅ Team status updated successfully");
+    console.log("🔍 Updating team status to approved...")
+    teamRegistration.status = "approved"
+    if (req.body.notes) teamRegistration.notes = req.body.notes
+    await teamRegistration.save()
+    console.log("✅ Team status updated successfully")
 
-    const leader = teamRegistration.members.find(m => m.isLeader);
-    console.log("🔍 Team leader:", leader ? leader.name : "No leader found");
+    const leader = teamRegistration.members.find((m) => m.isLeader)
+    console.log("🔍 Team leader:", leader ? leader.name : "No leader found")
 
-    console.log("🔍 Creating approved team record...");
+    console.log("🔍 Creating approved team record...")
     const approvedTeam = new ApprovedTeam({
       eventId: teamRegistration.eventId,
       teamName: teamRegistration.teamName,
@@ -933,52 +954,90 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
       members: teamRegistration.members,
       projectIdea: teamRegistration.projectIdea,
       techStack: teamRegistration.techStack,
-    });
+    })
 
-    await approvedTeam.save();
-    console.log("✅ Approved team saved to database");
+    await approvedTeam.save()
+    console.log("✅ Approved team saved to database")
+
+    // Check if custom email data is provided
+    const customEmail = req.body.customEmail
 
     // Send emails to all team members
-    console.log("📧 Attempting to send emails to team members:");
+    console.log("📧 Attempting to send emails to team members:")
     approvedTeam.members.forEach((m, i) => {
-      console.log(`   ${i+1}. ${m.name} <${m.email}>`);
-    });
-    
+      console.log(`   ${i + 1}. ${m.name} <${m.email}>`)
+    })
+
     try {
-      console.log("📧 Calling sendApprovalEmail function...");
-      const emailResult = await sendApprovalEmail(approvedTeam);
+      console.log("📧 Calling sendApprovalEmail function...")
+      // Pass custom email data if provided
+      const emailResult = await sendApprovalEmail(approvedTeam, customEmail)
       if (emailResult) {
-        console.log("✅ All approval emails sent successfully");
+        console.log("✅ All approval emails sent successfully")
       } else {
-        console.log("⚠️ There were issues sending some emails, but the approval process continued");
+        console.log("⚠️ There were issues sending some emails, but the approval process continued")
       }
     } catch (emailError) {
-      console.error("❌ EMAIL ERROR:", emailError);
+      console.error("❌ EMAIL ERROR:", emailError)
       // Continue execution even if email fails
-      console.log("⚠️ Continuing despite email error");
+      console.log("⚠️ Continuing despite email error")
     }
 
-    console.log("🔍 Sending success response to client");
+    console.log("🔍 Sending success response to client")
     res.json({
       success: true,
       message: "Team approved and emails sent",
       teamRegistration,
-    });
-
+    })
   } catch (error) {
-    console.error("❌ ERROR in approve team route:", error);
+    console.error("❌ ERROR in approve team route:", error)
     res.status(500).json({
       success: false,
       message: "Server error: " + error.message,
-      error: error.toString()
-    });
+      error: error.toString(),
+    })
   }
-});
+})
+
+// Route to handle custom email with attachments
+app.post("/api/team-registrations/:id/custom-email", async (req, res) => {
+  try {
+    const teamId = req.params.id
+    const { subject, content } = req.body
+
+    // Get team data
+    const team = await TeamRegistration.findById(teamId)
+    if (!team) {
+      return res.status(404).json({ success: false, message: "Team not found" })
+    }
+
+    // Process file uploads if any
+    let attachments = []
+    if (req.files && req.files.length > 0) {
+      attachments = req.files.map((file) => ({
+        filename: file.originalname,
+        content: file.buffer,
+      }))
+    }
+
+    // Send custom email
+    const emailResult = await sendApprovalEmail(team, { subject, content, attachments })
+
+    if (emailResult) {
+      res.json({ success: true, message: "Custom email sent successfully" })
+    } else {
+      res.status(500).json({ success: false, message: "Failed to send custom email" })
+    }
+  } catch (error) {
+    console.error("Error sending custom email:", error)
+    res.status(500).json({ success: false, message: "Server error" })
+  }
+})
 
 // Test email route
 app.get("/api/test-email", async (req, res) => {
-  console.log("🔍 TEST EMAIL ROUTE CALLED");
-  
+  console.log("🔍 TEST EMAIL ROUTE CALLED")
+
   try {
     const testTeam = {
       teamName: "Test Team",
@@ -986,41 +1045,41 @@ app.get("/api/test-email", async (req, res) => {
       projectIdea: "Test Project",
       techStack: "Test Stack",
       members: [
-        { 
-          name: "Test Member 1", 
-          email: req.query.email || process.env.EMAIL_USER || "test@example.com" 
+        {
+          name: "Test Member 1",
+          email: req.query.email || process.env.EMAIL_USER || "test@example.com",
         },
-        { 
-          name: "Test Member 2", 
-          email: req.query.email2 || process.env.EMAIL_USER || "test2@example.com" 
-        }
-      ]
-    };
-    
-    console.log("📧 Calling sendApprovalEmail with test data...");
-    const result = await sendApprovalEmail(testTeam);
-    
+        {
+          name: "Test Member 2",
+          email: req.query.email2 || process.env.EMAIL_USER || "test2@example.com",
+        },
+      ],
+    }
+
+    console.log("📧 Calling sendApprovalEmail with test data...")
+    const result = await sendApprovalEmail(testTeam)
+
     if (result) {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "Test email sent successfully",
-        testEmail: req.query.email || process.env.EMAIL_USER || "test@example.com"
-      });
+        testEmail: req.query.email || process.env.EMAIL_USER || "test@example.com",
+      })
     } else {
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to send test email. Check server logs for details." 
-      });
+      res.status(500).json({
+        success: false,
+        message: "Failed to send test email. Check server logs for details.",
+      })
     }
   } catch (error) {
-    console.error("❌ TEST EMAIL ERROR:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to send test email", 
-      error: error.toString() 
-    });
+    console.error("❌ TEST EMAIL ERROR:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to send test email",
+      error: error.toString(),
+    })
   }
-});
+})
 
 // Check environment variables route
 app.get("/api/check-env", (req, res) => {
@@ -1031,82 +1090,82 @@ app.get("/api/check-env", (req, res) => {
     emailUserLength: process.env.EMAIL_USER ? process.env.EMAIL_USER.length : 0,
     emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0,
     port: process.env.PORT || 5000,
-    nodeEnv: process.env.NODE_ENV || 'development'
-  });
-});
+    nodeEnv: process.env.NODE_ENV || "development",
+  })
+})
 
 // Team status update route
 app.put("/api/team-registrations/:id/status", async (req, res) => {
   try {
-    const team = await TeamRegistration.findById(req.params.id);
+    const team = await TeamRegistration.findById(req.params.id)
     if (!team) {
-      return res.status(404).json({ success: false, message: "Team not found" });
+      return res.status(404).json({ success: false, message: "Team not found" })
     }
 
-    const { status } = req.body;
+    const { status } = req.body
     if (!["approved", "rejected", "pending"].includes(status)) {
-      return res.status(400).json({ success: false, message: "Invalid status" });
+      return res.status(400).json({ success: false, message: "Invalid status" })
     }
 
-    team.status = status;
-    await team.save();
+    team.status = status
+    await team.save()
 
     // Auto-create approved entry and send emails if status is approved
     if (status === "approved") {
-      const leader = team.members.find(m => m.isLeader);
+      const leader = team.members.find((m) => m.isLeader)
       const approvedTeam = await ApprovedTeam.create({
         eventId: team.eventId,
         teamName: team.teamName,
         leaderName: leader ? leader.name : "",
         members: team.members,
         projectIdea: team.projectIdea,
-        techStack: team.techStack
-      });
-      
+        techStack: team.techStack,
+      })
+
       // Send approval emails
       try {
-        await sendApprovalEmail(approvedTeam);
-        console.log("✅ Approval emails sent for team:", team.teamName);
+        await sendApprovalEmail(approvedTeam)
+        console.log("✅ Approval emails sent for team:", team.teamName)
       } catch (emailError) {
-        console.error("❌ Error sending approval emails:", emailError);
+        console.error("❌ Error sending approval emails:", emailError)
       }
     }
 
-    res.json({ success: true, message: "Status updated", team });
+    res.json({ success: true, message: "Status updated", team })
   } catch (err) {
-    console.error("Status update error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Status update error:", err)
+    res.status(500).json({ success: false, message: "Server error" })
   }
-});
+})
 
 // Team rejection route
 app.put("/api/team-registrations/:id/reject", async (req, res) => {
   try {
-    const teamRegistration = await TeamRegistration.findById(req.params.id);
+    const teamRegistration = await TeamRegistration.findById(req.params.id)
 
     if (!teamRegistration) {
       return res.status(404).json({
         success: false,
         message: "Team registration not found",
-      });
+      })
     }
 
-    teamRegistration.status = "rejected";
-    if (req.body.notes) teamRegistration.notes = req.body.notes;
+    teamRegistration.status = "rejected"
+    if (req.body.notes) teamRegistration.notes = req.body.notes
 
-    await teamRegistration.save();
+    await teamRegistration.save()
 
     res.json({
       success: true,
       message: "Team registration rejected",
       teamRegistration,
-    });
+    })
   } catch (error) {
-    console.error("Error rejecting team registration:", error);
+    console.error("Error rejecting team registration:", error)
     res.status(500).json({
       success: false,
       message: "Server error",
-    });
+    })
   }
 })
 
@@ -1891,33 +1950,33 @@ app.get("/api/team-registrations/:id", async (req, res) => {
 
 app.get("/api/events/club/:clubId", async (req, res) => {
   try {
-    const { clubId } = req.params;
-    const events = await ClubEvent.find({ clubId });
-    res.json({ success: true, events });
+    const { clubId } = req.params
+    const events = await ClubEvent.find({ clubId })
+    res.json({ success: true, events })
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" })
   }
-});
+})
 
 app.get("/api/approved-teams", async (req, res) => {
   try {
-    const { eventId } = req.query;
-    const query = eventId ? { eventId } : {};
+    const { eventId } = req.query
+    const query = eventId ? { eventId } : {}
 
-    const teams = await ApprovedTeam.find(query);
+    const teams = await ApprovedTeam.find(query)
 
     res.json({
       success: true,
       teams,
-    });
+    })
   } catch (error) {
-    console.error("Error fetching approved teams:", error);
+    console.error("Error fetching approved teams:", error)
     res.status(500).json({
       success: false,
       message: "Server error",
-    });
+    })
   }
-});
+})
 
 // ==================== ADMIN DASHBOARD ROUTES ====================
 
@@ -1944,25 +2003,25 @@ app.get("/api/admin/club-data", async (req, res) => {
       { id: "hc", name: "Happiness Center" },
       { id: "nss", name: "NSS" },
     ]
-    
+
     const allClubsData = await Promise.all(
       clubs.map(async (club) => {
         const events = await ClubEvent.find({ clubId: club.id })
 
         // Calculate stats
         let totalExpenses = 0
-        let totalRegistrations = 0
+        const totalRegistrations = 0
         const today = new Date()
 
-        events.forEach(event => {
-          event.expenses?.forEach(exp => {
+        events.forEach((event) => {
+          event.expenses?.forEach((exp) => {
             totalExpenses += exp.amount || 0
           })
 
           // Registration logic (if you have separate reg data)
         })
 
-        const upcomingEvents = events.filter(event => new Date(event.startDate) > today).length
+        const upcomingEvents = events.filter((event) => new Date(event.startDate) > today).length
 
         return {
           id: club.id,
@@ -1973,7 +2032,7 @@ app.get("/api/admin/club-data", async (req, res) => {
           totalRegistrations,
           upcomingEvents,
         }
-      })
+      }),
     )
 
     res.status(200).json({ success: true, clubData: allClubsData })

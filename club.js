@@ -1,7 +1,6 @@
-
+import { Chart } from "@/components/ui/chart"
 // Initialize the application when the DOM is loaded
-document.addEventListener("DOMContentLoaded", async () =>
-{
+document.addEventListener("DOMContentLoaded", async () => {
   showLoader() // 👈 loader starts
 
   // Initialize club data if not exists
@@ -27,8 +26,7 @@ document.addEventListener("DOMContentLoaded", async () =>
   observer.observe(document.body, { attributes: true, childList: true, subtree: true })
 
   hideLoader() // 👈 loader ends
-}
-)
+})
 
 let eventId = null
 // Display current date
@@ -2205,15 +2203,21 @@ async function loadRegisteredTeams(eventId) {
       btn.addEventListener("click", async (e) => {
         e.preventDefault() // Prevent default button behavior
         const id = btn.getAttribute("data-id")
-        // Disable all approve/reject buttons to prevent multiple clicks
-        registeredTeamsList.querySelectorAll(".approve-team, .reject-team").forEach((button) => {
-          button.disabled = true
-        })
-        await updateTeamStatus(id, "approved")
-        // Re-enable buttons after operation completes
-        registeredTeamsList.querySelectorAll(".approve-team, .reject-team").forEach((button) => {
-          button.disabled = false
-        })
+
+        // Get team data
+        const teams = await fetchTeamRegistrations(eventId)
+        const team = teams.find((t) => t._id === id)
+
+        // Get event data
+        const events = await fetchEvents()
+        const event = events.find((e) => e._id === eventId || e.id === eventId)
+
+        if (team) {
+          // Open email customization modal
+          openEmailCustomizationModal(team, event, id)
+        } else {
+          showToast("Error", "Team data not found", "error")
+        }
       })
     })
 
@@ -2459,6 +2463,7 @@ async function updateTeamStatus(teamId, newStatus) {
   const token = localStorage.getItem("authToken")
 
   try {
+    // First update the team status
     const response = await fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations/${teamId}/status`, {
       method: "PUT",
       headers: {
@@ -2470,17 +2475,27 @@ async function updateTeamStatus(teamId, newStatus) {
 
     const data = await response.json()
 
-    if (data.success) {
-      showToast("Status Updated", `Team marked as ${newStatus}`, "success")
-      // Optionally refresh team list
-      const eventId = document.getElementById("btn-edit-event").getAttribute("data-id")
-      loadRegisteredTeams(eventId)
-    } else {
-      showToast("Error", data.message || "Failed to update team", "error")
+    if (!data.success) {
+      throw new Error(data.message || "Failed to update team status")
     }
+
+    // If custom email data is provided and status is approved, send custom email
+    if (customEmail && newStatus === "approved") {
+      // In a real implementation, you would send the custom email data to the server
+      console.log("Custom email would be sent:", customEmail)
+    }
+
+    showToast("Status Updated", `Team marked as ${newStatus}`, "success")
+
+    // Refresh team list
+    const eventId = document.getElementById("event-detail-modal").getAttribute("data-event-id")
+    loadRegisteredTeams(eventId)
+
+    return data
   } catch (error) {
     console.error("Error updating status:", error)
-    showToast("Error", "Server issue", "error")
+    showToast("Error", error.message || "Server issue", "error")
+    throw error
   } finally {
     hideLoader() // Always hide loader when operation completes
   }
@@ -3981,249 +3996,488 @@ function setupDetailModalListeners() {
 // Fetch events from server
 async function fetchEvents(clubId) {
   try {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("authToken")
     const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events?clubId=${clubId}`, {
       headers: {
         "x-auth-token": token,
       },
-    });
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (data.success) {
-      return data.events;
+      return data.events
     } else {
-      console.error("Failed to fetch events:", data.message);
-      return [];
+      console.error("Failed to fetch events:", data.message)
+      return []
     }
   } catch (error) {
-    console.error("Error fetching events:", error);
-    return [];
+    console.error("Error fetching events:", error)
+    return []
   }
 }
 
 // Fetch expenses directly from server
 async function fetchExpensesFromServer(clubId) {
   try {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("authToken")
 
     // First, get all events for this club
-    const events = await fetchEvents(clubId);
+    const events = await fetchEvents(clubId)
 
     if (!events || events.length === 0) {
-      return [];
+      return []
     }
 
     // Extract all expenses from events
-    let allExpenses = [];
+    let allExpenses = []
 
-    events.forEach(event => {
+    events.forEach((event) => {
       if (event.expenses && event.expenses.length > 0) {
         // Add eventId and clubId to each expense for reference
-        const eventExpenses = event.expenses.map(expense => ({
+        const eventExpenses = event.expenses.map((expense) => ({
           ...expense,
           eventId: event._id || event.id,
           clubId: event.clubId,
           eventName: event.name,
-          date: expense.createdAt || new Date().toISOString()
-        }));
+          date: expense.createdAt || new Date().toISOString(),
+        }))
 
-        allExpenses = [...allExpenses, ...eventExpenses];
+        allExpenses = [...allExpenses, ...eventExpenses]
       }
-    });
+    })
 
-    return allExpenses;
+    return allExpenses
   } catch (error) {
-    console.error("Error fetching expenses from server:", error);
-    return [];
+    console.error("Error fetching expenses from server:", error)
+    return []
   }
 }
 
 // Get the logged-in club's ID
 function getLoggedInClubId() {
-  const loggedInClub = localStorage.getItem("loggedInClub");
+  const loggedInClub = localStorage.getItem("loggedInClub")
   if (loggedInClub) {
-    const clubData = JSON.parse(loggedInClub);
-    return clubData.id; // Assuming the ID is stored as 'id'
+    const clubData = JSON.parse(loggedInClub)
+    return clubData.id // Assuming the ID is stored as 'id'
   }
-  console.error("No logged-in club found");
-  return null;
+  console.error("No logged-in club found")
+  return null
 }
 
 // Load dashboard data
 async function loadDashboardData() {
-  showLoader();
+  showLoader()
 
   try {
-    const clubId = getLoggedInClubId();
+    const clubId = getLoggedInClubId()
 
     if (!clubId) {
-      console.error("No logged-in club ID found. Cannot load dashboard data.");
-      hideLoader();
-      return;
+      console.error("No logged-in club ID found. Cannot load dashboard data.")
+      hideLoader()
+      return
     }
 
     // Fetch events from server
-    const events = await fetchEvents(clubId);
+    const events = await fetchEvents(clubId)
 
     // Fetch expenses from server
-    const expenses = await fetchExpensesFromServer(clubId);
+    const expenses = await fetchExpensesFromServer(clubId)
 
     // Calculate total expenses
-    const totalExpenses = expenses.reduce((total, expense) => total + (expense.amount || 0), 0);
+    const totalExpenses = expenses.reduce((total, expense) => total + (expense.amount || 0), 0)
 
     // Get team registrations (if applicable)
-    const teams = []; // You would need to implement fetchTeams() if needed
+    const teams = [] // You would need to implement fetchTeams() if needed
 
     // Calculate upcoming events
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const upcomingEvents = events.filter(event => {
-      const eventStartDate = new Date(event.startDate);
-      return eventStartDate >= today;
-    });
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const upcomingEvents = events.filter((event) => {
+      const eventStartDate = new Date(event.startDate)
+      return eventStartDate >= today
+    })
 
     // Update dashboard stats with animation
-    animateCounter("total-events", events.length);
-    animateCounter("total-budget", totalExpenses, "₹");
-    animateCounter("total-registrations", teams.length);
-    animateCounter("upcoming-events", upcomingEvents.length);
+    animateCounter("total-events", events.length)
+    animateCounter("total-budget", totalExpenses, "₹")
+    animateCounter("total-registrations", teams.length)
+    animateCounter("upcoming-events", upcomingEvents.length)
 
     // Render charts
-    renderBudgetChart(expenses);
-    renderTimelineChart(events);
-    renderUpcomingEvents(upcomingEvents);
+    renderBudgetChart(expenses)
+    renderTimelineChart(events)
+    renderUpcomingEvents(upcomingEvents)
 
-    hideLoader();
+    hideLoader()
   } catch (error) {
-    console.error("Error loading dashboard data:", error);
-    hideLoader();
+    console.error("Error loading dashboard data:", error)
+    hideLoader()
   }
 }
 
 // Load events
 async function loadEvents() {
-  showLoader();
+  showLoader()
 
   try {
-    const clubId = getLoggedInClubId();
+    const clubId = getLoggedInClubId()
 
     if (!clubId) {
-      console.error("No logged-in club ID found. Cannot load events.");
-      hideLoader();
-      return;
+      console.error("No logged-in club ID found. Cannot load events.")
+      hideLoader()
+      return
     }
 
     // Fetch events from server
-    const events = await fetchEvents(clubId);
+    const events = await fetchEvents(clubId)
 
     // Render events
-    renderEvents(events);
+    renderEvents(events)
 
     // Render timeline chart
-    renderTimelineChart(events);
+    renderTimelineChart(events)
 
-    hideLoader();
+    hideLoader()
   } catch (error) {
-    console.error("Error loading events:", error);
-    hideLoader();
+    console.error("Error loading events:", error)
+    hideLoader()
   }
 }
 
 // Load budget data
 async function loadBudgetData() {
-  showLoader();
+  showLoader()
 
   try {
-    const clubId = getLoggedInClubId();
+    const clubId = getLoggedInClubId()
 
     if (!clubId) {
-      console.error("No logged-in club ID found. Cannot load budget data.");
-      hideLoader();
-      return;
+      console.error("No logged-in club ID found. Cannot load budget data.")
+      hideLoader()
+      return
     }
 
     // Fetch expenses from server
-    const expenses = await fetchExpensesFromServer(clubId);
+    const expenses = await fetchExpensesFromServer(clubId)
 
     // Calculate total expenses
-    const totalExpenses = expenses.reduce((total, expense) => total + (expense.amount || 0), 0);
+    const totalExpenses = expenses.reduce((total, expense) => total + (expense.amount || 0), 0)
 
     // Update budget stats with animation
-    animateCounter("budget-total", totalExpenses, "₹");
-    animateCounter("expenses-total", totalExpenses, "₹");
-    animateCounter("budget-remaining", 0, "₹"); // This would need to be calculated based on your budget logic
+    animateCounter("budget-total", totalExpenses, "₹")
+    animateCounter("expenses-total", totalExpenses, "₹")
+    animateCounter("budget-remaining", 0, "₹") // This would need to be calculated based on your budget logic
 
     // Fetch events for expense event chart
-    const events = await fetchEvents(clubId);
+    const events = await fetchEvents(clubId)
 
     // Render expense charts
-    renderExpenseCategoryChart(expenses);
-    renderExpenseEventChart(expenses, events);
+    renderExpenseCategoryChart(expenses)
+    renderExpenseEventChart(expenses, events)
 
     // Render expense table
-    renderExpenseTable(expenses, events);
+    renderExpenseTable(expenses, events)
 
-    hideLoader();
+    hideLoader()
   } catch (error) {
-    console.error("Error loading budget data:", error);
-    hideLoader();
+    console.error("Error loading budget data:", error)
+    hideLoader()
   }
 }
 
 // Render expense table
 function renderExpenseTable(expenses, events) {
-  const tableBody = document.getElementById("expense-table-body");
-  if (!tableBody) return;
+  const tableBody = document.getElementById("expense-table-body")
+  if (!tableBody) return
 
-  tableBody.innerHTML = "";
+  tableBody.innerHTML = ""
 
   if (expenses.length === 0) {
-    const row = document.createElement("tr");
-    row.innerHTML = '<td colspan="5">No expenses found</td>';
-    tableBody.appendChild(row);
-    return;
+    const row = document.createElement("tr")
+    row.innerHTML = '<td colspan="5">No expenses found</td>'
+    tableBody.appendChild(row)
+    return
   }
 
   // Sort expenses by date (newest first)
-  expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+  expenses.sort((a, b) => new Date(b.date) - new Date(a.date))
 
   expenses.forEach((expense) => {
-    const event = events.find((e) => e._id === expense.eventId || e.id === expense.eventId);
+    const event = events.find((e) => e._id === expense.eventId || e.id === expense.eventId)
 
-    const row = document.createElement("tr");
+    const row = document.createElement("tr")
     row.innerHTML = `
       <td>${event ? event.name : "Unknown Event"}</td>
       <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
       <td>${expense.description}</td>
       <td>₹${expense.amount}</td>
       <td>${formatDate(new Date(expense.date))}</td>
-    `;
+    `
 
-    tableBody.appendChild(row);
-  });
+    tableBody.appendChild(row)
+  })
 }
 
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {
   // Add Chart.js script dynamically if not already included
-  if (typeof Chart === 'undefined') {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+  if (typeof Chart === "undefined") {
+    const script = document.createElement("script")
+    script.src = "https://cdn.jsdelivr.net/npm/chart.js"
     script.onload = () => {
-      console.log('Chart.js loaded successfully');
+      console.log("Chart.js loaded successfully")
       // Initialize charts after Chart.js is loaded
-      const clubId = getLoggedInClubId();
+      const clubId = getLoggedInClubId()
       if (clubId) {
-        loadDashboardData();
+        loadDashboardData()
       }
-    };
-    document.head.appendChild(script);
+    }
+    document.head.appendChild(script)
   } else {
     // If Chart.js is already loaded, initialize dashboard data
-    const clubId = getLoggedInClubId();
+    const clubId = getLoggedInClubId()
     if (clubId) {
-      loadDashboardData();
+      loadDashboardData()
     }
   }
-});
+})
+
+// Generate default email template based on team and event data
+function generateDefaultEmailTemplate(team, event) {
+  const teamName = team.teamName || "your team"
+  const eventName = event?.name || "the event"
+  const clubName = event?.clubId || "our club"
+
+  // Map club IDs to readable names
+  const clubMap = {
+    osc: "Open Source Chandigarh",
+    gfg: "GeeksForGeeks CUIET",
+    ieee: "IEEE",
+    coe: "Center of Excellence",
+    explore: "Explore Labs",
+    ceed: "CEED",
+    // Add more if needed
+  }
+
+  const readableClub = clubMap[clubName] || clubName
+
+  return `Hi Team Members,
+
+We're excited to let you know that your team "${teamName}" has been approved to participate in the event "${eventName}", proudly organized by ${readableClub}! 🥳
+
+${team.projectIdea ? `Project Idea: ${team.projectIdea}` : ""}
+${team.techStack ? `Tech Stack: ${team.techStack}` : ""}
+
+Get ready to showcase your creativity and innovation! This is your moment. 🌟
+
+Wishing you all the best,
+${eventName} Team`
+}
+
+// Function to open email customization modal
+function openEmailCustomizationModal(team, event, teamId) {
+  const modal = document.getElementById("email-customization-modal")
+  const emailContent = document.getElementById("email-content")
+  const attachmentsList = document.getElementById("attachments-list")
+  const fileInput = document.getElementById("email-attachments")
+  const fileNameDisplay = document.querySelector("#email-customization-modal .file-name")
+
+  // Generate default email content
+  const defaultEmailContent = generateDefaultEmailTemplate(team, event)
+  emailContent.value = defaultEmailContent
+
+  // Clear previous attachments
+  attachmentsList.innerHTML = ""
+  fileNameDisplay.textContent = "No files chosen"
+  fileInput.value = ""
+
+  // Handle file input change
+  fileInput.addEventListener("change", function () {
+    if (this.files.length > 0) {
+      fileNameDisplay.textContent = `${this.files.length} file(s) selected`
+
+      // Display file names in the attachments list
+      attachmentsList.innerHTML = ""
+      Array.from(this.files).forEach((file) => {
+        const fileItem = document.createElement("div")
+        fileItem.className = "attachment-item"
+        fileItem.innerHTML = `
+          <i class="fas fa-file"></i>
+          <span>${file.name}</span>
+          <span class="file-size">(${formatFileSize(file.size)})</span>
+        `
+        attachmentsList.appendChild(fileItem)
+      })
+    } else {
+      fileNameDisplay.textContent = "No files chosen"
+      attachmentsList.innerHTML = ""
+    }
+  })
+
+  // Handle use default email button
+  document.getElementById("use-default-email").onclick = async () => {
+    modal.style.display = "none"
+    showLoader()
+    try {
+      await updateTeamStatus(teamId, "approved")
+      showToast("Success", "Team approved with default email", "success")
+    } catch (error) {
+      console.error("Error approving team:", error)
+      showToast("Error", "Failed to approve team", "error")
+    } finally {
+      hideLoader()
+    }
+  }
+
+  // Handle send custom email button
+  document.getElementById("send-custom-email").onclick = async () => {
+    const customSubject = document.getElementById("email-subject").value
+    const customContent = emailContent.value
+    const attachments = fileInput.files
+
+    if (!customContent.trim()) {
+      showToast("Error", "Email content cannot be empty", "error")
+      return
+    }
+
+    modal.style.display = "none"
+    showLoader()
+
+    try {
+      // First, approve the team
+      await updateTeamStatus(teamId, "approved")
+
+      // Then send custom email
+      const emailData = {
+        teamId: teamId,
+        subject: customSubject,
+        content: customContent,
+        // In a real implementation, you would handle file uploads here
+        hasAttachments: attachments.length > 0,
+      }
+
+      // For demonstration, we're just logging the email data
+      console.log("Sending custom email:", emailData)
+
+      // In a real implementation, you would send this data to the server
+      // await sendCustomEmail(emailData, attachments);
+
+      showToast("Success", "Team approved with custom email", "success")
+
+      // Refresh the teams list
+      loadRegisteredTeams(eventId)
+    } catch (error) {
+      console.error("Error approving team with custom email:", error)
+      showToast("Error", "Failed to send custom email", "error")
+    } finally {
+      hideLoader()
+    }
+  }
+
+  // Show the modal
+  modal.style.display = "block"
+
+  // Close modal when clicking the close button
+  modal.querySelector(".close-modal").onclick = () => {
+    modal.style.display = "none"
+  }
+
+  // Close modal when clicking outside
+  window.onclick = (event) => {
+    if (event.target === modal) {
+      modal.style.display = "none"
+    }
+  }
+}
+
+// Helper function to format file size
+function formatFileSize(bytes) {
+  if (bytes === 0) return "0 Bytes"
+  const k = 1024
+  const sizes = ["Bytes", "KB", "MB", "GB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+}
+
+// Add CSS styles for the attachments list
+const style = document.createElement("style")
+style.textContent = `
+  .attachments-list {
+    margin-top: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+  
+  .attachment-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+  
+  .attachment-item i {
+    margin-right: 8px;
+    color: #4f46e5;
+  }
+  
+  .file-size {
+    margin-left: auto;
+    color: #6b7280;
+    font-size: 0.85em;
+  }
+  
+  .email-options {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: flex-end;
+  }
+`
+document.head.appendChild(style)
+
+// Update the existing updateTeamStatus function to support custom emails
+async function updateTeamStatus(teamId, newStatus, customEmail = null) {
+  showLoader() // Show loader when starting the operation
+  const token = localStorage.getItem("authToken")
+
+  try {
+    // First update the team status
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/team-registrations/${teamId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token,
+      },
+      body: JSON.stringify({ status: newStatus }),
+    })
+
+    const data = await response.json()
+
+    if (!data.success) {
+      throw new Error(data.message || "Failed to update team status")
+    }
+
+    // If custom email data is provided and status is approved, send custom email
+    if (customEmail && newStatus === "approved") {
+      // In a real implementation, you would send the custom email data to the server
+      console.log("Custom email would be sent:", customEmail)
+    }
+
+    showToast("Status Updated", `Team marked as ${newStatus}`, "success")
+
+    // Refresh team list
+    const eventId = document.getElementById("event-detail-modal").getAttribute("data-event-id")
+    loadRegisteredTeams(eventId)
+
+    return data
+  } catch (error) {
+    console.error("Error updating status:", error)
+    showToast("Error", error.message || "Server issue", "error")
+    throw error
+  } finally {
+    hideLoader() // Always hide loader when operation completes
+  }
+}
