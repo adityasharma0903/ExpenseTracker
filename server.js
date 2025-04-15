@@ -7,6 +7,11 @@ const dotenv = require("dotenv")
 const nodemailer = require("nodemailer")
 const path = require("path");
 app.use(express.static(path.join(__dirname, "public")));
+const multer = require("multer");
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Store files in memory for email attachments
+const upload = multer({ storage });
 // Load environment variables
 dotenv.config()
 
@@ -813,13 +818,12 @@ const validateTeamRegistration = (req, res, next) => {
 
 // ==================== EMAIL FUNCTIONALITY ====================
 
-const sendApprovalEmail = async (team, customEmailContent = null) => {
+const sendApprovalEmail = async (team, customEmailContent = null, attachments = []) => {
   console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED");
 
   try {
     // ✅ 1. Check email credentials
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Email credentials missing!");
       throw new Error("Email credentials not configured");
     }
 
@@ -830,60 +834,16 @@ const sendApprovalEmail = async (team, customEmailContent = null) => {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-      debug: true,
     });
 
-    await transporter.verify();
-    console.log("✅ Transporter verified");
-
-    // ✅ 3. Fetch event details
-    let eventName = "your registered event";
-    let clubName = "your club";
-
-    try {
-      const event = await ClubEvent.findById(team.eventId);
-      console.log("🔍 Fetched Event:", event);
-
-      if (event) {
-        eventName = event.name || eventName;
-        clubName = event.clubId || clubName;
-      } else {
-        console.warn("⚠️ No event found for eventId:", team.eventId);
-      }
-    } catch (err) {
-      console.error("❌ Error fetching event:", err.message);
-    }
-
-    // ✅ 4. Convert club ID to full name
-    const clubMap = {
-      osc: "Open Source Chandigarh",
-      gfg: "GeeksForGeeks CUIET",
-      ieee: "IEEE",
-      coe: "Center of Excellence",
-      explore: "Explore Labs",
-      ceed: "CEED",
-      // Add more if needed
-    };
-
-    const readableClub = clubMap[clubName] || clubName;
-
-    // ✅ 5. Loop through members and send email
+    // ✅ 3. Loop through members and send email
     for (const member of team.members) {
       // Determine email content - use custom if provided, otherwise default
-      let emailHtml = customEmailContent
+      const emailHtml = customEmailContent
         ? customEmailContent.replace("[MEMBER_NAME]", member.name)
         : `
-          <div style="font-family: Arial, sans-serif; padding: 15px;">
-            <h2 style="color: #28a745;">Hi ${member.name},</h2>
-            <p style="font-size: 16px;">
-              We're excited to let you know that your team <b>${team.teamName}</b> has been <span style="color: green;"><b>approved</b></span> to participate in the event <b>${eventName}</b>, proudly organized by <b>${readableClub}</b>.
-            </p>
-            <p style="font-size: 15px;"><b>Project Idea:</b> ${team.projectIdea || "Not specified"}</p>
-            <p style="font-size: 15px;"><b>Tech Stack:</b> ${team.techStack || "Not specified"}</p>
-            <p style="font-size: 15px;">Get ready to showcase your creativity and innovation! This is your moment. 🌟</p>
-            <br/>
-            <p style="font-size: 16px;">Wishing you all the best,<br><b>${readableClub} Team</b></p>
-          </div>
+          <p>Hi ${member.name},</p>
+          <p>Your team "${team.teamName}" has been approved for the event!</p>
         `;
 
       const mailOptions = {
@@ -891,18 +851,18 @@ const sendApprovalEmail = async (team, customEmailContent = null) => {
         to: member.email,
         subject: "🎉 Your Team is Approved!",
         html: emailHtml,
+        attachments, // Include attachments here
       };
 
-      console.log(`📧 Sending approval email to: ${member.email}`);
+      console.log(`📧 Sending email to: ${member.email}`);
       try {
         const info = await transporter.sendMail(mailOptions);
         console.log(`✅ Email sent to ${member.email}: ${info.messageId}`);
-      } catch (sendError) {
-        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message);
+      } catch (error) {
+        console.error(`❌ Failed to send email to ${member.email}:`, error.message);
       }
     }
 
-    console.log("✅ All approval emails sent successfully");
     return true;
   } catch (error) {
     console.error("❌ ERROR in sendApprovalEmail function:", error);
@@ -994,39 +954,36 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
 });
 
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", async (req, res) => {
+app.post("/api/team-registrations/:id/custom-email", upload.array("attachments"), async (req, res) => {
   try {
-    const teamId = req.params.id
-    const { subject, content } = req.body
+    const teamId = req.params.id;
+    const { subject, content } = req.body;
 
-    // Get team data
-    const team = await TeamRegistration.findById(teamId)
+    // Get the team data
+    const team = await TeamRegistration.findById(teamId);
     if (!team) {
-      return res.status(404).json({ success: false, message: "Team not found" })
+      return res.status(404).json({ success: false, message: "Team not found" });
     }
 
     // Process file uploads if any
-    let attachments = []
-    if (req.files && req.files.length > 0) {
-      attachments = req.files.map((file) => ({
-        filename: file.originalname,
-        content: file.buffer,
-      }))
-    }
+    const attachments = req.files.map((file) => ({
+      filename: file.originalname,
+      content: file.buffer,
+    }));
 
     // Send custom email
-    const emailResult = await sendApprovalEmail(team, { subject, content, attachments })
+    const emailResult = await sendApprovalEmail(team, content, attachments);
 
     if (emailResult) {
-      res.json({ success: true, message: "Custom email sent successfully" })
+      res.json({ success: true, message: "Custom email sent successfully" });
     } else {
-      res.status(500).json({ success: false, message: "Failed to send custom email" })
+      res.status(500).json({ success: false, message: "Failed to send custom email" });
     }
   } catch (error) {
-    console.error("Error sending custom email:", error)
-    res.status(500).json({ success: false, message: "Server error" })
+    console.error("Error sending custom email:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-})
+});
 
 // Test email route
 app.get("/api/test-email", async (req, res) => {

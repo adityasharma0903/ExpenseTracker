@@ -4279,118 +4279,112 @@ ${eventName} Team`
 
 // Function to open email customization modal
 function openEmailCustomizationModal(team, event, teamId) {
-  const modal = document.getElementById("email-customization-modal")
-  const emailContent = document.getElementById("email-content")
-  const attachmentsList = document.getElementById("attachments-list")
-  const fileInput = document.getElementById("email-attachments")
-  const fileNameDisplay = document.querySelector("#email-customization-modal .file-name")
+  const modal = document.getElementById("email-customization-modal");
+  const emailContent = document.getElementById("email-content");
+  const attachmentsList = document.getElementById("attachments-list");
+  const fileInput = document.getElementById("email-attachments");
+  const fileNameDisplay = document.querySelector("#email-customization-modal .file-name");
 
   // Generate default email content
-  const defaultEmailContent = generateDefaultEmailTemplate(team, event)
-  emailContent.value = defaultEmailContent
+  const defaultEmailContent = generateDefaultEmailTemplate(team, event);
+  emailContent.value = defaultEmailContent;
 
   // Clear previous attachments
-  attachmentsList.innerHTML = ""
-  fileNameDisplay.textContent = "No files chosen"
-  fileInput.value = ""
+  attachmentsList.innerHTML = "";
+  fileNameDisplay.textContent = "No files chosen";
+  fileInput.value = "";
 
   // Handle file input change
   fileInput.addEventListener("change", function () {
     if (this.files.length > 0) {
-      fileNameDisplay.textContent = `${this.files.length} file(s) selected`
+      fileNameDisplay.textContent = `${this.files.length} file(s) selected`;
 
       // Display file names in the attachments list
-      attachmentsList.innerHTML = ""
+      attachmentsList.innerHTML = "";
       Array.from(this.files).forEach((file) => {
-        const fileItem = document.createElement("div")
-        fileItem.className = "attachment-item"
+        const fileItem = document.createElement("div");
+        fileItem.className = "attachment-item";
         fileItem.innerHTML = `
           <i class="fas fa-file"></i>
           <span>${file.name}</span>
           <span class="file-size">(${formatFileSize(file.size)})</span>
-        `
-        attachmentsList.appendChild(fileItem)
-      })
+        `;
+        attachmentsList.appendChild(fileItem);
+      });
     } else {
-      fileNameDisplay.textContent = "No files chosen"
-      attachmentsList.innerHTML = ""
+      fileNameDisplay.textContent = "No files chosen";
+      attachmentsList.innerHTML = "";
     }
-  })
-
-  // Handle use default email button
-  document.getElementById("use-default-email").onclick = async () => {
-    modal.style.display = "none"
-    showLoader()
-    try {
-      await updateTeamStatus(teamId, "approved")
-      showToast("Success", "Team approved with default email", "success")
-    } catch (error) {
-      console.error("Error approving team:", error)
-      showToast("Error", "Failed to approve team", "error")
-    } finally {
-      hideLoader()
-    }
-  }
+  });
 
   // Handle send custom email button
   document.getElementById("send-custom-email").onclick = async () => {
-    const customSubject = document.getElementById("email-subject").value
-    const customContent = emailContent.value
-    const attachments = fileInput.files
+    const customSubject = document.getElementById("email-subject").value;
+    const customContent = emailContent.value;
+    const attachments = fileInput.files;
 
     if (!customContent.trim()) {
-      showToast("Error", "Email content cannot be empty", "error")
-      return
+      showToast("Error", "Email content cannot be empty", "error");
+      return;
     }
 
-    modal.style.display = "none"
-    showLoader()
+    modal.style.display = "none";
+    showLoader();
 
     try {
       // First, approve the team
-      await updateTeamStatus(teamId, "approved")
+      await updateTeamStatus(teamId, "approved");
 
       // Then send custom email
-      const emailData = {
-        teamId: teamId,
-        subject: customSubject,
-        content: customContent,
-        // In a real implementation, you would handle file uploads here
-        hasAttachments: attachments.length > 0,
+      const formData = new FormData();
+      formData.append("teamId", teamId);
+      formData.append("subject", customSubject);
+      formData.append("content", customContent);
+
+      // Append each file to the FormData
+      for (let i = 0; i < attachments.length; i++) {
+        formData.append("attachments", attachments[i]);
       }
 
-      // For demonstration, we're just logging the email data
-      console.log("Sending custom email:", emailData)
+      const response = await fetch(`/api/team-registrations/${teamId}/custom-email`, {
+        method: "POST",
+        body: formData,
+      });
 
-      // In a real implementation, you would send this data to the server
-      // await sendCustomEmail(emailData, attachments);
+      const result = await response.json();
 
-      showToast("Success", "Team approved with custom email", "success")
+      if (response.ok && result.success) {
+        showToast("Success", "Custom email sent successfully", "success");
+      } else {
+        showToast("Error", result.message || "Failed to send email", "error");
+      }
 
       // Refresh the teams list
-      loadRegisteredTeams(eventId)
+      loadRegisteredTeams(event.id);
     } catch (error) {
-      console.error("Error approving team with custom email:", error)
-      showToast("Error", "Failed to send custom email", "error")
+      console.error("Error sending custom email:", error);
+      showToast("Error", "Failed to send custom email. Please try again.", "error");
     } finally {
-      hideLoader()
+      hideLoader();
     }
-  }
+  };
 
   // Show the modal
-  modal.style.display = "block"
+  modal.style.display = "block";
 
   // Close modal when clicking the close button
   modal.querySelector(".close-modal").onclick = () => {
-    modal.style.display = "none"
-  }
+    modal.style.display = "none";
+  };
 
   // Close modal when clicking outside
-  window.onclick = (event) => {
+  const outsideClickListener = (event) => {
     if (event.target === modal) {
-      modal.style.display = "none"
+      modal.style.display = "none";
+      window.removeEventListener("click", outsideClickListener);
     }
-  }
+  };
+  window.addEventListener("click", outsideClickListener);
 }
 
 // Helper function to format file size
