@@ -999,40 +999,46 @@ You will receive an email notification once your registration is approved.
   function applyFilters() {
     const prizeFilter = document.getElementById("prizeFilter")?.value || "all";
     const dlFilter = document.getElementById("dlFilter")?.value || "all";
-
+  
     const container = document.querySelector("#dynamic-events");
     if (!container) return;
-
+  
     container.innerHTML = "";
-
+  
     const filtered = window.allEvents.filter((event) => {
-      const hasPrize = event.prizes && event.prizes.length > 0;
-      const hasDL = event.dutyLeave && event.dutyLeave.toLowerCase().includes("available");
-
-      let prizeMatch =
+      const hasPrize = !!(event.prizes && (
+        event.prizes.pool > 0 ||
+        (event.prizes.first && event.prizes.first.amount > 0) ||
+        (event.prizes.second && event.prizes.second.amount > 0) ||
+        (event.prizes.third && event.prizes.third.amount > 0)
+      ));
+  
+      const hasDL = !!event.hasDL;
+  
+      const prizeMatch =
         prizeFilter === "all" ||
         (prizeFilter === "withPrize" && hasPrize) ||
         (prizeFilter === "noPrize" && !hasPrize);
-
-      let dlMatch =
+  
+      const dlMatch =
         dlFilter === "all" ||
         (dlFilter === "withDL" && hasDL) ||
         (dlFilter === "noDL" && !hasDL);
-
+  
       return prizeMatch && dlMatch;
     });
-
+  
     if (filtered.length === 0) {
       container.innerHTML = '<p class="text-muted">No matching events found.</p>';
       return;
     }
-
+  
     filtered.forEach((event) => {
       const card = document.createElement("div");
       card.className = "event-card";
       const eventId = event._id || event.id || "event-" + Math.random().toString(36).substr(2, 9);
       card.setAttribute("data-event-id", eventId);
-
+  
       card.innerHTML = `
         <div class="event-card-header">
           <h3>${event.name}</h3>
@@ -1058,14 +1064,14 @@ You will receive an email notification once your registration is approved.
           <a href="#" class="btn-notify">Register Now</a>
         </div>
       `;
-
+  
       card.addEventListener("click", () => {
         fetchEventDetails(eventId);
       });
-
+  
       container.appendChild(card);
     });
-  }
+  }  
 
 
   // Fetch event details by ID
