@@ -954,31 +954,28 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
 });
 
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", async (req, res) => {
+app.post("/api/team-registrations/:id/custom-email", upload.array("attachments"), async (req, res) => {
   try {
     const teamId = req.params.id;
     const { subject, content } = req.body;
 
-    // Get team data
+    // Fetch team data
     const team = await TeamRegistration.findById(teamId);
     if (!team) {
       return res.status(404).json({ success: false, message: "Team not found" });
     }
 
-    // Process file uploads if any
-    let attachments = [];
-    if (req.files && req.files.length > 0) {
-      attachments = req.files.map((file) => ({
-        filename: file.originalname,
-        content: file.buffer,
-      }));
-    }
+    // Process attachments
+    const attachments = req.files.map((file) => ({
+      filename: file.originalname,
+      content: file.buffer,
+    }));
 
-    // Send custom email
+    // Send email
     const emailResult = await sendApprovalEmail(team, { subject, content, attachments });
 
     if (emailResult) {
-      res.status(200).json({ success: true, message: "Custom email sent successfully" }); // Add this line here
+      res.status(200).json({ success: true, message: "Custom email sent successfully" });
     } else {
       res.status(500).json({ success: false, message: "Failed to send custom email" });
     }
@@ -987,7 +984,6 @@ app.post("/api/team-registrations/:id/custom-email", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
 // Test email route
 app.get("/api/test-email", async (req, res) => {
   console.log("🔍 TEST EMAIL ROUTE CALLED")
