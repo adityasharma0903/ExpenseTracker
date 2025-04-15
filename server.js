@@ -787,6 +787,15 @@ const validateTeamRegistration = (req, res, next) => {
       })
     }
   }
+  // Ensure email is from chitkara.edu.in domain
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@chitkara\.edu\.in$/;
+  if (!emailPattern.test(member.email)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid email: ${member.email}. Only @chitkara.edu.in emails are allowed.`,
+    });
+  }
+
 
   next()
 }
