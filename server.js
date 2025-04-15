@@ -954,28 +954,31 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
 });
 
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", upload.array("attachments"), async (req, res) => {
+app.post("/api/team-registrations/:id/custom-email", async (req, res) => {
   try {
     const teamId = req.params.id;
     const { subject, content } = req.body;
 
-    // Get the team data
+    // Get team data
     const team = await TeamRegistration.findById(teamId);
     if (!team) {
       return res.status(404).json({ success: false, message: "Team not found" });
     }
 
     // Process file uploads if any
-    const attachments = req.files.map((file) => ({
-      filename: file.originalname,
-      content: file.buffer,
-    }));
+    let attachments = [];
+    if (req.files && req.files.length > 0) {
+      attachments = req.files.map((file) => ({
+        filename: file.originalname,
+        content: file.buffer,
+      }));
+    }
 
     // Send custom email
-    const emailResult = await sendApprovalEmail(team, content, attachments);
+    const emailResult = await sendApprovalEmail(team, { subject, content, attachments });
 
     if (emailResult) {
-      res.json({ success: true, message: "Custom email sent successfully" });
+      res.status(200).json({ success: true, message: "Custom email sent successfully" }); // Add this line here
     } else {
       res.status(500).json({ success: false, message: "Failed to send custom email" });
     }
