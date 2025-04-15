@@ -1,4 +1,4 @@
-import { Chart } from "@/components/ui/chart"
+// import { Chart } from "@/components/ui/chart"
 // Initialize the application when the DOM is loaded
 document.addEventListener("DOMContentLoaded", async () => {
   showLoader() // 👈 loader starts
