@@ -5,13 +5,7 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
 const nodemailer = require("nodemailer")
-const path = require("path");
-app.use(express.static(path.join(__dirname, "public")));
-const multer = require("multer");
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage(); // Store files in memory for email attachments
-const upload = multer({ storage });
 // Load environment variables
 dotenv.config()
 
@@ -35,24 +29,14 @@ mongoose
 // Middleware
 // Configure CORS
 const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      "https://unibux.vercel.app",
-      "http://localhost:3000",
-    ];
-
-    if (allowedOrigins.includes(origin) || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "x-auth-token"],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+  origin: [
+    "https://unibux.vercel.app", // Your frontend URL
+    "http://localhost:3000", // Local development URL (if needed)
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+}
 
 // Apply CORS middleware with options
 app.use(cors(corsOptions))
@@ -818,13 +802,14 @@ const validateTeamRegistration = (req, res, next) => {
 
 // ==================== EMAIL FUNCTIONALITY ====================
 
-const sendApprovalEmail = async (team, customEmailContent = null, attachments = []) => {
-  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED");
+const sendApprovalEmail = async (team, customEmail = null) => {
+  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED")
 
   try {
     // ✅ 1. Check email credentials
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      throw new Error("Email credentials not configured");
+      console.log("⚠️ Email credentials missing!")
+      throw new Error("Email credentials not configured")
     }
 
     // ✅ 2. Setup transporter
@@ -834,73 +819,134 @@ const sendApprovalEmail = async (team, customEmailContent = null, attachments = 
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-    });
+      debug: true,
+    })
 
-    // ✅ 3. Loop through members and send email
+    await transporter.verify()
+    console.log("✅ Transporter verified")
+
+    // ✅ 3. Fetch event details
+    let eventName = "your registered event"
+    let clubName = "your club"
+
+    try {
+      const event = await ClubEvent.findById(team.eventId)
+      console.log("🔍 Fetched Event:", event)
+
+      if (event) {
+        eventName = event.name || eventName
+        clubName = event.clubId || clubName
+      } else {
+        console.warn("⚠️ No event found for eventId:", team.eventId)
+      }
+    } catch (err) {
+      console.error("❌ Error fetching event:", err.message)
+    }
+
+    // ✅ 4. Convert club ID to full name
+    const clubMap = {
+      osc: "Open Source Chandigarh",
+      gfg: "GeeksForGeeks CUIET",
+      ieee: "IEEE",
+      coe: "Center of Excellence",
+      explore: "Explore Labs",
+      ceed: "CEED",
+      // Add more if needed
+    }
+
+    const readableClub = clubMap[clubName] || clubName
+
+    // ✅ 5. Loop through members and send email
     for (const member of team.members) {
       // Determine email content - use custom if provided, otherwise default
-      const emailHtml = customEmailContent
-        ? customEmailContent.replace("[MEMBER_NAME]", member.name)
-        : `
-          <p>Hi ${member.name},</p>
-          <p>Your team "${team.teamName}" has been approved for the event!</p>
-        `;
+      let emailSubject = "🎉 Your Team is Approved!"
+      let emailHtml = `
+        <div style="font-family: Arial, sans-serif; padding: 15px;">
+          <h2 style="color: #28a745;">Hi ${member.name},</h2>
+          <p style="font-size: 16px;">
+            We're excited to let you know that your team <b>${team.teamName}</b> has been <span style="color: green;"><b>approved</b></span> to participate in the event <b>${eventName}</b>, proudly organized by <b>${readableClub}</b>! 🥳
+          </p>
+          <p style="font-size: 15px;"><b>Project Idea:</b> ${team.projectIdea || "Not specified"}</p>
+          <p style="font-size: 15px;"><b>Tech Stack:</b> ${team.techStack || "Not specified"}</p>
+          <p style="font-size: 15px;">Get ready to showcase your creativity and innovation! This is your moment. 🌟</p>
+          <br/>
+          <p style="font-size: 16px;">Wishing you all the best,<br><b>${eventName} Team</b></p>
+        </div>
+      `
+
+      // If custom email content is provided, use it
+      if (customEmail) {
+        if (customEmail.subject) emailSubject = customEmail.subject
+        if (customEmail.content) {
+          // Convert plain text to HTML
+          emailHtml = `
+            <div style="font-family: Arial, sans-serif; padding: 15px;">
+              ${customEmail.content.replace(/\n/g, "<br>")}
+            </div>
+          `
+        }
+      }
 
       const mailOptions = {
         from: `"Unibux" <${process.env.EMAIL_USER}>`,
         to: member.email,
-        subject: "🎉 Your Team is Approved!",
+        subject: emailSubject,
         html: emailHtml,
-        attachments, // Include attachments here
-      };
+      }
 
-      console.log(`📧 Sending email to: ${member.email}`);
+      // Add attachments if provided
+      if (customEmail && customEmail.attachments && customEmail.attachments.length > 0) {
+        mailOptions.attachments = customEmail.attachments
+      }
+
+      console.log(`📧 Sending approval email to: ${member.email}`)
       try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`);
-      } catch (error) {
-        console.error(`❌ Failed to send email to ${member.email}:`, error.message);
+        const info = await transporter.sendMail(mailOptions)
+        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`)
+      } catch (sendError) {
+        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message)
       }
     }
 
-    return true;
+    console.log("✅ All approval emails sent successfully")
+    return true
   } catch (error) {
-    console.error("❌ ERROR in sendApprovalEmail function:", error);
-    return false;
+    console.error("❌ ERROR in sendApprovalEmail function:", error)
+    return false
   }
-};
+}
 
 // ==================== ROUTES ====================
 
 // Team approval route with improved email handling
 app.put("/api/team-registrations/:id/approve", async (req, res) => {
-  console.log("🔍 APPROVE TEAM ROUTE CALLED for ID:", req.params.id);
+  console.log("🔍 APPROVE TEAM ROUTE CALLED for ID:", req.params.id)
 
   try {
-    console.log("🔍 Finding team registration...");
-    const teamRegistration = await TeamRegistration.findById(req.params.id);
+    console.log("🔍 Finding team registration...")
+    const teamRegistration = await TeamRegistration.findById(req.params.id)
 
     if (!teamRegistration) {
-      console.log("❌ Team registration not found!");
+      console.log("❌ Team registration not found!")
       return res.status(404).json({
         success: false,
         message: "Team registration not found",
-      });
+      })
     }
 
-    console.log("✅ Team found:", teamRegistration.teamName);
+    console.log("✅ Team found:", teamRegistration.teamName)
 
     // Update team status
-    console.log("🔍 Updating team status to approved...");
-    teamRegistration.status = "approved";
-    if (req.body.notes) teamRegistration.notes = req.body.notes;
-    await teamRegistration.save();
-    console.log("✅ Team status updated successfully");
+    console.log("🔍 Updating team status to approved...")
+    teamRegistration.status = "approved"
+    if (req.body.notes) teamRegistration.notes = req.body.notes
+    await teamRegistration.save()
+    console.log("✅ Team status updated successfully")
 
-    const leader = teamRegistration.members.find((m) => m.isLeader);
-    console.log("🔍 Team leader:", leader ? leader.name : "No leader found");
+    const leader = teamRegistration.members.find((m) => m.isLeader)
+    console.log("🔍 Team leader:", leader ? leader.name : "No leader found")
 
-    console.log("🔍 Creating approved team record...");
+    console.log("🔍 Creating approved team record...")
     const approvedTeam = new ApprovedTeam({
       eventId: teamRegistration.eventId,
       teamName: teamRegistration.teamName,
@@ -908,82 +954,86 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
       members: teamRegistration.members,
       projectIdea: teamRegistration.projectIdea,
       techStack: teamRegistration.techStack,
-    });
+    })
 
-    await approvedTeam.save();
-    console.log("✅ Approved team saved to database");
+    await approvedTeam.save()
+    console.log("✅ Approved team saved to database")
 
-    // Check if custom email content is provided
-    const customEmailContent = req.body.customEmailContent;
+    // Check if custom email data is provided
+    const customEmail = req.body.customEmail
 
     // Send emails to all team members
-    console.log("📧 Attempting to send emails to team members:");
+    console.log("📧 Attempting to send emails to team members:")
     approvedTeam.members.forEach((m, i) => {
-      console.log(`   ${i + 1}. ${m.name} <${m.email}>`);
-    });
+      console.log(`   ${i + 1}. ${m.name} <${m.email}>`)
+    })
 
     try {
-      console.log("📧 Calling sendApprovalEmail function...");
-      // Pass custom email content if provided
-      const emailResult = await sendApprovalEmail(approvedTeam, customEmailContent);
+      console.log("📧 Calling sendApprovalEmail function...")
+      // Pass custom email data if provided
+      const emailResult = await sendApprovalEmail(approvedTeam, customEmail)
       if (emailResult) {
-        console.log("✅ All approval emails sent successfully");
+        console.log("✅ All approval emails sent successfully")
       } else {
-        console.log("⚠️ There were issues sending some emails, but the approval process continued");
+        console.log("⚠️ There were issues sending some emails, but the approval process continued")
       }
     } catch (emailError) {
-      console.error("❌ EMAIL ERROR:", emailError);
+      console.error("❌ EMAIL ERROR:", emailError)
       // Continue execution even if email fails
-      console.log("⚠️ Continuing despite email error");
+      console.log("⚠️ Continuing despite email error")
     }
 
-    console.log("🔍 Sending success response to client");
+    console.log("🔍 Sending success response to client")
     res.json({
       success: true,
       message: "Team approved and emails sent",
       teamRegistration,
-    });
+    })
   } catch (error) {
-    console.error("❌ ERROR in approve team route:", error);
+    console.error("❌ ERROR in approve team route:", error)
     res.status(500).json({
       success: false,
       message: "Server error: " + error.message,
       error: error.toString(),
-    });
+    })
   }
-});
+})
 
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", upload.array("attachments"), async (req, res) => {
+app.post("/api/team-registrations/:id/custom-email", async (req, res) => {
   try {
-    const teamId = req.params.id;
-    const { subject, content } = req.body;
+    const teamId = req.params.id
+    const { subject, content } = req.body
 
-    // Fetch team data
-    const team = await TeamRegistration.findById(teamId);
+    // Get team data
+    const team = await TeamRegistration.findById(teamId)
     if (!team) {
-      return res.status(404).json({ success: false, message: "Team not found" });
+      return res.status(404).json({ success: false, message: "Team not found" })
     }
 
-    // Process attachments
-    const attachments = req.files.map((file) => ({
-      filename: file.originalname,
-      content: file.buffer,
-    }));
+    // Process file uploads if any
+    let attachments = []
+    if (req.files && req.files.length > 0) {
+      attachments = req.files.map((file) => ({
+        filename: file.originalname,
+        content: file.buffer,
+      }))
+    }
 
-    // Send email
-    const emailResult = await sendApprovalEmail(team, { subject, content, attachments });
+    // Send custom email
+    const emailResult = await sendApprovalEmail(team, { subject, content, attachments })
 
     if (emailResult) {
-      res.status(200).json({ success: true, message: "Custom email sent successfully" });
+      res.json({ success: true, message: "Custom email sent successfully" })
     } else {
-      res.status(500).json({ success: false, message: "Failed to send custom email" });
+      res.status(500).json({ success: false, message: "Failed to send custom email" })
     }
   } catch (error) {
-    console.error("Error sending custom email:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error sending custom email:", error)
+    res.status(500).json({ success: false, message: "Server error" })
   }
-});
+})
+
 // Test email route
 app.get("/api/test-email", async (req, res) => {
   console.log("🔍 TEST EMAIL ROUTE CALLED")
