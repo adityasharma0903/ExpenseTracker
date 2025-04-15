@@ -130,19 +130,30 @@
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
-                <div class="filters" style="margin-bottom: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <select id="prizeFilter">
+                <div class="filters" style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 1rem; flex-wrap: wrap;">
+                    <div style="display: flex; flex-direction: column; font-size: 14px; min-width: 160px;">
+                      <label for="prizeFilter" style="margin-bottom: 4px; font-weight: 600;">
+                        <i class="fas fa-trophy" style="margin-right: 6px;"></i>Prize
+                      </label>
+                      <select id="prizeFilter" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
                         <option value="all">All</option>
                         <option value="withPrize">With Prize</option>
                         <option value="noPrize">No Prize</option>
-                    </select>
-
-                    <select id="dlFilter">
+                      </select>
+                    </div>
+                  
+                    <div style="display: flex; flex-direction: column; font-size: 14px; min-width: 160px;">
+                      <label for="dlFilter" style="margin-bottom: 4px; font-weight: 600;">
+                        <i class="fas fa-file-alt" style="margin-right: 6px;"></i>Duty Leave
+                      </label>
+                      <select id="dlFilter" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
                         <option value="all">All</option>
                         <option value="withDL">With DL</option>
                         <option value="noDL">No DL</option>
-                    </select>
-                </div>
+                      </select>
+                    </div>
+                  </div>
+                                  
                 <div class="events-grid" id="dynamic-events">
                     <!-- Dynamic events will be loaded here -->
                 </div>
