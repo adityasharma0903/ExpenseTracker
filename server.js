@@ -5,7 +5,8 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
 const nodemailer = require("nodemailer")
-
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public")));
 // Load environment variables
 dotenv.config()
 
@@ -29,14 +30,24 @@ mongoose
 // Middleware
 // Configure CORS
 const corsOptions = {
-  origin: [
-    "https://unibux.vercel.app", // Your frontend URL
-    "http://localhost:3000", // Local development URL (if needed)
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-  allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
-  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-}
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "https://unibux.vercel.app",
+      "http://localhost:3000",
+    ];
+
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "x-auth-token"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 // Apply CORS middleware with options
 app.use(cors(corsOptions))
