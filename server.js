@@ -859,7 +859,7 @@ const sendApprovalEmail = async (team) => {
     // ✅ 5. Loop through members and send email
     for (const member of team.members) {
       const mailOptions = {
-        from: `"TechAbhivyakti Team" <${process.env.EMAIL_USER}>`,
+        from: `"Unibux" <${process.env.EMAIL_USER}>`,
         to: member.email,
         subject: `🎉 Your Team "${team.teamName}" is Approved for ${eventName}!`,
         html: `
@@ -872,7 +872,7 @@ const sendApprovalEmail = async (team) => {
             <p style="font-size: 15px;"><b>Tech Stack:</b> ${team.techStack || 'Not specified'}</p>
             <p style="font-size: 15px;">Get ready to showcase your creativity and innovation! This is your moment. 🌟</p>
             <br/>
-            <p style="font-size: 16px;">Wishing you all the best,<br><b>TechAbhivyakti Team</b></p>
+            <p style="font-size: 16px;">Wishing you all the best,<br><b>${eventName} Team</b></p>
           </div>
         `
       };
