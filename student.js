@@ -479,59 +479,59 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  // Add Team Member Button
-  const addMemberBtn = document.getElementById("addMemberBtn")
-  const additionalMembers = document.getElementById("additionalMembers")
-  let memberCount = 2
-
+  const addMemberBtn = document.getElementById("addMemberBtn");
+  const additionalMembers = document.getElementById("additionalMembers");
+  let memberCount = 2;
+  
   if (addMemberBtn && additionalMembers) {
-    addMemberBtn.addEventListener("click", () => {
-      memberCount++
-
-      if (memberCount > 4) {
-        showToast("Maximum team size is 4 members")
-        return
-      }
-
-      const memberInputs = document.createElement("div")
-      memberInputs.className = "team-member-inputs"
-      memberInputs.innerHTML = `
-                <div class="form-group">
-        <label for="memberName${memberCount}">Member ${memberCount}*</label>
-        <input type="text" id="memberName${memberCount}" placeholder="Full Name" required>
-    </div>
-    <div class="form-group">
-        <label for="memberEmail${memberCount}">Email*</label>
-        <input 
-            type="email" 
-            id="memberEmail${memberCount}" 
-            placeholder="Email Address" 
-            required 
-            pattern="^[a-zA-Z0-9._%+-]+@chitkara\\.edu\\.in$" 
-            title="Please enter a valid Chitkara email (e.g., name@chitkara.edu.in)">
-    </div>
-    <div class="form-group">
-        <label for="memberPhone${memberCount}">Phone*</label>
-        <input type="tel" id="memberPhone${memberCount}" placeholder="Phone Number" required>
-    </div>
-    <div class="form-group">
-        <label for="memberDepartment${memberCount}">Department*</label>
-        <input type="text" id="memberDepartment${memberCount}" placeholder="Department" required>
-    </div>
-    <button type="button" class="btn-remove-member">
-        <i class="fas fa-times"></i> Remove
-    </button>
-            `
-
-      additionalMembers.appendChild(memberInputs)
-
-      // Add event listener to remove button
-      const removeBtn = memberInputs.querySelector(".btn-remove-member")
-      removeBtn.addEventListener("click", () => {
-        additionalMembers.removeChild(memberInputs)
-        memberCount--
-      })
-    })
+      addMemberBtn.addEventListener("click", () => {
+          memberCount++;
+  
+          if (memberCount > 4) {
+              showToast("Maximum team size is 4 members");
+              return;
+          }
+  
+          const memberInputs = document.createElement("div");
+          memberInputs.className = "team-member-inputs";
+          memberInputs.innerHTML = `
+              <div class="form-group">
+                  <label for="memberName${memberCount}">Member ${memberCount}*</label>
+                  <input type="text" id="memberName${memberCount}" placeholder="Full Name" required>
+              </div>
+              <div class="form-group">
+                  <label for="memberEmail${memberCount}">Email*</label>
+                  <input 
+                      type="email" 
+                      id="memberEmail${memberCount}" 
+                      placeholder="Email Address" 
+                      required 
+                      pattern="^[a-zA-Z0-9._%+-]+@chitkara\\.edu\\.in$" 
+                      title="Please enter a valid Chitkara email (e.g., name@chitkara.edu.in)">
+              </div>
+              <div class="form-group">
+                  <label for="memberPhone${memberCount}">Phone*</label>
+                  <input type="tel" id="memberPhone${memberCount}" placeholder="Phone Number" required>
+              </div>
+              <div class="form-group">
+                  <label for="memberDepartment${memberCount}">Department*</label>
+                  <input type="text" id="memberDepartment${memberCount}" placeholder="Department" required>
+              </div>
+              <button type="button" class="btn-remove-member">
+                  <i class="fas fa-times"></i> Remove
+              </button>
+          `;
+  
+          additionalMembers.appendChild(memberInputs);
+  
+          // Add event listener to the remove button
+          const removeBtn = memberInputs.querySelector(".btn-remove-member");
+          removeBtn.addEventListener("click", () => {
+              additionalMembers.removeChild(memberInputs);
+              memberCount--;
+          });
+      });
+  
   }
 
   // Registration Form Submission
