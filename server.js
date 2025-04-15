@@ -25,44 +25,6 @@ mongoose.connect(MONGODB_URI, {
 .then(() => console.log("✅ MongoDB connected"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-
-
-// Pagination Endpoint
-app.get('/api/transactions', async (req, res) => {
-  try {
-    // Extract page and limit from query parameters, with defaults
-    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
-    const limit = parseInt(req.query.limit) || 10; // Default to limit 10 per page
-
-    // Calculate how many records to skip
-    const skip = (page - 1) * limit;
-
-    // Fetch transactions with pagination
-    const transactions = await Transaction.find()
-      .skip(skip)
-      .limit(limit);
-
-    // Get total count of transactions to calculate total pages
-    const totalTransactions = await Transaction.countDocuments();
-    const totalPages = Math.ceil(totalTransactions / limit);
-
-    // Send response back with transactions and pagination info
-    res.json({
-      transactions,
-      totalPages, // Total number of pages based on data
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
-  }
-});
-
-
-// Error handling example
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
-
 // Middleware
 // Configure CORS
 const corsOptions = {
