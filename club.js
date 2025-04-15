@@ -2583,6 +2583,8 @@ async function approveTeamRegistration(teamId) {
         "Content-Type": "application/json",
         "x-auth-token": token,
       },
+      credentials: "include", // Include credentials (cookies, etc.)
+      body: JSON.stringify(payload),
     })
 
     const data = await response.json()
@@ -4276,127 +4278,119 @@ ${eventName} Team`
 }
 
 // Function to open email customization modal
-function openEmailCustomizationModal(team, event, teamId, eventId) {
-  const modal = document.getElementById("email-customization-modal");
-  const emailContent = document.getElementById("email-content");
-  const attachmentsList = document.getElementById("attachments-list");
-  const fileInput = document.getElementById("email-attachments");
-  const fileNameDisplay = document.querySelector("#email-customization-modal .file-name");
+function openEmailCustomizationModal(team, event, teamId) {
+  const modal = document.getElementById("email-customization-modal")
+  const emailContent = document.getElementById("email-content")
+  const attachmentsList = document.getElementById("attachments-list")
+  const fileInput = document.getElementById("email-attachments")
+  const fileNameDisplay = document.querySelector("#email-customization-modal .file-name")
 
   // Generate default email content
-  const defaultEmailContent = generateDefaultEmailTemplate(team, event);
-  emailContent.value = defaultEmailContent;
+  const defaultEmailContent = generateDefaultEmailTemplate(team, event)
+  emailContent.value = defaultEmailContent
 
   // Clear previous attachments
-  attachmentsList.innerHTML = "";
-  fileNameDisplay.textContent = "No files chosen";
-  fileInput.value = "";
+  attachmentsList.innerHTML = ""
+  fileNameDisplay.textContent = "No files chosen"
+  fileInput.value = ""
 
-  // Ensure file input event listener is not added multiple times
-  if (!fileInput.dataset.listenerAdded) {
-    fileInput.addEventListener("change", function () {
-      if (this.files.length > 0) {
-        fileNameDisplay.textContent = `${this.files.length} file(s) selected`;
+  // Handle file input change
+  fileInput.addEventListener("change", function () {
+    if (this.files.length > 0) {
+      fileNameDisplay.textContent = `${this.files.length} file(s) selected`
 
-        // Display file names in the attachments list
-        attachmentsList.innerHTML = "";
-        Array.from(this.files).forEach((file) => {
-          const fileItem = document.createElement("div");
-          fileItem.className = "attachment-item";
-          fileItem.innerHTML = `
-            <i class="fas fa-file"></i>
-            <span>${file.name}</span>
-            <span class="file-size">(${formatFileSize(file.size)})</span>
-          `;
-          attachmentsList.appendChild(fileItem);
-        });
-      } else {
-        fileNameDisplay.textContent = "No files chosen";
-        attachmentsList.innerHTML = "";
-      }
-    });
-    fileInput.dataset.listenerAdded = true;
-  }
+      // Display file names in the attachments list
+      attachmentsList.innerHTML = ""
+      Array.from(this.files).forEach((file) => {
+        const fileItem = document.createElement("div")
+        fileItem.className = "attachment-item"
+        fileItem.innerHTML = `
+          <i class="fas fa-file"></i>
+          <span>${file.name}</span>
+          <span class="file-size">(${formatFileSize(file.size)})</span>
+        `
+        attachmentsList.appendChild(fileItem)
+      })
+    } else {
+      fileNameDisplay.textContent = "No files chosen"
+      attachmentsList.innerHTML = ""
+    }
+  })
 
   // Handle use default email button
   document.getElementById("use-default-email").onclick = async () => {
-    modal.style.display = "none";
-    showLoader();
+    modal.style.display = "none"
+    showLoader()
     try {
-      await updateTeamStatus(teamId, "approved");
-      showToast("Success", "Team approved with default email", "success");
+      await updateTeamStatus(teamId, "approved")
+      showToast("Success", "Team approved with default email", "success")
     } catch (error) {
-      console.error("Error approving team:", error);
-      showToast("Error", "Failed to approve team", "error");
+      console.error("Error approving team:", error)
+      showToast("Error", "Failed to approve team", "error")
     } finally {
-      hideLoader();
+      hideLoader()
     }
-  };
+  }
 
   // Handle send custom email button
   document.getElementById("send-custom-email").onclick = async () => {
-    const customSubject = document.getElementById("email-subject").value;
-    const customContent = emailContent.value;
-    const attachments = fileInput.files;
-
-    if (!customSubject.trim()) {
-      showToast("Error", "Email subject cannot be empty", "error");
-      return;
-    }
+    const customSubject = document.getElementById("email-subject").value
+    const customContent = emailContent.value
+    const attachments = fileInput.files
 
     if (!customContent.trim()) {
-      showToast("Error", "Email content cannot be empty", "error");
-      return;
+      showToast("Error", "Email content cannot be empty", "error")
+      return
     }
 
-    modal.style.display = "none";
-    showLoader();
+    modal.style.display = "none"
+    showLoader()
 
     try {
       // First, approve the team
-      await updateTeamStatus(teamId, "approved");
+      await updateTeamStatus(teamId, "approved")
 
       // Then send custom email
       const emailData = {
         teamId: teamId,
         subject: customSubject,
         content: customContent,
+        // In a real implementation, you would handle file uploads here
         hasAttachments: attachments.length > 0,
-      };
+      }
 
-      console.log("Sending custom email:", emailData);
+      // For demonstration, we're just logging the email data
+      console.log("Sending custom email:", emailData)
 
-      // TODO: Implement backend logic to handle email data and attachments
+      // In a real implementation, you would send this data to the server
       // await sendCustomEmail(emailData, attachments);
 
-      showToast("Success", "Team approved with custom email", "success");
+      showToast("Success", "Team approved with custom email", "success")
 
       // Refresh the teams list
-      loadRegisteredTeams(eventId); // Pass the correct eventId here
+      loadRegisteredTeams(eventId)
     } catch (error) {
-      console.error("Error approving team with custom email:", error);
-      showToast("Error", "Failed to send custom email", "error");
+      console.error("Error approving team with custom email:", error)
+      showToast("Error", "Failed to send custom email", "error")
     } finally {
-      hideLoader();
+      hideLoader()
     }
-  };
+  }
 
   // Show the modal
-  modal.style.display = "block";
+  modal.style.display = "block"
 
   // Close modal when clicking the close button
   modal.querySelector(".close-modal").onclick = () => {
-    modal.style.display = "none";
-  };
+    modal.style.display = "none"
+  }
 
   // Close modal when clicking outside
-  const outsideClickListener = (event) => {
+  window.onclick = (event) => {
     if (event.target === modal) {
-      modal.style.display = "none";
-      window.removeEventListener("click", outsideClickListener);
+      modal.style.display = "none"
     }
-  };
-  window.addEventListener("click", outsideClickListener);
+  }
 }
 
 // Helper function to format file size
