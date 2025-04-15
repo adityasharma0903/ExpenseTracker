@@ -2302,7 +2302,7 @@ async function openEventDetailModal(id) {
     }
 
     const data = await response.json()
-    console.log("API Response:", data)
+    // console.log("API Response:", data)
 
     if (!data || !data.success || !data.event) {
       showToast("Error", "Event not found or invalid response", "error")

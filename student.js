@@ -1027,7 +1027,7 @@ You will receive an email notification once your registration is approved.
     if (!eventDetailView) return
 
     // Debug log to see the full event data
-    console.log("Full event data:", event)
+    // console.log("Full event data:", event)
 
     // Set default values for missing fields
     const defaultBanner = "https://source.unsplash.com/random/1200x400/?hackathon"
