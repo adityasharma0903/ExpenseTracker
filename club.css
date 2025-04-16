@@ -3997,3 +3997,77 @@ textarea {
     margin-bottom: 10px;
   }
 }
+
+
+/* Email customization modal styles */
+.attachments-list {
+  margin-top: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  background-color: #f9fafb;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+  background-color: #e5e7eb;
+}
+
+.attachment-item i {
+  margin-right: 8px;
+  color: #4f46e5;
+}
+
+.file-size {
+  margin-left: auto;
+  color: #6b7280;
+  font-size: 0.85em;
+}
+
+.email-options {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+#email-content {
+  font-family: Arial, sans-serif;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Loading indicator for email sending */
+.sending-indicator {
+  display: flex;
+  align-items: center;
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+.sending-indicator i {
+  margin-right: 8px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

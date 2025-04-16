@@ -5,6 +5,9 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
 const nodemailer = require("nodemailer")
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 // Load environment variables
 dotenv.config()
@@ -802,14 +805,15 @@ const validateTeamRegistration = (req, res, next) => {
 
 // ==================== EMAIL FUNCTIONALITY ====================
 
+// Modify the existing sendApprovalEmail function to better handle attachments
 const sendApprovalEmail = async (team, customEmail = null) => {
-  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED")
+  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED");
 
   try {
     // ✅ 1. Check email credentials
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Email credentials missing!")
-      throw new Error("Email credentials not configured")
+      console.log("⚠️ Email credentials missing!");
+      throw new Error("Email credentials not configured");
     }
 
     // ✅ 2. Setup transporter
@@ -820,27 +824,27 @@ const sendApprovalEmail = async (team, customEmail = null) => {
         pass: process.env.EMAIL_PASS,
       },
       debug: true,
-    })
+    });
 
-    await transporter.verify()
-    console.log("✅ Transporter verified")
+    await transporter.verify();
+    console.log("✅ Transporter verified");
 
     // ✅ 3. Fetch event details
-    let eventName = "your registered event"
-    let clubName = "your club"
+    let eventName = "your registered event";
+    let clubName = "your club";
 
     try {
-      const event = await ClubEvent.findById(team.eventId)
-      console.log("🔍 Fetched Event:", event)
+      const event = await ClubEvent.findById(team.eventId);
+      console.log("🔍 Fetched Event:", event ? event.name : "Not found");
 
       if (event) {
-        eventName = event.name || eventName
-        clubName = event.clubId || clubName
+        eventName = event.name || eventName;
+        clubName = event.clubId || clubName;
       } else {
-        console.warn("⚠️ No event found for eventId:", team.eventId)
+        console.warn("⚠️ No event found for eventId:", team.eventId);
       }
     } catch (err) {
-      console.error("❌ Error fetching event:", err.message)
+      console.error("❌ Error fetching event:", err.message);
     }
 
     // ✅ 4. Convert club ID to full name
@@ -852,14 +856,14 @@ const sendApprovalEmail = async (team, customEmail = null) => {
       explore: "Explore Labs",
       ceed: "CEED",
       // Add more if needed
-    }
+    };
 
-    const readableClub = clubMap[clubName] || clubName
+    const readableClub = clubMap[clubName] || clubName;
 
     // ✅ 5. Loop through members and send email
     for (const member of team.members) {
       // Determine email content - use custom if provided, otherwise default
-      let emailSubject = "🎉 Your Team is Approved!"
+      let emailSubject = "🎉 Your Team is Approved!";
       let emailHtml = `
         <div style="font-family: Arial, sans-serif; padding: 15px;">
           <h2 style="color: #28a745;">Hi ${member.name},</h2>
@@ -872,18 +876,18 @@ const sendApprovalEmail = async (team, customEmail = null) => {
           <br/>
           <p style="font-size: 16px;">Wishing you all the best,<br><b>${eventName} Team</b></p>
         </div>
-      `
+      `;
 
       // If custom email content is provided, use it
       if (customEmail) {
-        if (customEmail.subject) emailSubject = customEmail.subject
+        if (customEmail.subject) emailSubject = customEmail.subject;
         if (customEmail.content) {
-          // Convert plain text to HTML
+          // Convert plain text to HTML with proper line breaks
           emailHtml = `
             <div style="font-family: Arial, sans-serif; padding: 15px;">
               ${customEmail.content.replace(/\n/g, "<br>")}
             </div>
-          `
+          `;
         }
       }
 
@@ -892,29 +896,30 @@ const sendApprovalEmail = async (team, customEmail = null) => {
         to: member.email,
         subject: emailSubject,
         html: emailHtml,
-      }
+      };
 
       // Add attachments if provided
       if (customEmail && customEmail.attachments && customEmail.attachments.length > 0) {
-        mailOptions.attachments = customEmail.attachments
+        console.log(`📎 Adding ${customEmail.attachments.length} attachments to email`);
+        mailOptions.attachments = customEmail.attachments;
       }
 
-      console.log(`📧 Sending approval email to: ${member.email}`)
+      console.log(`📧 Sending approval email to: ${member.email}`);
       try {
-        const info = await transporter.sendMail(mailOptions)
-        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`)
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`);
       } catch (sendError) {
-        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message)
+        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message);
       }
     }
 
-    console.log("✅ All approval emails sent successfully")
-    return true
+    console.log("✅ All approval emails sent successfully");
+    return true;
   } catch (error) {
-    console.error("❌ ERROR in sendApprovalEmail function:", error)
-    return false
+    console.error("❌ ERROR in sendApprovalEmail function:", error);
+    return false;
   }
-}
+};
 
 // ==================== ROUTES ====================
 
@@ -999,40 +1004,113 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
   }
 })
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", async (req, res) => {
+app.post("/api/team-registrations/:id/custom-email", upload.array('attachments', 5), async (req, res) => {
+  console.log("📧 CUSTOM EMAIL ROUTE CALLED for ID:", req.params.id);
+  
   try {
-    const teamId = req.params.id
-    const { subject, content } = req.body
-
+    const teamId = req.params.id;
+    const { subject, content } = req.body;
+    
+    console.log("📧 Email Subject:", subject);
+    console.log("📧 Email Content:", content);
+    
     // Get team data
-    const team = await TeamRegistration.findById(teamId)
+    const team = await TeamRegistration.findById(teamId);
     if (!team) {
-      return res.status(404).json({ success: false, message: "Team not found" })
+      console.log("❌ Team not found!");
+      return res.status(404).json({ 
+        success: false, 
+        message: "Team not found" 
+      });
     }
-
+    
+    console.log("✅ Team found:", team.teamName);
+    
     // Process file uploads if any
-    let attachments = []
+    let attachments = [];
     if (req.files && req.files.length > 0) {
-      attachments = req.files.map((file) => ({
+      console.log(`📎 Processing ${req.files.length} attachments`);
+      
+      attachments = req.files.map(file => ({
         filename: file.originalname,
-        content: file.buffer,
-      }))
+        path: file.path
+      }));
+      
+      console.log("📎 Attachments processed:", attachments);
     }
-
+    
+    // Update team status to approved
+    team.status = "approved";
+    await team.save();
+    console.log("✅ Team status updated to approved");
+    
+    // Create approved team record
+    const leader = team.members.find(m => m.isLeader);
+    const approvedTeam = new ApprovedTeam({
+      eventId: team.eventId,
+      teamName: team.teamName,
+      leaderName: leader ? leader.name : "",
+      members: team.members,
+      projectIdea: team.projectIdea,
+      techStack: team.techStack
+    });
+    
+    await approvedTeam.save();
+    console.log("✅ Approved team saved to database");
+    
     // Send custom email
-    const emailResult = await sendApprovalEmail(team, { subject, content, attachments })
-
+    const customEmail = {
+      subject,
+      content,
+      attachments
+    };
+    
+    console.log("📧 Sending custom email with attachments");
+    const emailResult = await sendApprovalEmail(approvedTeam, customEmail);
+    
     if (emailResult) {
-      res.json({ success: true, message: "Custom email sent successfully" })
+      console.log("✅ Custom email sent successfully");
+      res.json({ 
+        success: true, 
+        message: "Team approved and custom email sent" 
+      });
     } else {
-      res.status(500).json({ success: false, message: "Failed to send custom email" })
+      console.log("⚠️ Failed to send custom email");
+      res.status(500).json({ 
+        success: false, 
+        message: "Team approved but failed to send custom email" 
+      });
     }
   } catch (error) {
-    console.error("Error sending custom email:", error)
-    res.status(500).json({ success: false, message: "Server error" })
+    console.error("❌ ERROR in custom email route:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error: " + error.message,
+      error: error.toString()
+    });
   }
-})
+});
 
 // Test email route
 app.get("/api/test-email", async (req, res) => {
