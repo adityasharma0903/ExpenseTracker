@@ -54,19 +54,33 @@ mongoose
 // Middleware
 // Configure CORS
 const corsOptions = {
-  origin: [
-    "https://unibux.vercel.app", // Your frontend URL
-    "http://localhost:3000", // Local development URL (if needed)
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-  allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
-  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-}
+  origin: (origin, callback) => {
+    const allowedOrigins = ["https://unibux.vercel.app", "http://localhost:3000"];
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "x-auth-token"],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 
 // Apply CORS middleware with options
 app.use(cors(corsOptions))
 app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ extended: true, limit: "50mb" }))
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://unibux.vercel.app");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, x-auth-token");
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 // ==================== SCHEMAS & MODELS ====================
 
