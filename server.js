@@ -8,6 +8,28 @@ const nodemailer = require("nodemailer")
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+
+// Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Cloudinary storage
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'unibux_uploads', // Optional: name your folder in Cloudinary
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    transformation: [{ width: 800, crop: 'limit' }],
+  },
+});
+
+const uploadCloud = multer({ storage: cloudinaryStorage });
 
 // Load environment variables
 dotenv.config()
@@ -896,6 +918,10 @@ const sendApprovalEmail = async (team, customEmail = null) => {
         to: member.email,
         subject: emailSubject,
         html: emailHtml,
+        attachments: req.files.map(file => ({
+          filename: file.originalname,
+          path: file.path, // Cloudinary URL
+        })),
       };
 
       // Add attachments if provided
@@ -1005,67 +1031,38 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
 })
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'uploads');
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
-
 const upload = multer({ 
-  storage: storage,
+  storage: cloudinaryStorage,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", upload.array('attachments', 5), async (req, res) => {
+app.post("/api/team-registrations/:id/custom-email", uploadCloud.array('attachments', 5), async (req, res) => {
   console.log("📧 CUSTOM EMAIL ROUTE CALLED for ID:", req.params.id);
-  
+
   try {
     const teamId = req.params.id;
     const { subject, content } = req.body;
-    
-    console.log("📧 Email Subject:", subject);
-    console.log("📧 Email Content:", content);
-    
-    // Get team data
+
+    // Fetch team info
     const team = await TeamRegistration.findById(teamId);
     if (!team) {
-      console.log("❌ Team not found!");
-      return res.status(404).json({ 
-        success: false, 
-        message: "Team not found" 
-      });
+      return res.status(404).json({ success: false, message: "Team not found" });
     }
-    
-    console.log("✅ Team found:", team.teamName);
-    
-    // Process file uploads if any
+
+    // Process uploaded files from Cloudinary
     let attachments = [];
     if (req.files && req.files.length > 0) {
-      console.log(`📎 Processing ${req.files.length} attachments`);
-      
       attachments = req.files.map(file => ({
         filename: file.originalname,
-        path: file.path
+        path: file.path  // 🔥 Cloudinary URL
       }));
-      
-      console.log("📎 Attachments processed:", attachments);
     }
-    
-    // Update team status to approved
+
+    // Update team status
     team.status = "approved";
     await team.save();
-    console.log("✅ Team status updated to approved");
-    
-    // Create approved team record
+
     const leader = team.members.find(m => m.isLeader);
     const approvedTeam = new ApprovedTeam({
       eventId: team.eventId,
@@ -1075,40 +1072,21 @@ app.post("/api/team-registrations/:id/custom-email", upload.array('attachments',
       projectIdea: team.projectIdea,
       techStack: team.techStack
     });
-    
+
     await approvedTeam.save();
-    console.log("✅ Approved team saved to database");
-    
-    // Send custom email
-    const customEmail = {
-      subject,
-      content,
-      attachments
-    };
-    
-    console.log("📧 Sending custom email with attachments");
+
+    // Prepare email content
+    const customEmail = { subject, content, attachments };
     const emailResult = await sendApprovalEmail(approvedTeam, customEmail);
-    
+
     if (emailResult) {
-      console.log("✅ Custom email sent successfully");
-      res.json({ 
-        success: true, 
-        message: "Team approved and custom email sent" 
-      });
+      res.json({ success: true, message: "Team approved and custom email sent" });
     } else {
-      console.log("⚠️ Failed to send custom email");
-      res.status(500).json({ 
-        success: false, 
-        message: "Team approved but failed to send custom email" 
-      });
+      res.status(500).json({ success: false, message: "Failed to send email" });
     }
   } catch (error) {
     console.error("❌ ERROR in custom email route:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error: " + error.message,
-      error: error.toString()
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
