@@ -1790,43 +1790,31 @@ app.put("/api/events/:id/reject", adminAuth, async (req, res) => {
 // @access  Public
 app.post("/api/club-events", async (req, res) => {
   try {
-    // Get token from header
-    const token = req.header("x-auth-token")
-
-    // Log the token for debugging
-    console.log("Token received:", token)
-
-    // Validate the event data
-    const { clubId, name, description, startDate, endDate, startTime, endTime, venue } = req.body
-
-    // Check if all required fields are provided
-    if (!clubId || !name || !description || !startDate || !endDate || !startTime || !endTime || !venue) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide all required fields",
-      })
+    // 👇 Upload poster to Cloudinary if it's base64
+    if (req.body.poster && req.body.poster.startsWith('data:image')) {
+      const uploadResult = await cloudinary.uploader.upload(req.body.poster, {
+        folder: 'unibux_posters',
+      });
+      req.body.poster = uploadResult.secure_url;
     }
 
-    // Create new event
-    const newEvent = new ClubEvent(req.body)
-
-    // Save event
-    const event = await newEvent.save()
-    console.log("Club event saved:", event)
+    const newEvent = new ClubEvent(req.body);
+    const event = await newEvent.save();
+    console.log("Club event saved:", event);
 
     res.json({
       success: true,
       event,
-    })
+    });
   } catch (error) {
-    console.error("Error creating club event:", error)
+    console.error("Error creating club event:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
       error: error.message,
-    })
+    });
   }
-})
+});
 
 // @route   GET api/club-events
 // @desc    Get all club events
@@ -1861,28 +1849,39 @@ app.get("/api/club-events", async (req, res) => {
 // @access  Public
 app.put("/api/club-events/:id", async (req, res) => {
   try {
-    // Find and update the event
-    const updatedEvent = await ClubEvent.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true })
+    // 👇 Upload poster to Cloudinary if it's base64
+    if (req.body.poster && req.body.poster.startsWith('data:image')) {
+      const uploadResult = await cloudinary.uploader.upload(req.body.poster, {
+        folder: 'unibux_posters',
+      });
+      req.body.poster = uploadResult.secure_url;
+    }
+
+    const updatedEvent = await ClubEvent.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
 
     if (!updatedEvent) {
       return res.status(404).json({
         success: false,
         message: "Event not found",
-      })
+      });
     }
 
     res.json({
       success: true,
       event: updatedEvent,
-    })
+    });
   } catch (error) {
-    console.error("Error updating club event:", error)
+    console.error("Error updating club event:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
-    })
+    });
   }
-})
+});
 
 // @route   DELETE api/club-events/:id
 // @desc    Delete a club event
