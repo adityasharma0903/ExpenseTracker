@@ -2182,6 +2182,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
+document.addEventListener("DOMContentLoaded", () => {
+  const sidebar = document.getElementById("sidebar");
+  const mobileHeaderToggle = document.getElementById("mobileHeaderToggle");
+  const mobileOverlay = document.getElementById("mobileOverlay");
+
+  // Hide sidebar by default on mobile
+  if (window.innerWidth <= 992) {
+    sidebar.classList.remove("active");
+  }
+
+  // Toggle sidebar on hamburger menu click
+  mobileHeaderToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("active");
+    mobileOverlay.classList.toggle("active");
+  });
+
+  // Close sidebar when overlay is clicked
+  mobileOverlay.addEventListener("click", () => {
+    sidebar.classList.remove("active");
+    mobileOverlay.classList.remove("active");
+  });
+
+  // Close sidebar on window resize (if switching to desktop view)
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 992) {
+      sidebar.classList.remove("active");
+      mobileOverlay.classList.remove("active");
+    }
+  });
+});
+
 window.addEventListener("DOMContentLoaded", async () => {
   // const events = await fetchClubData(clubId);
 });

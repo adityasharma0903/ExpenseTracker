@@ -965,7 +965,7 @@ textarea {
 
 .calendar-event.pharma {
   background-color: rgba(114, 9, 183, 0.1);
-  color: var(--purple);
+  color: var (--purple);
 }
 
 .calendar-event.business {
@@ -1385,7 +1385,6 @@ textarea {
     display: block;
   }
 }
-
 
 /* Clubs Grid Container */
 .club-grid {
@@ -2081,5 +2080,32 @@ textarea {
   
   .modal-header h3 {
     font-size: 1.2rem;
+  }
+}
+
+/* Sidebar hidden by default on mobile */
+@media (max-width: 992px) {
+  .sidebar {
+    left: -100%; /* Hide sidebar */
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.active {
+    left: 0; /* Show sidebar when active */
+  }
+
+  .mobile-overlay {
+    display: none;
+  }
+
+  .mobile-overlay.active {
+    display: block;
+  }
+}
+
+/* Hamburger menu visible on mobile */
+@media (max-width: 992px) {
+  .mobile-header-toggle {
+    display: flex;
   }
 }
