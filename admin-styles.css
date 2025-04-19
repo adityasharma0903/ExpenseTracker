@@ -1611,6 +1611,8 @@ textarea {
     z-index: 1001;
     transition: left 0.3s ease;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    height: 100vh;
+    overflow-y: auto;
   }
 
   .sidebar.active {
@@ -1634,10 +1636,27 @@ textarea {
     font-size: 1.1rem !important;
   }
 
+  .sidebar-user {
+    justify-content: flex-start !important;
+  }
+
+  .user-avatar {
+    margin-right: 15px !important;
+  }
+
+  .logout-btn {
+    justify-content: flex-start !important;
+  }
+
+  .logout-btn i {
+    margin-right: 10px !important;
+  }
+
   .main-content {
     margin-left: 0 !important;
+    width: 100% !important;
   }
-  
+
   .mobile-overlay {
     display: none;
     position: fixed;
@@ -1648,7 +1667,7 @@ textarea {
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
   }
-  
+
   .mobile-overlay.active {
     display: block;
   }
@@ -1699,8 +1718,10 @@ textarea {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
-  
-  .charts-container {
+}
+
+@media (max-width: 576px) {
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 }
