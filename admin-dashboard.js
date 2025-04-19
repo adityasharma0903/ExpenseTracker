@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "login.html"
     return
   }
-  
+
   // Global data store
   let dashboardData = null
 
