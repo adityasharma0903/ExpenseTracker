@@ -69,55 +69,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Mobile sidebar functionality
   function setupMobileSidebar() {
-    const sidebarToggle = document.getElementById("sidebarToggle");
-    const sidebar = document.querySelector(".sidebar");
-    const mobileOverlay = document.getElementById("mobileOverlay");
-
-    if (!sidebarToggle || !sidebar) return;
-
+    const sidebarToggle = document.getElementById("sidebarToggle")
+    const sidebar = document.querySelector(".sidebar")
+    const mobileOverlay = document.getElementById("mobileOverlay")
+    const mainContent = document.querySelector(".main-content")
+  
+    if (!sidebarToggle || !sidebar) return
+  
     // Modified toggle behavior for mobile
-    sidebarToggle.addEventListener("click", function () {
+    sidebarToggle.addEventListener("click", () => {
       if (window.innerWidth <= 576) {
-        sidebar.classList.toggle("active");
+        sidebar.classList.toggle("active")
         if (mobileOverlay) {
-          mobileOverlay.classList.toggle("active");
+          mobileOverlay.classList.toggle("active")
         }
       } else {
-        sidebar.classList.toggle("collapsed");
-        document.querySelector(".main-content").classList.toggle("expanded");
+        sidebar.classList.toggle("collapsed")
+        mainContent.classList.toggle("expanded")
       }
-    });
-
+    })
+  
     // Close sidebar when overlay is clicked
     if (mobileOverlay) {
-      mobileOverlay.addEventListener("click", function () {
-        sidebar.classList.remove("active");
-        mobileOverlay.classList.remove("active");
-      });
+      mobileOverlay.addEventListener("click", () => {
+        sidebar.classList.remove("active")
+        mobileOverlay.classList.remove("active")
+      })
     }
-
+  
     // Close sidebar when nav items are clicked (on mobile)
-    const navItems = document.querySelectorAll(".nav-item");
-    navItems.forEach(item => {
-      item.addEventListener("click", function () {
+    const navItems = document.querySelectorAll(".nav-item")
+    navItems.forEach((item) => {
+      item.addEventListener("click", () => {
         if (window.innerWidth <= 576) {
-          sidebar.classList.remove("active");
+          sidebar.classList.remove("active")
           if (mobileOverlay) {
-            mobileOverlay.classList.remove("active");
+            mobileOverlay.classList.remove("active")
           }
         }
-      });
-    });
-
+      })
+    })
+  
     // Handle window resize
-    window.addEventListener("resize", function () {
+    window.addEventListener("resize", () => {
       if (window.innerWidth > 576) {
-        sidebar.classList.remove("active");
+        sidebar.classList.remove("active")
         if (mobileOverlay) {
-          mobileOverlay.classList.remove("active");
+          mobileOverlay.classList.remove("active")
         }
       }
-    });
+    })
   }
 
   // Call after DOM is loaded
