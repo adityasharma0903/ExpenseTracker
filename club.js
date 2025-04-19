@@ -100,33 +100,45 @@ function initializeClubData() {
 // Setup all event listeners
 function setupEventListeners() {
   // Login form submission
-  document.getElementById("login-btn").addEventListener("click", handleLogin);
-  
+  document.getElementById("login-btn").addEventListener("click", handleLogin)
+
   // Sidebar navigation
-  const navItems = document.querySelectorAll(".sidebar-nav li:not(#logout-btn)");
+  const navItems = document.querySelectorAll(".sidebar-nav li:not(#logout-btn)")
   navItems.forEach((item) => {
-    item.addEventListener("click", function() {
-      const page = this.getAttribute("data-page");
-      navigateTo(page);
-    });
-  });
-  
+    item.addEventListener("click", function () {
+      const page = this.getAttribute("data-page")
+      navigateTo(page)
+    })
+  })
+
+  function setupAdditionalEventListeners() {
+    // Event detail modal listeners
+    document.addEventListener("DOMContentLoaded", () => {
+      // Make sure the modal exists in the DOM
+      if (!document.getElementById("event-detail-modal")) {
+        console.error("Event detail modal not found in the DOM")
+        return
+      }
+
+      // Setup listeners
+      setupDetailModalListeners()
+    })
+  }
+
   // Logout button
-  document.getElementById("logout-btn").addEventListener("click", handleLogout);
-  
+  document.getElementById("logout-btn").addEventListener("click", handleLogout)
+
   // Mobile menu toggle
-  document.querySelector(".hamburger-menu").addEventListener("click", toggleSidebar);
-  
+  document.querySelector(".hamburger-menu").addEventListener("click", toggleSidebar)
+
   // Create event button
-  document.getElementById("create-event-btn").addEventListener("click", openCreateEventModal);
-  document.getElementById("create-event-btn-events").addEventListener("click", openCreateEventModal);
-  
+  document.getElementById("create-event-btn").addEventListener("click", openCreateEventModal)
+
   // Close modal buttons
-  const closeButtons = document.querySelectorAll(".close-modal, .close-detail-modal");
+  const closeButtons = document.querySelectorAll(".close-modal")
   closeButtons.forEach((button) => {
-    button.addEventListener("click", closeAllModals);
-  });
-}
+    button.addEventListener("click", closeAllModals)
+  })
 
   // Event DL select change
   document.getElementById("event-dl").addEventListener("change", toggleDLOptions)
@@ -276,33 +288,33 @@ function setupEventListeners() {
 
     showToast("Budget Updated", `Total budget updated to ₹${totalBudgetValue}`, "success")
   })
-
+}
 
 // Check if user is logged in
-async function checkLoginStatus() {
-  const loggedInClub = localStorage.getItem("loggedInClub");
-  
+function checkLoginStatus() {
+  const loggedInClub = localStorage.getItem("loggedInClub")
+
   if (loggedInClub) {
     // User is logged in, show dashboard
-    const club = JSON.parse(loggedInClub);
-    document.getElementById("club-name").textContent = club.name;
-    document.getElementById("profile-club-name").textContent = club.name;
-    document.getElementById("profile-club-id").textContent = `Club ID: ${club.id}`;
-    document.getElementById("profile-name").value = club.name;
-    document.getElementById("profile-id").value = club.id;
-    
+    const club = JSON.parse(loggedInClub)
+    document.getElementById("club-name").textContent = club.name
+    document.getElementById("profile-club-name").textContent = club.name
+    document.getElementById("profile-club-id").textContent = `Club ID: ${club.id}`
+    document.getElementById("profile-name").value = club.name
+    document.getElementById("profile-id").value = club.id
+
     // Set email and contact if available
-    if (club.email) document.getElementById("profile-email").value = club.email;
-    if (club.contact) document.getElementById("profile-contact").value = club.contact;
-    if (club.description) document.getElementById("profile-description").value = club.description;
-    
-    showPage("dashboard-page");
-    loadDashboardData();
-    loadEvents();
-    loadBudgetData();
+    if (club.email) document.getElementById("profile-email").value = club.email
+    if (club.contact) document.getElementById("profile-contact").value = club.contact
+    if (club.description) document.getElementById("profile-description").value = club.description
+
+    showPage("dashboard-page")
+    loadDashboardData()
+    loadEvents()
+    loadBudgetData()
   } else {
     // User is not logged in, show login page
-    showPage("login-page");
+    showPage("login-page")
   }
 }
 
