@@ -5,7 +5,6 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
 const nodemailer = require("nodemailer")
-const multer = require("multer")
 const path = require("path")
 const fs = require("fs")
 const cloudinary = require("cloudinary").v2 // Add Cloudinary
@@ -19,6 +18,21 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
+
+const { CloudinaryStorage } = require("multer-storage-cloudinary")
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "event-posters",
+    allowed_formats: ["jpg", "jpeg", "png"],
+    transformation: [{ width: 1080, height: 1350, crop: "limit" }],
+  },
+})
+
+const upload = multer({ storage }) // ✅ Final one
+
+
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -1027,10 +1041,10 @@ const cloudinaryStorage = multer.diskStorage({
   },
 })
 
-const upload = multer({
-  storage: cloudinaryStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-})
+// const upload = multer({
+//   storage: cloudinaryStorage,
+//   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+// })
 
 // Helper function to upload file to Cloudinary
 async function uploadToCloudinary(filePath) {
@@ -1855,16 +1869,21 @@ app.put("/api/events/:id/reject", adminAuth, async (req, res) => {
 // @access  Public
 app.post("/api/club-events", upload.single("poster"), async (req, res) => {
   try {
-    // Get token from header
     const token = req.header("x-auth-token")
-
-    // Log the token for debugging
     console.log("Token received:", token)
 
-    // Validate the event data
-    const { clubId, name, description, startDate, endDate, startTime, endTime, venue } = req.body
+    const {
+      clubId,
+      name,
+      description,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      venue,
+    } = req.body
 
-    // Check if all required fields are provided
+    // Validation
     if (!clubId || !name || !description || !startDate || !endDate || !startTime || !endTime || !venue) {
       return res.status(400).json({
         success: false,
@@ -1872,60 +1891,60 @@ app.post("/api/club-events", upload.single("poster"), async (req, res) => {
       })
     }
 
-    // Create event object from request body
+    // Collect event data
     const eventData = { ...req.body }
 
-    // Handle poster upload if provided
+    // ✅ Upload event poster to Cloudinary
     if (req.file) {
       try {
-        // Upload to Cloudinary
         const cloudinaryUrl = await uploadToCloudinary(req.file.path)
         eventData.poster = cloudinaryUrl
+        // Optionally delete local temp file
+        fs.unlinkSync(req.file.path)
       } catch (uploadError) {
-        console.error("Error uploading poster to Cloudinary:", uploadError)
-        // Continue without poster if upload fails
+        console.error("❌ Error uploading poster to Cloudinary:", uploadError)
+        eventData.poster = null
       }
     }
 
-    // Handle sponsor logos if provided in the request body
+    // ✅ Handle sponsor logos (base64)
     if (eventData.sponsors && Array.isArray(eventData.sponsors)) {
       for (let i = 0; i < eventData.sponsors.length; i++) {
         const sponsor = eventData.sponsors[i]
         if (sponsor.logo && sponsor.logo.startsWith("data:")) {
-          // Convert base64 to file and upload to Cloudinary
           try {
             const base64Data = sponsor.logo.split(";base64,").pop()
             const tempFilePath = path.join(__dirname, "uploads", `sponsor-${Date.now()}-${i}.png`)
             fs.writeFileSync(tempFilePath, base64Data, { encoding: "base64" })
 
-            const cloudinaryUrl = await uploadToCloudinary(tempFilePath)
-            eventData.sponsors[i].logo = cloudinaryUrl
-          } catch (logoError) {
-            console.error("Error uploading sponsor logo to Cloudinary:", logoError)
-            // Continue without logo if upload fails
+            const logoUrl = await uploadToCloudinary(tempFilePath, "sponsor-logos")
+            eventData.sponsors[i].logo = logoUrl
+
+            // Clean up
+            fs.unlinkSync(tempFilePath)
+          } catch (logoErr) {
+            console.error("❌ Error uploading sponsor logo:", logoErr)
             eventData.sponsors[i].logo = null
           }
         }
       }
     }
 
-    // Create new event
+    // ✅ Save event to MongoDB
     const newEvent = new ClubEvent(eventData)
-
-    // Save event
-    const event = await newEvent.save()
-    console.log("Club event saved:", event)
+    const saved = await newEvent.save()
 
     res.json({
       success: true,
-      event,
+      message: "Event created successfully",
+      event: saved,
     })
-  } catch (error) {
-    console.error("Error creating club event:", error)
+  } catch (err) {
+    console.error("❌ Server Error in /api/club-events:", err)
     res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message,
+      error: err.message,
     })
   }
 })

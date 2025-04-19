@@ -1263,295 +1263,170 @@ function switchTab(tabId, tabContainer) {
 
 // Create event - Modified to save to MongoDB
 async function createEvent() {
-  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
   const token = localStorage.getItem("authToken")
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
 
-  // Get basic event details
-  const name = document.getElementById("event-name").value.trim()
-  const description = document.getElementById("event-description").value.trim()
-  const startDate = document.getElementById("event-start-date").value
-  const endDate = document.getElementById("event-end-date").value
-  const startTime = document.getElementById("event-start-time").value
-  const endTime = document.getElementById("event-end-time").value
-  const venue = document.getElementById("event-venue").value.trim()
-  const teamMin = Number.parseInt(document.getElementById("event-team-min").value) || 1
-  const teamMax = Number.parseInt(document.getElementById("event-team-max").value) || 5
-  const hasDL = document.getElementById("event-dl").value === "yes"
-  const dlType = hasDL ? document.getElementById("dl-type").value : null
-  const dlStartTime = hasDL && dlType === "specific-hours" ? document.getElementById("dl-start-time").value : null
-  const dlEndTime = hasDL && dlType === "specific-hours" ? document.getElementById("dl-end-time").value : null
-  let poster = null
+  const formData = new FormData()
+
+  // Poster upload
   if (window.posterFileToUpload) {
-    // Create a FormData object to upload to Cloudinary
-    const formData = new FormData()
-    formData.append('file', window.posterFileToUpload)
-    formData.append('upload_preset', 'unibux_posters') // Create this upload preset in your Cloudinary dashboard
-
-    try {
-      showLoader() // Show loader while uploading
-
-      // Upload to Cloudinary
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await response.json()
-
-      if (data.secure_url) {
-        poster = data.secure_url
-      } else {
-        showToast("Error", "Failed to upload poster image", "error")
-      }
-
-      hideLoader() // Hide loader after upload
-    } catch (error) {
-      console.error("Error uploading to Cloudinary:", error)
-      hideLoader()
-      showToast("Error", "Failed to upload poster image", "error")
-    }
-  }
-  const teams = Number.parseInt(document.getElementById("event-teams").value) || 1
-
-  // Get overview details
-  const about = document.getElementById("event-about") ? document.getElementById("event-about").value.trim() : ""
-  const theme = document.getElementById("event-theme") ? document.getElementById("event-theme").value.trim() : ""
-
-  // Get what to expect items
-  const expectItems = []
-  document.querySelectorAll(".expect-input").forEach((input) => {
-    if (input.value.trim()) {
-      expectItems.push(input.value.trim())
-    }
-  })
-
-  // Get eligibility criteria
-  const eligibilityCriteria = []
-  document.querySelectorAll(".eligibility-input").forEach((input) => {
-    if (input.value.trim()) {
-      eligibilityCriteria.push(input.value.trim())
-    }
-  })
-
-  // Get duty leave details
-  const dutyLeaveAvailable = document.getElementById("event-duty-leave")
-    ? document.getElementById("event-duty-leave").checked
-    : false
-  const dutyLeaveDays = document.getElementById("event-duty-leave-days")
-    ? Number.parseInt(document.getElementById("event-duty-leave-days").value) || 0
-    : 0
-
-  // Get prize details
-  const prizePool = document.getElementById("event-prize-pool")
-    ? Number.parseInt(document.getElementById("event-prize-pool").value) || 0
-    : 0
-
-  // Get main prizes
-  const firstPrize = {
-    amount: document.getElementById("first-prize-amount")
-      ? Number.parseInt(document.getElementById("first-prize-amount").value) || 0
-      : 0,
-    description: document.getElementById("first-prize-description")
-      ? document.getElementById("first-prize-description").value.trim()
-      : "",
+    formData.append("poster", window.posterFileToUpload)
   }
 
-  const secondPrize = {
-    amount: document.getElementById("second-prize-amount")
-      ? Number.parseInt(document.getElementById("second-prize-amount").value) || 0
-      : 0,
-    description: document.getElementById("second-prize-description")
-      ? document.getElementById("second-prize-description").value.trim()
-      : "",
+  // Basic fields
+  formData.append("clubId", loggedInClub.id)
+  formData.append("name", document.getElementById("event-name").value.trim())
+  formData.append("description", document.getElementById("event-description").value.trim())
+  formData.append("startDate", document.getElementById("event-start-date").value)
+  formData.append("endDate", document.getElementById("event-end-date").value)
+  formData.append("startTime", document.getElementById("event-start-time").value)
+  formData.append("endTime", document.getElementById("event-end-time").value)
+  formData.append("venue", document.getElementById("event-venue").value.trim())
+  formData.append("teams", document.getElementById("event-teams").value)
+  formData.append("teamMin", document.getElementById("event-team-min")?.value || 1)
+  formData.append("teamMax", document.getElementById("event-team-max")?.value || 5)
+  formData.append("about", document.getElementById("event-about")?.value.trim() || "")
+  formData.append("theme", document.getElementById("event-theme")?.value.trim() || "")
+
+  // DL fields
+  const hasDL = document.getElementById("event-dl").value === "yes"
+  formData.append("hasDL", hasDL)
+  if (hasDL) {
+    formData.append("dlType", document.getElementById("dl-type").value)
+    formData.append("dlStartTime", document.getElementById("dl-start-time").value)
+    formData.append("dlEndTime", document.getElementById("dl-end-time").value)
   }
 
-  const thirdPrize = {
-    amount: document.getElementById("third-prize-amount")
-      ? Number.parseInt(document.getElementById("third-prize-amount").value) || 0
-      : 0,
-    description: document.getElementById("third-prize-description")
-      ? document.getElementById("third-prize-description").value.trim()
-      : "",
+  // What to Expect
+  const expectItems = [...document.querySelectorAll(".expect-input")].map(i => i.value.trim()).filter(Boolean)
+  formData.append("expectItems", JSON.stringify(expectItems))
+
+  // Eligibility
+  const eligibilityCriteria = [...document.querySelectorAll(".eligibility-input")].map(i => i.value.trim()).filter(Boolean)
+  formData.append("eligibilityCriteria", JSON.stringify(eligibilityCriteria))
+
+  // Duty Leave
+  const dutyLeave = {
+    available: document.getElementById("event-duty-leave")?.checked || false,
+    days: Number(document.getElementById("event-duty-leave-days")?.value || 0),
+  }
+  formData.append("dutyLeave", JSON.stringify(dutyLeave))
+
+  // Prizes
+  const prizes = {
+    pool: Number(document.getElementById("event-prize-pool")?.value || 0),
+    first: {
+      amount: Number(document.getElementById("first-prize-amount")?.value || 0),
+      description: document.getElementById("first-prize-description")?.value.trim() || "",
+    },
+    second: {
+      amount: Number(document.getElementById("second-prize-amount")?.value || 0),
+      description: document.getElementById("second-prize-description")?.value.trim() || "",
+    },
+    third: {
+      amount: Number(document.getElementById("third-prize-amount")?.value || 0),
+      description: document.getElementById("third-prize-description")?.value.trim() || "",
+    },
+    special: [],
+    perks: [...document.querySelectorAll(".perk-input")].map(i => i.value.trim()).filter(Boolean)
   }
 
-  // Get special awards
-  const specialAwards = []
-  document.querySelectorAll(".special-award").forEach((award) => {
-    const nameElement = award.querySelector(".award-name")
-    const amountElement = award.querySelector(".award-amount")
-    const descriptionElement = award.querySelector(".award-description")
-
-    if (nameElement && nameElement.value.trim()) {
-      specialAwards.push({
-        name: nameElement.value.trim(),
-        amount: amountElement ? Number.parseInt(amountElement.value) || 0 : 0,
-        description: descriptionElement ? descriptionElement.value.trim() : "",
+  document.querySelectorAll(".special-award").forEach(award => {
+    const name = award.querySelector(".award-name")?.value.trim()
+    if (name) {
+      prizes.special.push({
+        name,
+        amount: Number(award.querySelector(".award-amount")?.value || 0),
+        description: award.querySelector(".award-description")?.value.trim() || "",
       })
     }
   })
+  formData.append("prizes", JSON.stringify(prizes))
 
-  // Get participant perks
-  const participantPerks = []
-  document.querySelectorAll(".perk-input").forEach((input) => {
-    if (input.value.trim()) {
-      participantPerks.push(input.value.trim())
-    }
-  })
-
-  // Get sponsors
+  // Sponsors
   const sponsors = []
-  document.querySelectorAll(".sponsor-item").forEach((sponsor) => {
-    const nameElement = sponsor.querySelector(".sponsor-name")
-    const logoInput = sponsor.querySelector(".sponsor-logo")
-
-    if (nameElement && nameElement.value.trim()) {
-      let logo = null
-      if (logoInput && logoInput.files.length > 0) {
-        // In a real implementation, you would upload the logo and get a URL
-        // For now, we'll just note that a logo was selected
-        logo = "logo_placeholder.png"
-      }
-
-      sponsors.push({ name: nameElement.value.trim(), logo })
+  document.querySelectorAll(".sponsor-item").forEach(sponsor => {
+    const name = sponsor.querySelector(".sponsor-name")?.value.trim()
+    if (name) {
+      sponsors.push({ name, logo: null }) // Logo will be handled in backend
     }
   })
+  formData.append("sponsors", JSON.stringify(sponsors))
 
-  // Get schedule
+  // Schedule
   const schedule = []
-  document.querySelectorAll(".schedule-day").forEach((day) => {
-    const dayNumber = Number.parseInt(day.getAttribute("data-day"))
-    const dateElement = day.querySelector(".day-date")
-    const date = dateElement ? dateElement.value : ""
+  document.querySelectorAll(".schedule-day").forEach(day => {
+    const dayNumber = Number(day.getAttribute("data-day"))
+    const date = day.querySelector(".day-date")?.value
     const items = []
-
-    day.querySelectorAll(".schedule-item").forEach((item) => {
-      const timeElement = item.querySelector(".item-time")
-      const titleElement = item.querySelector(".item-title")
-      const descriptionElement = item.querySelector(".item-description")
-
-      if (timeElement && titleElement && timeElement.value && titleElement.value.trim()) {
-        items.push({
-          time: timeElement.value,
-          title: titleElement.value.trim(),
-          description: descriptionElement ? descriptionElement.value.trim() : "",
-        })
+    day.querySelectorAll(".schedule-item").forEach(item => {
+      const time = item.querySelector(".item-time")?.value
+      const title = item.querySelector(".item-title")?.value.trim()
+      const description = item.querySelector(".item-description")?.value.trim()
+      if (time && title) {
+        items.push({ time, title, description })
       }
     })
-
-    if (date && items.length > 0) {
+    if (date && items.length) {
       schedule.push({ dayNumber, date, items })
     }
   })
+  formData.append("schedule", JSON.stringify(schedule))
 
-  // Get FAQs
+  // FAQs
   const faqs = []
-  document.querySelectorAll(".faq-item").forEach((faq) => {
-    const questionElement = faq.querySelector(".faq-question")
-    const answerElement = faq.querySelector(".faq-answer")
-
-    if (questionElement && answerElement && questionElement.value.trim() && answerElement.value.trim()) {
-      faqs.push({
-        question: questionElement.value.trim(),
-        answer: answerElement.value.trim(),
-      })
-    }
+  document.querySelectorAll(".faq-item").forEach(faq => {
+    const q = faq.querySelector(".faq-question")?.value.trim()
+    const a = faq.querySelector(".faq-answer")?.value.trim()
+    if (q && a) faqs.push({ question: q, answer: a })
   })
+  formData.append("faqs", JSON.stringify(faqs))
 
-  // Get expenses
+  // Expenses
   const expenses = []
-  document.querySelectorAll(".expense-item").forEach((item) => {
-    const categoryElement = item.querySelector(".expense-category")
-    const descriptionElement = item.querySelector(".expense-description")
-    const amountElement = item.querySelector(".expense-amount")
-
-    if (
-      descriptionElement &&
-      amountElement &&
-      descriptionElement.value.trim() &&
-      (Number.parseInt(amountElement.value) || 0) > 0
-    ) {
-      expenses.push({
-        category: categoryElement ? categoryElement.value : "other",
-        description: descriptionElement.value.trim(),
-        amount: Number.parseInt(amountElement.value) || 0,
-      })
+  document.querySelectorAll(".expense-item").forEach(item => {
+    const category = item.querySelector(".expense-category")?.value
+    const description = item.querySelector(".expense-description")?.value.trim()
+    const amount = Number(item.querySelector(".expense-amount")?.value || 0)
+    if (description && amount > 0) {
+      expenses.push({ category, description, amount })
     }
   })
+  formData.append("expenses", JSON.stringify(expenses))
 
-  // Calculate total budget
-  const totalBudget = expenses.reduce((total, expense) => total + expense.amount, 0)
+  const totalBudget = expenses.reduce((sum, e) => sum + e.amount, 0)
+  formData.append("totalBudget", totalBudget)
 
-  // Create event object with all the new fields
-  const event = {
-    clubId: loggedInClub.id,
-    name,
-    description,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    hasDL,
-    dlType,
-    dlStartTime,
-    dlEndTime,
-    poster,
-    teams,
-    venue,
-    teamMin,
-    teamMax,
-    about,
-    theme,
-    expectItems,
-    eligibilityCriteria,
-    dutyLeave: {
-      available: dutyLeaveAvailable,
-      days: dutyLeaveDays,
-    },
-    prizes: {
-      pool: prizePool,
-      first: firstPrize,
-      second: secondPrize,
-      third: thirdPrize,
-      special: specialAwards,
-      perks: participantPerks,
-    },
-    sponsors,
-    schedule,
-    faqs,
-    expenses,
-    totalBudget,
-    createdAt: new Date().toISOString(),
-  }
-
+  // Final API call
   try {
-    // Save event to MongoDB - CHANGED ENDPOINT FROM /api/events to /api/club-events
+    showLoader()
     const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-auth-token": token, // Include the token here
+        "x-auth-token": token,
       },
-      body: JSON.stringify(event),
+      body: formData,
     })
 
-    const data = await response.json()
+    const result = await response.json()
+    hideLoader()
 
-    if (data.success) {
-      // Close modal and refresh events
+    if (result.success) {
+      showToast("Event Created", `${result.event.name} has been created successfully!`, "success")
       closeAllModals()
       loadEvents()
       loadDashboardData()
       loadBudgetData()
-
-      showToast("Event Created", `${name} has been created successfully`, "success")
     } else {
-      showToast("Error", data.message || "Failed to create event", "error")
+      showToast("Error", result.message || "Failed to create event", "error")
     }
-  } catch (error) {
-    console.error("Error creating event:", error)
+  } catch (err) {
+    hideLoader()
+    console.error("❌ Error creating event:", err)
     showToast("Error", "Failed to connect to server", "error")
   }
 }
+
 
 // Function to fetch events from MongoDB
 async function fetchEvents() {
