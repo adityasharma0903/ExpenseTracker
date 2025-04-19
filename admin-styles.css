@@ -1602,3 +1602,367 @@ textarea {
     opacity: 1;
   }
 }
+
+/* Enhanced Responsive Breakpoints */
+
+/* Improve tablet responsiveness */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .club-grid {
+    justify-content: space-around;
+  }
+}
+
+/* Better sidebar and content handling for medium screens */
+@media (max-width: 992px) {
+  :root {
+    --sidebar-width: 220px; /* Slightly smaller sidebar */
+  }
+  
+  .sidebar {
+    width: var(--sidebar-collapsed-width);
+    transition: all var(--transition-speed) ease;
+  }
+
+  .sidebar-header h2,
+  .user-info,
+  .nav-item a span,
+  .logout-btn span {
+    display: none;
+  }
+
+  .nav-item a {
+    justify-content: center;
+    padding: 15px;
+  }
+
+  .nav-item a i {
+    margin-right: 0;
+    font-size: 1.3rem;
+  }
+
+  .sidebar-user {
+    justify-content: center;
+  }
+
+  .user-avatar {
+    margin-right: 0;
+  }
+
+  .logout-btn {
+    justify-content: center;
+  }
+
+  .logout-btn i {
+    margin-right: 0;
+  }
+
+  .main-content {
+    margin-left: var(--sidebar-collapsed-width);
+  }
+  
+  .department-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .club-card {
+    width: 220px;
+  }
+}
+
+/* Improved handling for small tablets and large phones */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .department-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .club-grid {
+    gap: 15px;
+  }
+  
+  .club-card {
+    width: 45%;
+    min-height: 180px;
+  }
+
+  .main-header {
+    flex-direction: column;
+    height: auto;
+    padding: 15px;
+  }
+
+  .header-search {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tab-contents {
+    padding: 15px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-controls {
+    margin-top: 15px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .filter-group {
+    margin-bottom: 10px;
+    width: 100%;
+  }
+  
+  .filter-group select,
+  .filter-group input {
+    width: 100%;
+  }
+  
+  /* Improved calendar for mobile */
+  .calendar-day {
+    padding: 3px;
+  }
+  
+  .calendar-day-number {
+    font-size: 0.8rem;
+  }
+  
+  .calendar-event {
+    font-size: 0.6rem;
+    padding: 1px 3px;
+  }
+  
+  /* Better table responsiveness */
+  .data-table th,
+  .data-table td {
+    padding: 10px 15px;
+  }
+  
+  /* Improve club details section */
+  .club-details {
+    padding: 20px 15px;
+  }
+  
+  .club-stats {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+}
+
+/* Improved mobile experience */
+@media (max-width: 576px) {
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    width: 80%;
+    z-index: 1001;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .sidebar-header h2,
+  .user-info,
+  .nav-item a span,
+  .logout-btn span {
+    display: block;
+  }
+
+  .nav-item a {
+    justify-content: flex-start;
+    padding: 12px 20px;
+  }
+
+  .nav-item a i {
+    margin-right: 15px;
+    font-size: 1.1rem;
+  }
+
+  .sidebar-user {
+    justify-content: flex-start;
+  }
+
+  .user-avatar {
+    margin-right: 15px;
+  }
+
+  .logout-btn {
+    justify-content: flex-start;
+  }
+
+  .logout-btn i {
+    margin-right: 10px;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+  }
+
+  .mobile-overlay.active {
+    display: block;
+  }
+  
+  /* Make club cards full width on mobile */
+  .club-card {
+    width: 100%;
+  }
+  
+  /* Improve stats cards */
+  .stat-card {
+    padding: 15px;
+  }
+  
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+    margin-right: 15px;
+  }
+  
+  /* Modal improvements */
+  .modal-content {
+    width: 95%;
+  }
+  
+  .modal-header {
+    padding: 15px;
+  }
+  
+  .modal-body {
+    padding: 15px;
+  }
+  
+  .modal-footer {
+    padding: 15px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .modal-footer button {
+    width: 100%;
+  }
+  
+  /* Toast improvements */
+  .toast {
+    max-width: 90%;
+    right: 5%;
+    left: 5%;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 375px) {
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .date-display {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  
+  .club-details h3 {
+    font-size: 1.8em;
+  }
+  
+  .club-details p {
+    font-size: 1em;
+  }
+  
+  .view-more-btn {
+    padding: 10px 20px;
+    font-size: 1em;
+  }
+  
+  .stat-info h3 {
+    font-size: 0.8rem;
+  }
+  
+  .stat-info p {
+    font-size: 1.2rem;
+  }
+}
+
+/* Hamburger menu for mobile */
+.mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--gray-dark);
+  cursor: pointer;
+}
+
+@media (max-width: 576px) {
+  .mobile-menu-toggle {
+    display: block;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 999;
+  }
+  
+  .main-header {
+    padding-left: 50px;
+  }
+}
+
+/* Fix for chart responsiveness */
+.chart-body {
+  width: 100%;
+  height: auto;
+  min-height: 250px;
+}
+
+/* General responsive fixes */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+table {
+  width: 100%;
+  table-layout: auto;
+}
+
+input, select, textarea, button {
+  max-width: 100%;
+}
