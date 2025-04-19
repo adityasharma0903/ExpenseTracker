@@ -430,28 +430,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Copy Link Button
-  const copyLinkBtn = document.getElementById("copyLinkBtn")
-  if (copyLinkBtn) {
-    copyLinkBtn.addEventListener("click", (e) => {
-      e.stopPropagation()
-      const url = window.location.href
+// Copy Link Button
+const copyLinkBtn = document.getElementById("copyLinkBtn");
+if (copyLinkBtn) {
+  copyLinkBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    // Get the current event ID
+const eventId = getCurrentEventId();
+// Create the event-specific URL
+const url = window.location.origin + window.location.pathname + "?event=" + eventId;
 
-      // Create a temporary input element
-      const tempInput = document.createElement("input")
-      tempInput.value = url
-      document.body.appendChild(tempInput)
+    // Create a temporary input element
+    const tempInput = document.createElement("input");
+    tempInput.value = url;
+    document.body.appendChild(tempInput);
 
-      // Select and copy the URL
-      tempInput.select()
-      document.execCommand("copy")
+    // Select and copy the URL
+    tempInput.select();
+    document.execCommand("copy");
 
-      // Remove the temporary input
-      document.body.removeChild(tempInput)
+    // Remove the temporary input
+    document.body.removeChild(tempInput);
 
-      // Show success message
-      showToast("Link copied to clipboard!")
-    })
-  }
+    // Show success message
+    showToast("Link copied to clipboard!");
+  });
+}
 
   // Registration Modal
   const registerBtn = document.getElementById("registerBtn")
@@ -790,6 +794,55 @@ You will receive an email notification once your registration is approved.
       if (searchInput) searchInput.focus()
     }
   })
+
+
+
+  // Set up social media sharing buttons
+function setupSocialSharing() {
+  const eventId = getCurrentEventId();
+  const eventTitle = document.getElementById("eventTitle").textContent;
+  const url = window.location.origin + window.location.pathname + "?event=" + eventId;
+  
+  // Facebook share
+  const facebookBtn = document.querySelector(".social-share .facebook");
+  if (facebookBtn) {
+    facebookBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+    });
+  }
+  
+  // WhatsApp share
+  const whatsappBtn = document.querySelector(".social-share .whatsapp");
+  if (whatsappBtn) {
+    whatsappBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Check out this event: ' + eventTitle + ' ' + url)}`, '_blank');
+    });
+  }
+  
+  // Twitter share
+  const twitterBtn = document.querySelector(".social-share .twitter");
+  if (twitterBtn) {
+    twitterBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out this event: ' + eventTitle)}&url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+    });
+  }
+  
+  // LinkedIn share
+  const linkedinBtn = document.querySelector(".social-share .linkedin");
+  if (linkedinBtn) {
+    linkedinBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+    });
+  }
+}
 
   // Toast Notification
   function showToast(message, title = "") {
@@ -1200,6 +1253,9 @@ You will receive an email notification once your registration is approved.
     updateCountdownForEvent(event.startDate)
     eventDetailView.classList.add("active")
     document.body.style.overflow = "hidden"
+
+    // Add this line to set up social sharing
+  setupSocialSharing();
   }
 
   // Update prizes tab with event prize data
