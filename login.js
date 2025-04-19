@@ -154,37 +154,37 @@ adminSignupForm.addEventListener("submit", async (e) => {
 
   // Department Login Form Submission
   // Department Login Form Submission
-// deptLoginForm.addEventListener("submit", async (e) => {
-//   e.preventDefault();
+deptLoginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-//   const department = deptSelect.value;
-//   const id = deptId.value.trim();
-//   const password = deptPassword.value.trim();
+  const department = deptSelect.value;
+  const id = deptId.value.trim();
+  const password = deptPassword.value.trim();
 
-//   if (!department || !id || !password) {
-//     showMessage(deptLoginMessage, "Please fill in all fields", "error");
-//     return;
-//   }
+  if (!department || !id || !password) {
+    showMessage(deptLoginMessage, "Please fill in all fields", "error");
+    return;
+  }
 
-//   try {
-//     const response = await fetch("https://expensetracker-qppb.onrender.com/api/auth/department/login", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ department, id, password }),
-//     });
-//     const data = await response.json();
+  try {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/auth/department/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ department, id, password }),
+    });
+    const data = await response.json();
 
-//     if (data.success) {
-//       localStorage.setItem("loggedInUser", JSON.stringify(data.user));
-//       showMessage(deptLoginMessage, "Login successful! Redirecting...", "success");
-//       setTimeout(() => showDashboard(), 1000);
-//     } else {
-//       showMessage(deptLoginMessage, data.message, "error");
-//     }
-//   } catch (error) {
-//     showMessage(deptLoginMessage, "Server error", "error");
-//   }
-// });
+    if (data.success) {
+      localStorage.setItem("loggedInUser", JSON.stringify(data.user));
+      showMessage(deptLoginMessage, "Login successful! Redirecting...", "success");
+      setTimeout(() => showDashboard(), 1000);
+    } else {
+      showMessage(deptLoginMessage, data.message, "error");
+    }
+  } catch (error) {
+    showMessage(deptLoginMessage, "Server error", "error");
+  }
+});
 
   // Logout Button
   logoutBtn.addEventListener("click", () => {
@@ -225,36 +225,25 @@ adminSignupForm.addEventListener("submit", async (e) => {
     // Get logged in user
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
-    // Debugging: Log the loggedInUser object
-    console.log("Logged In User:", loggedInUser);
-
-    // Check if loggedInUser exists and has a valid type
-    if (!loggedInUser || !loggedInUser.type) {
-      console.error("Invalid user data. Redirecting to login.");
-      localStorage.removeItem("loggedInUser");
-      window.location.href = "login.html"; // Redirect to login page
-      return;
-    }
-
-    // Redirect based on user type
-    if (loggedInUser.type === "admin") {
-      console.log("Redirecting to admin dashboard...");
-      window.location.href = "admin-dashboard.html"; // Admin dashboard
-      return;
-    }
-
     // If department user, redirect to department dashboard
     if (loggedInUser.type === "department") {
-      console.log("Redirecting to department dashboard...");
-      window.location.href = "department-dashboard.html"; // Department dashboard
+      window.location.href = "department-dashboard.html";
       return;
     }
 
-    // Default case: Show dashboard for other user types
-    console.log("Showing generic dashboard...");
+    // For admin users, redirect to dash.html
+    if (loggedInUser.type === "admin") {
+      window.location.href = "admin-dashboard.html";
+      return;
+    }
+
+    // This code will only run if there's some other user type
+    // Hide all other sections
     userTypeSelection.classList.add("hidden");
     adminForms.classList.add("hidden");
     deptForm.classList.add("hidden");
+
+    // Show dashboard
     dashboard.classList.remove("hidden");
 
     // Update welcome message
@@ -262,7 +251,7 @@ adminSignupForm.addEventListener("submit", async (e) => {
 
     // Display user info
     userInfo.innerHTML = `
-      <p><span>User Type:</span> <span>${loggedInUser.type}</span></p>
+      <p><span>User Type:</span> <span>Administrator</span></p>
       <p><span>Username:</span> <span>${loggedInUser.username}</span></p>
       <p><span>Email:</span> <span>${loggedInUser.email}</span></p>
     `;
