@@ -8,7 +8,8 @@ const nodemailer = require("nodemailer")
 const path = require("path")
 const fs = require("fs")
 const cloudinary = require("cloudinary").v2 // Add Cloudinary
-
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 // Load environment variables
 dotenv.config()
 
@@ -19,18 +20,18 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-const { CloudinaryStorage } = require("multer-storage-cloudinary")
+// const { CloudinaryStorage } = require("multer-storage-cloudinary")
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "event-posters",
-    allowed_formats: ["jpg", "jpeg", "png"],
-    transformation: [{ width: 1080, height: 1350, crop: "limit" }],
+    folder: "event-posters", // Specify the folder in Cloudinary
+    allowed_formats: ["jpg", "jpeg", "png"], // Restrict formats
+    transformation: [{ width: 1080, height: 1350, crop: "limit" }], // Resize images
   },
-})
+});
 
-const upload = multer({ storage }) // ✅ Final one
+const upload = multer({ storage });
 
 
 
@@ -1047,25 +1048,30 @@ const cloudinaryStorage = multer.diskStorage({
 // })
 
 // Helper function to upload file to Cloudinary
-async function uploadToCloudinary(filePath) {
+async function uploadToCloudinary(filePath, folder = "unibux") {
   try {
-    // Upload the file to Cloudinary
+    // Upload the file to Cloudinary with transformations
     const result = await cloudinary.uploader.upload(filePath, {
-      resource_type: "auto", // Automatically detect resource type
-      folder: "unibux", // Store in a specific folder in Cloudinary
-    })
+      resource_type: "image", // Ensure it's an image
+      folder: folder, // Specify the folder
+      transformation: [
+        { width: 1080, height: 1350, crop: "limit" }, // Resize to specific dimensions
+      ],
+    });
 
     // Remove the temporary file after upload
-    fs.unlinkSync(filePath)
+    fs.unlinkSync(filePath);
 
-    return result.secure_url
+    return result.secure_url;
   } catch (error) {
-    console.error("Error uploading to Cloudinary:", error)
+    console.error("Error uploading to Cloudinary:", error.message);
+
     // Remove the temporary file if upload fails
     if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath)
+      fs.unlinkSync(filePath);
     }
-    throw error
+
+    throw new Error("Failed to upload to Cloudinary. Please check your Cloudinary credentials or file format.");
   }
 }
 
@@ -2355,7 +2361,7 @@ const insertDefaultAccounts = async () => {
 }
 
 // Add this route to server.js
-app.post("/api/upload-image", upload.single('image'), async (req, res) => {
+app.post("/api/upload-image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No file uploaded" });
@@ -2373,7 +2379,7 @@ app.post("/api/upload-image", upload.single('image'), async (req, res) => {
     res.json({
       success: true,
       url: result.secure_url,
-      public_id: result.public_id
+      public_id: result.public_id,
     });
   } catch (error) {
     console.error("Error uploading to Cloudinary:", error);

@@ -1131,24 +1131,36 @@ function toggleDLHours() {
 
 // Handle poster upload
 function handlePosterUpload(e) {
-  const file = e.target.files[0]
-  const preview = document.getElementById("poster-preview")
+  const file = e.target.files[0];
+  const preview = document.getElementById("poster-preview");
 
   if (file) {
-    // Store the file for later upload to Cloudinary
-    window.posterFileToUpload = file
-
-    // Still show preview locally
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      preview.style.backgroundImage = `url(${e.target.result})`
-      preview.innerHTML = ""
+    // Validate file type and size
+    const allowedTypes = ["image/jpeg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      showToast("Error", "Unsupported file type. Only JPG and PNG are allowed.", "error");
+      return;
     }
-    reader.readAsDataURL(file)
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      showToast("Error", "File size exceeds 5MB limit.", "error");
+      return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      preview.style.backgroundImage = `url(${e.target.result})`;
+      preview.innerHTML = ""; // Clear any old content
+    };
+    reader.readAsDataURL(file);
+
+    // Store the file for later upload
+    window.posterFileToUpload = file;
   } else {
-    window.posterFileToUpload = null
-    preview.style.backgroundImage = ""
-    preview.innerHTML = '<i class="fas fa-image"></i><span>No image selected</span>'
+    window.posterFileToUpload = null;
+    preview.style.backgroundImage = "";
+    preview.innerHTML = '<i class="fas fa-image"></i><span>No image selected</span>';
   }
 }
 
@@ -1263,54 +1275,78 @@ function switchTab(tabId, tabContainer) {
 
 // Create event - Modified to save to MongoDB
 async function createEvent() {
-  const token = localStorage.getItem("authToken")
-  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
+  const token = localStorage.getItem("authToken");
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
 
-  const formData = new FormData()
+  if (!loggedInClub || !token) {
+    showToast("Error", "Authentication error. Please log in again.", "error");
+    return;
+  }
+
+  const formData = new FormData();
 
   // Poster upload
   if (window.posterFileToUpload) {
-    formData.append("poster", window.posterFileToUpload)
+    formData.append("poster", window.posterFileToUpload);
   }
 
   // Basic fields
-  formData.append("clubId", loggedInClub.id)
-  formData.append("name", document.getElementById("event-name").value.trim())
-  formData.append("description", document.getElementById("event-description").value.trim())
-  formData.append("startDate", document.getElementById("event-start-date").value)
-  formData.append("endDate", document.getElementById("event-end-date").value)
-  formData.append("startTime", document.getElementById("event-start-time").value)
-  formData.append("endTime", document.getElementById("event-end-time").value)
-  formData.append("venue", document.getElementById("event-venue").value.trim())
-  formData.append("teams", document.getElementById("event-teams").value)
-  formData.append("teamMin", document.getElementById("event-team-min")?.value || 1)
-  formData.append("teamMax", document.getElementById("event-team-max")?.value || 5)
-  formData.append("about", document.getElementById("event-about")?.value.trim() || "")
-  formData.append("theme", document.getElementById("event-theme")?.value.trim() || "")
+  const name = document.getElementById("event-name").value.trim();
+  const description = document.getElementById("event-description").value.trim();
+  const startDate = document.getElementById("event-start-date").value;
+  const endDate = document.getElementById("event-end-date").value;
+  const startTime = document.getElementById("event-start-time").value;
+  const endTime = document.getElementById("event-end-time").value;
+  const venue = document.getElementById("event-venue").value.trim();
+
+  // Validate required fields
+  if (!name || !description || !startDate || !endDate || !startTime || !endTime || !venue) {
+    showToast("Error", "All required fields must be filled.", "error");
+    return;
+  }
+
+  formData.append("clubId", loggedInClub.id);
+  formData.append("name", name);
+  formData.append("description", description);
+  formData.append("startDate", startDate);
+  formData.append("endDate", endDate);
+  formData.append("startTime", startTime);
+  formData.append("endTime", endTime);
+  formData.append("venue", venue);
+
+  formData.append("teams", document.getElementById("event-teams").value);
+  formData.append("teamMin", document.getElementById("event-team-min")?.value || 1);
+  formData.append("teamMax", document.getElementById("event-team-max")?.value || 5);
+  formData.append("about", document.getElementById("event-about")?.value.trim() || "");
+  formData.append("theme", document.getElementById("event-theme")?.value.trim() || "");
 
   // DL fields
-  const hasDL = document.getElementById("event-dl").value === "yes"
-  formData.append("hasDL", hasDL)
+  const hasDL = document.getElementById("event-dl").value === "yes";
+  formData.append("hasDL", hasDL);
   if (hasDL) {
-    formData.append("dlType", document.getElementById("dl-type").value)
-    formData.append("dlStartTime", document.getElementById("dl-start-time").value)
-    formData.append("dlEndTime", document.getElementById("dl-end-time").value)
+    formData.append("dlType", document.getElementById("dl-type").value);
+    formData.append("dlStartTime", document.getElementById("dl-start-time").value);
+    formData.append("dlEndTime", document.getElementById("dl-end-time").value);
   }
 
   // What to Expect
-  const expectItems = [...document.querySelectorAll(".expect-input")].map(i => i.value.trim()).filter(Boolean)
-  formData.append("expectItems", JSON.stringify(expectItems))
+  const expectItems = [...document.querySelectorAll(".expect-input")]
+    .map((i) => i.value.trim())
+    .filter(Boolean);
+  formData.append("expectItems", JSON.stringify(expectItems));
 
   // Eligibility
-  const eligibilityCriteria = [...document.querySelectorAll(".eligibility-input")].map(i => i.value.trim()).filter(Boolean)
-  formData.append("eligibilityCriteria", JSON.stringify(eligibilityCriteria))
+  const eligibilityCriteria = [...document.querySelectorAll(".eligibility-input")]
+    .map((i) => i.value.trim())
+    .filter(Boolean);
+  formData.append("eligibilityCriteria", JSON.stringify(eligibilityCriteria));
 
   // Duty Leave
   const dutyLeave = {
     available: document.getElementById("event-duty-leave")?.checked || false,
     days: Number(document.getElementById("event-duty-leave-days")?.value || 0),
-  }
-  formData.append("dutyLeave", JSON.stringify(dutyLeave))
+  };
+  formData.append("dutyLeave", JSON.stringify(dutyLeave));
 
   // Prizes
   const prizes = {
@@ -1328,102 +1364,102 @@ async function createEvent() {
       description: document.getElementById("third-prize-description")?.value.trim() || "",
     },
     special: [],
-    perks: [...document.querySelectorAll(".perk-input")].map(i => i.value.trim()).filter(Boolean)
-  }
+    perks: [...document.querySelectorAll(".perk-input")].map((i) => i.value.trim()).filter(Boolean),
+  };
 
-  document.querySelectorAll(".special-award").forEach(award => {
-    const name = award.querySelector(".award-name")?.value.trim()
+  document.querySelectorAll(".special-award").forEach((award) => {
+    const name = award.querySelector(".award-name")?.value.trim();
     if (name) {
       prizes.special.push({
         name,
         amount: Number(award.querySelector(".award-amount")?.value || 0),
         description: award.querySelector(".award-description")?.value.trim() || "",
-      })
+      });
     }
-  })
-  formData.append("prizes", JSON.stringify(prizes))
+  });
+  formData.append("prizes", JSON.stringify(prizes));
 
   // Sponsors
-  const sponsors = []
-  document.querySelectorAll(".sponsor-item").forEach(sponsor => {
-    const name = sponsor.querySelector(".sponsor-name")?.value.trim()
+  const sponsors = [];
+  document.querySelectorAll(".sponsor-item").forEach((sponsor) => {
+    const name = sponsor.querySelector(".sponsor-name")?.value.trim();
     if (name) {
-      sponsors.push({ name, logo: null }) // Logo will be handled in backend
+      sponsors.push({ name, logo: null }); // Logo will be handled in backend
     }
-  })
-  formData.append("sponsors", JSON.stringify(sponsors))
+  });
+  formData.append("sponsors", JSON.stringify(sponsors));
 
   // Schedule
-  const schedule = []
-  document.querySelectorAll(".schedule-day").forEach(day => {
-    const dayNumber = Number(day.getAttribute("data-day"))
-    const date = day.querySelector(".day-date")?.value
-    const items = []
-    day.querySelectorAll(".schedule-item").forEach(item => {
-      const time = item.querySelector(".item-time")?.value
-      const title = item.querySelector(".item-title")?.value.trim()
-      const description = item.querySelector(".item-description")?.value.trim()
+  const schedule = [];
+  document.querySelectorAll(".schedule-day").forEach((day) => {
+    const dayNumber = Number(day.getAttribute("data-day"));
+    const date = day.querySelector(".day-date")?.value;
+    const items = [];
+    day.querySelectorAll(".schedule-item").forEach((item) => {
+      const time = item.querySelector(".item-time")?.value;
+      const title = item.querySelector(".item-title")?.value.trim();
+      const description = item.querySelector(".item-description")?.value.trim();
       if (time && title) {
-        items.push({ time, title, description })
+        items.push({ time, title, description });
       }
-    })
+    });
     if (date && items.length) {
-      schedule.push({ dayNumber, date, items })
+      schedule.push({ dayNumber, date, items });
     }
-  })
-  formData.append("schedule", JSON.stringify(schedule))
+  });
+  formData.append("schedule", JSON.stringify(schedule));
 
   // FAQs
-  const faqs = []
-  document.querySelectorAll(".faq-item").forEach(faq => {
-    const q = faq.querySelector(".faq-question")?.value.trim()
-    const a = faq.querySelector(".faq-answer")?.value.trim()
-    if (q && a) faqs.push({ question: q, answer: a })
-  })
-  formData.append("faqs", JSON.stringify(faqs))
+  const faqs = [];
+  document.querySelectorAll(".faq-item").forEach((faq) => {
+    const q = faq.querySelector(".faq-question")?.value.trim();
+    const a = faq.querySelector(".faq-answer")?.value.trim();
+    if (q && a) faqs.push({ question: q, answer: a });
+  });
+  formData.append("faqs", JSON.stringify(faqs));
 
   // Expenses
-  const expenses = []
-  document.querySelectorAll(".expense-item").forEach(item => {
-    const category = item.querySelector(".expense-category")?.value
-    const description = item.querySelector(".expense-description")?.value.trim()
-    const amount = Number(item.querySelector(".expense-amount")?.value || 0)
+  const expenses = [];
+  document.querySelectorAll(".expense-item").forEach((item) => {
+    const category = item.querySelector(".expense-category")?.value;
+    const description = item.querySelector(".expense-description")?.value.trim();
+    const amount = Number(item.querySelector(".expense-amount")?.value || 0);
     if (description && amount > 0) {
-      expenses.push({ category, description, amount })
+      expenses.push({ category, description, amount });
     }
-  })
-  formData.append("expenses", JSON.stringify(expenses))
+  });
+  formData.append("expenses", JSON.stringify(expenses));
 
-  const totalBudget = expenses.reduce((sum, e) => sum + e.amount, 0)
-  formData.append("totalBudget", totalBudget)
+  const totalBudget = expenses.reduce((sum, e) => sum + e.amount, 0);
+  formData.append("totalBudget", totalBudget);
 
-  // Final API call
+  // API Call
   try {
-    showLoader()
+    showLoader();
     const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events", {
       method: "POST",
       headers: {
         "x-auth-token": token,
       },
       body: formData,
-    })
+    });
 
-    const result = await response.json()
-    hideLoader()
+    const result = await response.json();
+    hideLoader();
 
     if (result.success) {
-      showToast("Event Created", `${result.event.name} has been created successfully!`, "success")
-      closeAllModals()
-      loadEvents()
-      loadDashboardData()
-      loadBudgetData()
+      showToast("Event Created", `${result.event.name} has been created successfully!`, "success");
+      closeAllModals();
+      loadEvents();
+      loadDashboardData();
+      loadBudgetData();
     } else {
-      showToast("Error", result.message || "Failed to create event", "error")
+      showToast("Error", result.message || "Failed to create event", "error");
     }
   } catch (err) {
-    hideLoader()
-    console.error("❌ Error creating event:", err)
-    showToast("Error", "Failed to connect to server", "error")
+    hideLoader();
+    console.error("❌ Error creating event:", err);
+    showToast("Error", "Failed to connect to server", "error");
   }
 }
 
@@ -1453,48 +1489,78 @@ async function fetchEvents() {
 
 // Load dashboard data - Modified to use MongoDB
 async function loadDashboardData() {
-  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"))
-  const expenses = JSON.parse(localStorage.getItem("expenses")) || []
-  const teams = JSON.parse(localStorage.getItem("teams")) || []
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
+  const token = localStorage.getItem("authToken");
 
-  // Fetch events from MongoDB
-  const events = await fetchEvents()
+  if (!loggedInClub || !token) {
+    showToast("Error", "Authentication error. Please log in again.", "error");
+    return;
+  }
 
-  // Filter data for the logged-in club
-  const clubEvents = events.filter((event) => event.clubId === loggedInClub.id)
-  const clubTeams = teams.filter((team) => {
-    const event = events.find((e) => e._id === team.eventId || e.id === team.eventId)
-    return event && event.clubId === loggedInClub.id
-  })
-  const clubExpenses = expenses.filter((expense) => expense.clubId === loggedInClub.id)
+  try {
+    showLoader(); // Show loader while fetching data
 
-  // Calculate total budget
-  const totalBudget = clubExpenses.reduce((total, expense) => total + expense.amount, 0)
+    // Fetch events and expenses from MongoDB
+    const [eventsResponse, expensesResponse, teamsResponse] = await Promise.all([
+      fetch(`/api/club-events?clubId=${loggedInClub.id}`, {
+        headers: { "x-auth-token": token },
+      }),
+      fetch(`/api/expenses?clubId=${loggedInClub.id}`, {
+        headers: { "x-auth-token": token },
+      }),
+      fetch(`/api/team-registrations?clubId=${loggedInClub.id}`, {
+        headers: { "x-auth-token": token },
+      }),
+    ]);
 
-  // Calculate upcoming events
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const upcomingEvents = clubEvents.filter((event) => {
-    const eventStartDate = new Date(event.startDate)
-    return eventStartDate >= today
-  })
+    const [events, expenses, teams] = await Promise.all([
+      eventsResponse.json(),
+      expensesResponse.json(),
+      teamsResponse.json(),
+    ]);
 
-  // Update dashboard stats with animation
-  animateCounter("total-events", clubEvents.length)
-  animateCounter("total-budget", totalBudget, "₹")
-  animateCounter("total-registrations", clubTeams.length)
-  animateCounter("upcoming-events", upcomingEvents.length)
+    if (!events.success || !expenses.success || !teams.success) {
+      throw new Error("Failed to fetch one or more resources.");
+    }
 
-  // Render budget chart
-  renderBudgetChart(clubExpenses)
+    // Filter data for the logged-in club
+    const clubEvents = events.events;
+    const clubTeams = teams.teamRegistrations;
+    const clubExpenses = expenses.expenses;
 
-  // Render timeline chart
-  renderTimelineChart(clubEvents)
+    // Calculate total budget
+    const totalBudget = clubExpenses.reduce((total, expense) => total + (expense.amount || 0), 0);
 
-  // Render upcoming events
-  renderUpcomingEvents(upcomingEvents)
+    // Calculate upcoming events
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcomingEvents = clubEvents.filter((event) => {
+      const eventStartDate = new Date(event.startDate);
+      return eventStartDate >= today;
+    });
+
+    // Update dashboard stats with animations
+    animateCounter("total-events", clubEvents.length);
+    animateCounter("total-budget", totalBudget, "₹");
+    animateCounter("total-registrations", clubTeams.length);
+    animateCounter("upcoming-events", upcomingEvents.length);
+
+    // Render budget chart
+    renderBudgetChart(clubExpenses);
+
+    // Render timeline chart
+    renderTimelineChart(clubEvents);
+
+    // Render upcoming events
+    renderUpcomingEvents(upcomingEvents);
+
+    hideLoader(); // Hide loader once data is fetched
+  } catch (error) {
+    hideLoader(); // Ensure loader is hidden in case of an error
+    console.error("Error loading dashboard data:", error);
+    showToast("Error", "Failed to load dashboard data. Please try again.", "error");
+  }
 }
-
 // Animate counter
 function animateCounter(elementId, targetValue, prefix = "") {
   const element = document.getElementById(elementId)
