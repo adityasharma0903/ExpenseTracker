@@ -2208,3 +2208,12 @@ async function initializeDashboard() {
   console.log(data);
 }
 
+const mobileHeaderToggle = document.getElementById("mobileHeaderToggle");
+const sidebar = document.querySelector(".sidebar");
+const mainContent = document.querySelector(".main-content");
+
+mobileHeaderToggle.addEventListener("click", () => {
+  sidebar.classList.toggle("collapsed");
+  mainContent.classList.toggle("expanded");
+});
+
