@@ -5,34 +5,20 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
 const nodemailer = require("nodemailer")
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const multer = require("multer")
+const path = require("path")
+const fs = require("fs")
+const cloudinary = require("cloudinary").v2 // Add Cloudinary
 
+// Load environment variables
+dotenv.config()
 
-// Cloudinary config
+// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Cloudinary storage
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'unibux_uploads', // Optional: name your folder in Cloudinary
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [{ width: 800, crop: 'limit' }],
-  },
-});
-
-const uploadCloud = multer({ storage: cloudinaryStorage });
-
-// Load environment variables
-dotenv.config()
+})
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -54,33 +40,19 @@ mongoose
 // Middleware
 // Configure CORS
 const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = ["https://unibux.vercel.app", "http://localhost:3000"];
-    if (allowedOrigins.includes(origin) || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "x-auth-token"],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
+  origin: [
+    "https://unibux.vercel.app", // Your frontend URL
+    "http://localhost:3000", // Local development URL (if needed)
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+}
 
 // Apply CORS middleware with options
 app.use(cors(corsOptions))
 app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ extended: true, limit: "50mb" }))
-
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://unibux.vercel.app");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, x-auth-token");
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
-});
 
 // ==================== SCHEMAS & MODELS ====================
 
@@ -843,13 +815,13 @@ const validateTeamRegistration = (req, res, next) => {
 
 // Modify the existing sendApprovalEmail function to better handle attachments
 const sendApprovalEmail = async (team, customEmail = null) => {
-  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED");
+  console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED")
 
   try {
     // ✅ 1. Check email credentials
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Email credentials missing!");
-      throw new Error("Email credentials not configured");
+      console.log("⚠️ Email credentials missing!")
+      throw new Error("Email credentials not configured")
     }
 
     // ✅ 2. Setup transporter
@@ -860,27 +832,27 @@ const sendApprovalEmail = async (team, customEmail = null) => {
         pass: process.env.EMAIL_PASS,
       },
       debug: true,
-    });
+    })
 
-    await transporter.verify();
-    console.log("✅ Transporter verified");
+    await transporter.verify()
+    console.log("✅ Transporter verified")
 
     // ✅ 3. Fetch event details
-    let eventName = "your registered event";
-    let clubName = "your club";
+    let eventName = "your registered event"
+    let clubName = "your club"
 
     try {
-      const event = await ClubEvent.findById(team.eventId);
-      console.log("🔍 Fetched Event:", event ? event.name : "Not found");
+      const event = await ClubEvent.findById(team.eventId)
+      console.log("🔍 Fetched Event:", event ? event.name : "Not found")
 
       if (event) {
-        eventName = event.name || eventName;
-        clubName = event.clubId || clubName;
+        eventName = event.name || eventName
+        clubName = event.clubId || clubName
       } else {
-        console.warn("⚠️ No event found for eventId:", team.eventId);
+        console.warn("⚠️ No event found for eventId:", team.eventId)
       }
     } catch (err) {
-      console.error("❌ Error fetching event:", err.message);
+      console.error("❌ Error fetching event:", err.message)
     }
 
     // ✅ 4. Convert club ID to full name
@@ -892,14 +864,14 @@ const sendApprovalEmail = async (team, customEmail = null) => {
       explore: "Explore Labs",
       ceed: "CEED",
       // Add more if needed
-    };
+    }
 
-    const readableClub = clubMap[clubName] || clubName;
+    const readableClub = clubMap[clubName] || clubName
 
     // ✅ 5. Loop through members and send email
     for (const member of team.members) {
       // Determine email content - use custom if provided, otherwise default
-      let emailSubject = "🎉 Your Team is Approved!";
+      let emailSubject = "🎉 Your Team is Approved!"
       let emailHtml = `
         <div style="font-family: Arial, sans-serif; padding: 15px;">
           <h2 style="color: #28a745;">Hi ${member.name},</h2>
@@ -912,18 +884,18 @@ const sendApprovalEmail = async (team, customEmail = null) => {
           <br/>
           <p style="font-size: 16px;">Wishing you all the best,<br><b>${eventName} Team</b></p>
         </div>
-      `;
+      `
 
       // If custom email content is provided, use it
       if (customEmail) {
-        if (customEmail.subject) emailSubject = customEmail.subject;
+        if (customEmail.subject) emailSubject = customEmail.subject
         if (customEmail.content) {
           // Convert plain text to HTML with proper line breaks
           emailHtml = `
             <div style="font-family: Arial, sans-serif; padding: 15px;">
               ${customEmail.content.replace(/\n/g, "<br>")}
             </div>
-          `;
+          `
         }
       }
 
@@ -932,34 +904,30 @@ const sendApprovalEmail = async (team, customEmail = null) => {
         to: member.email,
         subject: emailSubject,
         html: emailHtml,
-        attachments: req.files.map(file => ({
-          filename: file.originalname,
-          path: file.path, // Cloudinary URL
-        })),
-      };
+      }
 
       // Add attachments if provided
       if (customEmail && customEmail.attachments && customEmail.attachments.length > 0) {
-        console.log(`📎 Adding ${customEmail.attachments.length} attachments to email`);
-        mailOptions.attachments = customEmail.attachments;
+        console.log(`📎 Adding ${customEmail.attachments.length} attachments to email`)
+        mailOptions.attachments = customEmail.attachments
       }
 
-      console.log(`📧 Sending approval email to: ${member.email}`);
+      console.log(`📧 Sending approval email to: ${member.email}`)
       try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`);
+        const info = await transporter.sendMail(mailOptions)
+        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`)
       } catch (sendError) {
-        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message);
+        console.error(`❌ Failed to send email to ${member.email}:`, sendError.message)
       }
     }
 
-    console.log("✅ All approval emails sent successfully");
-    return true;
+    console.log("✅ All approval emails sent successfully")
+    return true
   } catch (error) {
-    console.error("❌ ERROR in sendApprovalEmail function:", error);
-    return false;
+    console.error("❌ ERROR in sendApprovalEmail function:", error)
+    return false
   }
-};
+}
 
 // ==================== ROUTES ====================
 
@@ -1044,65 +1012,143 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
   }
 })
 
-// Configure multer for file uploads
-const upload = multer({ 
+// Configure Cloudinary storage for multer
+const cloudinaryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, "uploads")
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
+    }
+    cb(null, uploadDir)
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname)
+  },
+})
+
+const upload = multer({
   storage: cloudinaryStorage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+})
+
+// Helper function to upload file to Cloudinary
+async function uploadToCloudinary(filePath) {
+  try {
+    // Upload the file to Cloudinary
+    const result = await cloudinary.uploader.upload(filePath, {
+      resource_type: "auto", // Automatically detect resource type
+      folder: "unibux", // Store in a specific folder in Cloudinary
+    })
+
+    // Remove the temporary file after upload
+    fs.unlinkSync(filePath)
+
+    return result.secure_url
+  } catch (error) {
+    console.error("Error uploading to Cloudinary:", error)
+    // Remove the temporary file if upload fails
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
+    }
+    throw error
+  }
+}
 
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", uploadCloud.array('attachments', 5), async (req, res) => {
-  console.log("📧 CUSTOM EMAIL ROUTE CALLED for ID:", req.params.id);
+app.post("/api/team-registrations/:id/custom-email", upload.array("attachments", 5), async (req, res) => {
+  console.log("📧 CUSTOM EMAIL ROUTE CALLED for ID:", req.params.id)
 
   try {
-    const teamId = req.params.id;
-    const { subject, content } = req.body;
+    const teamId = req.params.id
+    const { subject, content } = req.body
 
-    // Fetch team info
-    const team = await TeamRegistration.findById(teamId);
+    console.log("📧 Email Subject:", subject)
+    console.log("📧 Email Content:", content)
+
+    // Get team data
+    const team = await TeamRegistration.findById(teamId)
     if (!team) {
-      return res.status(404).json({ success: false, message: "Team not found" });
+      console.log("❌ Team not found!")
+      return res.status(404).json({
+        success: false,
+        message: "Team not found",
+      })
     }
 
-    // Process uploaded files from Cloudinary
-    let attachments = [];
+    console.log("✅ Team found:", team.teamName)
+
+    // Process file uploads if any
+    let attachments = []
     if (req.files && req.files.length > 0) {
-      attachments = req.files.map(file => ({
-        filename: file.originalname,
-        path: file.path  // 🔥 Cloudinary URL
-      }));
+      console.log(`📎 Processing ${req.files.length} attachments`)
+
+      attachments = await Promise.all(
+        req.files.map(async (file) => {
+          // Upload file to Cloudinary
+          const cloudinaryUrl = await uploadToCloudinary(file.path)
+
+          return {
+            filename: file.originalname,
+            path: cloudinaryUrl,
+          }
+        }),
+      )
+
+      console.log("📎 Attachments processed:", attachments)
     }
 
-    // Update team status
-    team.status = "approved";
-    await team.save();
+    // Update team status to approved
+    team.status = "approved"
+    await team.save()
+    console.log("✅ Team status updated to approved")
 
-    const leader = team.members.find(m => m.isLeader);
+    // Create approved team record
+    const leader = team.members.find((m) => m.isLeader)
     const approvedTeam = new ApprovedTeam({
       eventId: team.eventId,
       teamName: team.teamName,
       leaderName: leader ? leader.name : "",
       members: team.members,
       projectIdea: team.projectIdea,
-      techStack: team.techStack
-    });
+      techStack: team.techStack,
+    })
 
-    await approvedTeam.save();
+    await approvedTeam.save()
+    console.log("✅ Approved team saved to database")
 
-    // Prepare email content
-    const customEmail = { subject, content, attachments };
-    const emailResult = await sendApprovalEmail(approvedTeam, customEmail);
+    // Send custom email
+    const customEmail = {
+      subject,
+      content,
+      attachments,
+    }
+
+    console.log("📧 Sending custom email with attachments")
+    const emailResult = await sendApprovalEmail(approvedTeam, customEmail)
 
     if (emailResult) {
-      res.json({ success: true, message: "Team approved and custom email sent" });
+      console.log("✅ Custom email sent successfully")
+      res.json({
+        success: true,
+        message: "Team approved and custom email sent",
+      })
     } else {
-      res.status(500).json({ success: false, message: "Failed to send email" });
+      console.log("⚠️ Failed to send custom email")
+      res.status(500).json({
+        success: false,
+        message: "Team approved but failed to send custom email",
+      })
     }
   } catch (error) {
-    console.error("❌ ERROR in custom email route:", error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error("❌ ERROR in custom email route:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error: " + error.message,
+      error: error.toString(),
+    })
   }
-});
+})
 
 // Test email route
 app.get("/api/test-email", async (req, res) => {
@@ -1161,6 +1207,11 @@ app.get("/api/check-env", (req, res) => {
     emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0,
     port: process.env.PORT || 5000,
     nodeEnv: process.env.NODE_ENV || "development",
+    cloudinaryConfigured: !!(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    ),
   })
 })
 
@@ -1802,33 +1853,82 @@ app.put("/api/events/:id/reject", adminAuth, async (req, res) => {
 // @route   POST api/club-events
 // @desc    Create a new club event
 // @access  Public
-app.post("/api/club-events", async (req, res) => {
+app.post("/api/club-events", upload.single("poster"), async (req, res) => {
   try {
-    // 👇 Upload poster to Cloudinary if it's base64
-    if (req.body.poster && req.body.poster.startsWith('data:image')) {
-      const uploadResult = await cloudinary.uploader.upload(req.body.poster, {
-        folder: 'unibux_posters',
-      });
-      req.body.poster = uploadResult.secure_url;
+    // Get token from header
+    const token = req.header("x-auth-token")
+
+    // Log the token for debugging
+    console.log("Token received:", token)
+
+    // Validate the event data
+    const { clubId, name, description, startDate, endDate, startTime, endTime, venue } = req.body
+
+    // Check if all required fields are provided
+    if (!clubId || !name || !description || !startDate || !endDate || !startTime || !endTime || !venue) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields",
+      })
     }
 
-    const newEvent = new ClubEvent(req.body);
-    const event = await newEvent.save();
-    console.log("Club event saved:", event);
+    // Create event object from request body
+    const eventData = { ...req.body }
+
+    // Handle poster upload if provided
+    if (req.file) {
+      try {
+        // Upload to Cloudinary
+        const cloudinaryUrl = await uploadToCloudinary(req.file.path)
+        eventData.poster = cloudinaryUrl
+      } catch (uploadError) {
+        console.error("Error uploading poster to Cloudinary:", uploadError)
+        // Continue without poster if upload fails
+      }
+    }
+
+    // Handle sponsor logos if provided in the request body
+    if (eventData.sponsors && Array.isArray(eventData.sponsors)) {
+      for (let i = 0; i < eventData.sponsors.length; i++) {
+        const sponsor = eventData.sponsors[i]
+        if (sponsor.logo && sponsor.logo.startsWith("data:")) {
+          // Convert base64 to file and upload to Cloudinary
+          try {
+            const base64Data = sponsor.logo.split(";base64,").pop()
+            const tempFilePath = path.join(__dirname, "uploads", `sponsor-${Date.now()}-${i}.png`)
+            fs.writeFileSync(tempFilePath, base64Data, { encoding: "base64" })
+
+            const cloudinaryUrl = await uploadToCloudinary(tempFilePath)
+            eventData.sponsors[i].logo = cloudinaryUrl
+          } catch (logoError) {
+            console.error("Error uploading sponsor logo to Cloudinary:", logoError)
+            // Continue without logo if upload fails
+            eventData.sponsors[i].logo = null
+          }
+        }
+      }
+    }
+
+    // Create new event
+    const newEvent = new ClubEvent(eventData)
+
+    // Save event
+    const event = await newEvent.save()
+    console.log("Club event saved:", event)
 
     res.json({
       success: true,
       event,
-    });
+    })
   } catch (error) {
-    console.error("Error creating club event:", error);
+    console.error("Error creating club event:", error)
     res.status(500).json({
       success: false,
       message: "Server error",
       error: error.message,
-    });
+    })
   }
-});
+})
 
 // @route   GET api/club-events
 // @desc    Get all club events
@@ -1861,41 +1961,90 @@ app.get("/api/club-events", async (req, res) => {
 // @route   PUT api/club-events/:id
 // @desc    Update a club event
 // @access  Public
-app.put("/api/club-events/:id", async (req, res) => {
+app.put("/api/club-events/:id", upload.single("poster"), async (req, res) => {
   try {
-    // 👇 Upload poster to Cloudinary if it's base64
-    if (req.body.poster && req.body.poster.startsWith('data:image')) {
-      const uploadResult = await cloudinary.uploader.upload(req.body.poster, {
-        folder: 'unibux_posters',
-      });
-      req.body.poster = uploadResult.secure_url;
+    // Get the existing event
+    const existingEvent = await ClubEvent.findById(req.params.id)
+
+    if (!existingEvent) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      })
     }
 
-    const updatedEvent = await ClubEvent.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true }
-    );
+    // Create update data from request body
+    const updateData = { ...req.body }
+
+    // Handle poster upload if provided
+    if (req.file) {
+      try {
+        // Upload to Cloudinary
+        const cloudinaryUrl = await uploadToCloudinary(req.file.path)
+        updateData.poster = cloudinaryUrl
+      } catch (uploadError) {
+        console.error("Error uploading poster to Cloudinary:", uploadError)
+        // Keep existing poster if upload fails
+      }
+    } else if (req.body.poster && req.body.poster.startsWith("data:")) {
+      // Handle base64 poster in request body
+      try {
+        const base64Data = req.body.poster.split(";base64,").pop()
+        const tempFilePath = path.join(__dirname, "uploads", `poster-${Date.now()}.png`)
+        fs.writeFileSync(tempFilePath, base64Data, { encoding: "base64" })
+
+        const cloudinaryUrl = await uploadToCloudinary(tempFilePath)
+        updateData.poster = cloudinaryUrl
+      } catch (posterError) {
+        console.error("Error uploading poster to Cloudinary:", posterError)
+        // Keep existing poster if upload fails
+      }
+    }
+
+    // Handle sponsor logos if provided in the request body
+    if (updateData.sponsors && Array.isArray(updateData.sponsors)) {
+      for (let i = 0; i < updateData.sponsors.length; i++) {
+        const sponsor = updateData.sponsors[i]
+        if (sponsor.logo && sponsor.logo.startsWith("data:")) {
+          // Convert base64 to file and upload to Cloudinary
+          try {
+            const base64Data = sponsor.logo.split(";base64,").pop()
+            const tempFilePath = path.join(__dirname, "uploads", `sponsor-${Date.now()}-${i}.png`)
+            fs.writeFileSync(tempFilePath, base64Data, { encoding: "base64" })
+
+            const cloudinaryUrl = await uploadToCloudinary(tempFilePath)
+            updateData.sponsors[i].logo = cloudinaryUrl
+          } catch (logoError) {
+            console.error("Error uploading sponsor logo to Cloudinary:", logoError)
+            // Continue without logo if upload fails
+            updateData.sponsors[i].logo = null
+          }
+        }
+      }
+    }
+
+    // Find and update the event
+    const updatedEvent = await ClubEvent.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true })
 
     if (!updatedEvent) {
       return res.status(404).json({
         success: false,
         message: "Event not found",
-      });
+      })
     }
 
     res.json({
       success: true,
       event: updatedEvent,
-    });
+    })
   } catch (error) {
-    console.error("Error updating club event:", error);
+    console.error("Error updating club event:", error)
     res.status(500).json({
       success: false,
       message: "Server error",
-    });
+    })
   }
-});
+})
 
 // @route   DELETE api/club-events/:id
 // @desc    Delete a club event
@@ -2185,6 +2334,33 @@ const insertDefaultAccounts = async () => {
     throw error
   }
 }
+
+// Add this route to server.js
+app.post("/api/upload-image", upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "unibux_posters",
+    });
+
+    // Remove the file from local storage
+    fs.unlinkSync(req.file.path);
+
+    // Return the Cloudinary URL
+    res.json({
+      success: true,
+      url: result.secure_url,
+      public_id: result.public_id
+    });
+  } catch (error) {
+    console.error("Error uploading to Cloudinary:", error);
+    res.status(500).json({ success: false, message: "Failed to upload image" });
+  }
+});
 
 // ==================== SERVER STARTUP ====================
 

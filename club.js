@@ -1135,15 +1135,18 @@ function handlePosterUpload(e) {
   const preview = document.getElementById("poster-preview")
 
   if (file) {
-    const reader = new FileReader()
+    // Store the file for later upload to Cloudinary
+    window.posterFileToUpload = file
 
+    // Still show preview locally
+    const reader = new FileReader()
     reader.onload = (e) => {
       preview.style.backgroundImage = `url(${e.target.result})`
       preview.innerHTML = ""
     }
-
     reader.readAsDataURL(file)
   } else {
+    window.posterFileToUpload = null
     preview.style.backgroundImage = ""
     preview.innerHTML = '<i class="fas fa-image"></i><span>No image selected</span>'
   }
@@ -1277,9 +1280,37 @@ async function createEvent() {
   const dlType = hasDL ? document.getElementById("dl-type").value : null
   const dlStartTime = hasDL && dlType === "specific-hours" ? document.getElementById("dl-start-time").value : null
   const dlEndTime = hasDL && dlType === "specific-hours" ? document.getElementById("dl-end-time").value : null
-  const posterInput = document.getElementById("event-poster")
-  const poster =
-    posterInput.files.length > 0 ? document.getElementById("poster-preview").style.backgroundImage.slice(5, -2) : null
+  let poster = null
+  if (window.posterFileToUpload) {
+    // Create a FormData object to upload to Cloudinary
+    const formData = new FormData()
+    formData.append('file', window.posterFileToUpload)
+    formData.append('upload_preset', 'unibux_posters') // Create this upload preset in your Cloudinary dashboard
+
+    try {
+      showLoader() // Show loader while uploading
+
+      // Upload to Cloudinary
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (data.secure_url) {
+        poster = data.secure_url
+      } else {
+        showToast("Error", "Failed to upload poster image", "error")
+      }
+
+      hideLoader() // Hide loader after upload
+    } catch (error) {
+      console.error("Error uploading to Cloudinary:", error)
+      hideLoader()
+      showToast("Error", "Failed to upload poster image", "error")
+    }
+  }
   const teams = Number.parseInt(document.getElementById("event-teams").value) || 1
 
   // Get overview details
@@ -2531,14 +2562,13 @@ function renderTeamsList(container, teams, statusContext = "all") {
         </ul>
 
         <div class="team-actions">
-          ${
-            team.status === "pending"
-              ? `
+          ${team.status === "pending"
+        ? `
             <button class="approve-team" data-id="${team._id}"><i class="fas fa-check"></i> Approve</button>
             <button class="reject-team" data-id="${team._id}"><i class="fas fa-times"></i> Reject</button>
           `
-              : ""
-          }
+        : ""
+      }
         </div>
       </div>
     `
@@ -4297,7 +4327,7 @@ function openEmailCustomizationModal(team, event, teamId) {
   fileInput.value = "";
 
   // Handle file input change
-  fileInput.addEventListener("change", function() {
+  fileInput.addEventListener("change", function () {
     if (this.files.length > 0) {
       fileNameDisplay.textContent = `${this.files.length} file(s) selected`;
 
@@ -4326,7 +4356,7 @@ function openEmailCustomizationModal(team, event, teamId) {
     try {
       await updateTeamStatus(teamId, "approved");
       showToast("Success", "Team approved with default email", "success");
-      
+
       // Refresh team list
       const eventId = document.getElementById("event-detail-modal").getAttribute("data-event-id");
       loadRegisteredTeams(eventId);
@@ -4357,7 +4387,7 @@ function openEmailCustomizationModal(team, event, teamId) {
       const formData = new FormData();
       formData.append("subject", customSubject);
       formData.append("content", customContent);
-      
+
       // Add all attachment files
       for (let i = 0; i < attachmentFiles.length; i++) {
         formData.append("attachments", attachmentFiles[i]);
@@ -4378,7 +4408,7 @@ function openEmailCustomizationModal(team, event, teamId) {
 
       if (data.success) {
         showToast("Success", "Team approved with custom email", "success");
-        
+
         // Refresh the teams list
         const eventId = document.getElementById("event-detail-modal").getAttribute("data-event-id");
         loadRegisteredTeams(eventId);
