@@ -276,7 +276,7 @@ function setupEventListeners() {
 
     showToast("Budget Updated", `Total budget updated to ₹${totalBudgetValue}`, "success")
   })
-}
+
 
 // Check if user is logged in
 async function checkLoginStatus() {
