@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "login.html"
     return
   }
-
+  setupMobileSidebar()
   // Global data store
   let dashboardData = null
 
@@ -70,24 +70,37 @@ document.addEventListener("DOMContentLoaded", () => {
   // Mobile sidebar functionality
   function setupMobileSidebar() {
     const sidebarToggle = document.getElementById("sidebarToggle")
+    const mobileHeaderToggle = document.getElementById("mobileHeaderToggle")
     const sidebar = document.querySelector(".sidebar")
     const mobileOverlay = document.getElementById("mobileOverlay")
     const mainContent = document.querySelector(".main-content")
   
-    if (!sidebarToggle || !sidebar) return
+    if (!sidebar) return
   
-    // Modified toggle behavior for mobile
-    sidebarToggle.addEventListener("click", () => {
-      if (window.innerWidth <= 576) {
+    // Handle sidebar toggle from within sidebar
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener("click", () => {
+        if (window.innerWidth <= 992) {
+          sidebar.classList.toggle("active")
+          if (mobileOverlay) {
+            mobileOverlay.classList.toggle("active")
+          }
+        } else {
+          sidebar.classList.toggle("collapsed")
+          mainContent.classList.toggle("expanded")
+        }
+      })
+    }
+  
+    // Handle mobile header toggle button
+    if (mobileHeaderToggle) {
+      mobileHeaderToggle.addEventListener("click", () => {
         sidebar.classList.toggle("active")
         if (mobileOverlay) {
           mobileOverlay.classList.toggle("active")
         }
-      } else {
-        sidebar.classList.toggle("collapsed")
-        mainContent.classList.toggle("expanded")
-      }
-    })
+      })
+    }
   
     // Close sidebar when overlay is clicked
     if (mobileOverlay) {
@@ -101,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const navItems = document.querySelectorAll(".nav-item")
     navItems.forEach((item) => {
       item.addEventListener("click", () => {
-        if (window.innerWidth <= 576) {
+        if (window.innerWidth <= 992) {
           sidebar.classList.remove("active")
           if (mobileOverlay) {
             mobileOverlay.classList.remove("active")
@@ -112,7 +125,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
     // Handle window resize
     window.addEventListener("resize", () => {
-      if (window.innerWidth > 576) {
+      if (window.innerWidth > 992) {
+        // Reset to desktop view
         sidebar.classList.remove("active")
         if (mobileOverlay) {
           mobileOverlay.classList.remove("active")
@@ -121,10 +135,10 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  // Call after DOM is loaded
-  document.addEventListener("DOMContentLoaded", function () {
-    setupMobileSidebar();
-  });
+  // // Call after DOM is loaded
+  // document.addEventListener("DOMContentLoaded", function () {
+  //   setupMobileSidebar();
+  // });
 
 
   // Toggle sidebar

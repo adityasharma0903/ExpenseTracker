@@ -1703,15 +1703,120 @@ textarea {
     padding: 0 15px;
     width: calc(100% + 30px);
   }
-  
+
   .data-table th,
   .data-table td {
     white-space: nowrap;
     padding: 10px 12px;
     font-size: 0.9rem;
   }
+
+  /* Improve touch targets for mobile */
+  .action-btn,
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
 }
 
+/* Fix stats grid responsiveness */
+@media (max-width: 992px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Add these styles to control the hamburger icon visibility */
+.sidebar-toggle {
+  display: none; /* Hide by default on desktop */
+}
+
+@media (max-width: 992px) {
+  .sidebar-toggle {
+    display: block; /* Show on screens 992px and below */
+    background: none;
+    border: none;
+    color: var(--gray-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color var(--transition-speed);
+  }
+
+  .sidebar-toggle:hover {
+    color: var(--primary-color);
+  }
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    width: 280px;
+    z-index: 1001;
+    transition: left 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+  }
+
+  .mobile-overlay.active {
+    display: block;
+  }
+}
+
+
+.main-header {
+  position: relative;
+}
+
+.mobile-header-toggle {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .mobile-header-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-right: 15px;
+    color: var(--gray-dark);
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  .mobile-header-toggle:hover {
+    color: var(--primary-color);
+  }
+}
 
 @media (max-width: 992px) {
   .stats-grid {
