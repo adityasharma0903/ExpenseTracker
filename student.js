@@ -1,5 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Profile Dropdown Toggle
+
+  // Check URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const eventIdFromUrl = urlParams.get('event');
+  const action = urlParams.get('action');
+  
+  if (eventIdFromUrl && action === 'view') {
+    // If there's an event ID in the URL with view action, fetch and display that event
+    fetchEventDetails(eventIdFromUrl);
+  }
   const profileDropdownTrigger = document.getElementById("profileDropdownTrigger")
   const profileDropdown = document.getElementById("profileDropdown")
   document.getElementById("prizeFilter").addEventListener("change", applyFilters);
@@ -438,8 +448,8 @@ if (copyLinkBtn) {
 // Get the current event ID
 const eventId = getCurrentEventId();
 // Create the event-specific URL
-const url = window.location.origin + window.location.pathname + "?event=" + eventId;
-    // Create a temporary input element
+// Use this:
+const url = window.location.origin + window.location.pathname + "?event=" + eventId + "&action=view";    // Create a temporary input element
     const tempInput = document.createElement("input");
     tempInput.value = url;
     document.body.appendChild(tempInput);
@@ -657,8 +667,7 @@ const url = window.location.origin + window.location.pathname + "?event=" + even
 function setupSocialSharing() {
   const eventId = getCurrentEventId();
   const eventTitle = document.getElementById("eventTitle").textContent;
-  const url = window.location.origin + window.location.pathname + "?event=" + eventId;
-  
+  const url = window.location.origin + window.location.pathname + "?event=" + eventId + "&action=view";  
   // Facebook share
   const facebookBtn = document.querySelector(".social-share .facebook");
   if (facebookBtn) {
