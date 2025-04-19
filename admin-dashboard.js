@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "login.html"
     return
   }
-  setupMobileSidebar()
+  
   // Global data store
   let dashboardData = null
 
@@ -135,10 +135,10 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  // // Call after DOM is loaded
-  // document.addEventListener("DOMContentLoaded", function () {
-  //   setupMobileSidebar();
-  // });
+  // Call after DOM is loaded
+  document.addEventListener("DOMContentLoaded", function () {
+    setupMobileSidebar();
+  });
 
 
   // Toggle sidebar
