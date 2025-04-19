@@ -19,8 +19,8 @@
   --purple: #7209b7;
   --orange: #f3722c;
 
-  --sidebar-width: 80%;
-  --sidebar-collapsed-width: 80px;
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80%;
   --header-height: 70px;
   --border-radius: 8px;
   --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
