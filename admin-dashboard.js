@@ -67,6 +67,65 @@ document.addEventListener("DOMContentLoaded", () => {
     day: "numeric",
   })
 
+  // Mobile sidebar functionality
+  function setupMobileSidebar() {
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const sidebar = document.querySelector(".sidebar");
+    const mobileOverlay = document.getElementById("mobileOverlay");
+
+    if (!sidebarToggle || !sidebar) return;
+
+    // Modified toggle behavior for mobile
+    sidebarToggle.addEventListener("click", function () {
+      if (window.innerWidth <= 576) {
+        sidebar.classList.toggle("active");
+        if (mobileOverlay) {
+          mobileOverlay.classList.toggle("active");
+        }
+      } else {
+        sidebar.classList.toggle("collapsed");
+        document.querySelector(".main-content").classList.toggle("expanded");
+      }
+    });
+
+    // Close sidebar when overlay is clicked
+    if (mobileOverlay) {
+      mobileOverlay.addEventListener("click", function () {
+        sidebar.classList.remove("active");
+        mobileOverlay.classList.remove("active");
+      });
+    }
+
+    // Close sidebar when nav items are clicked (on mobile)
+    const navItems = document.querySelectorAll(".nav-item");
+    navItems.forEach(item => {
+      item.addEventListener("click", function () {
+        if (window.innerWidth <= 576) {
+          sidebar.classList.remove("active");
+          if (mobileOverlay) {
+            mobileOverlay.classList.remove("active");
+          }
+        }
+      });
+    });
+
+    // Handle window resize
+    window.addEventListener("resize", function () {
+      if (window.innerWidth > 576) {
+        sidebar.classList.remove("active");
+        if (mobileOverlay) {
+          mobileOverlay.classList.remove("active");
+        }
+      }
+    });
+  }
+
+  // Call after DOM is loaded
+  document.addEventListener("DOMContentLoaded", function () {
+    setupMobileSidebar();
+  });
+
+
   // Toggle sidebar
   sidebarToggle.addEventListener("click", () => {
     sidebar.classList.toggle("collapsed")
@@ -118,46 +177,46 @@ document.addEventListener("DOMContentLoaded", () => {
       return [];
     }
   }
-  
+
   async function initializeDashboard() {
     const clubId = localStorage.getItem("clubId");
-  
+
     if (!clubId) {
       console.error("No club ID found in localStorage");
       return;
     }
-  
+
     try {
       const events = await fetchClubData(clubId);
       console.log("Fetched club events:", events);
-  
+
       document.getElementById("total-events").textContent = events.length;
-  
+
       let totalBudget = 0;
       let totalRegistrations = 0;
       let upcomingCount = 0;
-  
+
       const today = new Date();
-  
+
       events.forEach(event => {
         totalBudget += event.totalBudget || 0;
         if (new Date(event.startDate) > today) {
           upcomingCount++;
         }
       });
-  
+
       document.getElementById("total-budget").textContent = `₹${totalBudget}`;
       document.getElementById("total-registrations").textContent = totalRegistrations;
       document.getElementById("upcoming-events").textContent = upcomingCount;
-  
+
     } catch (err) {
       console.error("Dashboard init error:", err);
     }
   }
-  
 
 
-  
+
+
   // View All buttons
   viewAllButtons.forEach((button) => {
     button.addEventListener("click", function () {
@@ -284,9 +343,9 @@ document.addEventListener("DOMContentLoaded", () => {
           "x-auth-token": localStorage.getItem("authToken") || "", // if using JWT
         },
       });
-  
+
       const data = await response.json();
-  
+
       if (data.success && Array.isArray(data.clubData)) {
         return data.clubData;
       } else {
@@ -298,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return [];
     }
   }
-  
+
 
   // async function fetchClubData(clubId) {
   //   try {
@@ -311,14 +370,14 @@ document.addEventListener("DOMContentLoaded", () => {
   //     return [];
   //   }
   // }
-  
+
   async function initializeDashboard() {
     showToast("Loading", "Fetching dashboard data...", "info");
-  
+
     try {
       const data = await fetchAllClubsData();
       dashboardData = data;
-  
+
       updateOverviewStats(data);
       initializeCharts(data);
       updateRecentEventsTable();
@@ -326,16 +385,16 @@ document.addEventListener("DOMContentLoaded", () => {
       updateEventsTable();
       updateExpensesData();
       initializeCalendar(data);
-  
+
       toast.classList.remove("active");
     } catch (err) {
       console.error("Dashboard initialization failed:", err);
       showToast("Error", "Failed to load dashboard data", "error");
     }
   }
-  
-  
-  
+
+
+
 
   // async function fetchClubData(clubId) {
   //   try {
@@ -349,29 +408,29 @@ document.addEventListener("DOMContentLoaded", () => {
   //   }
   // }
 
-  
+
   // async function initializeDashboard() {
   //   const clubId = localStorage.getItem("clubId");
-  
+
   //   if (!clubId) {
   //     console.error("No club ID found in localStorage");
   //     return;
   //   }
-  
+
   //   try {
   //     const events = await fetchClubData(clubId);
-  
+
   //     console.log("Fetched club events:", events);
-  
+
   //     // ✅ Populate stats, chart, table, etc.
   //     document.getElementById("total-events").textContent = events.length;
-  
+
   //     let totalBudget = 0;
   //     let totalRegistrations = 0;
   //     let upcomingCount = 0;
-  
+
   //     const today = new Date();
-  
+
   //     events.forEach(event => {
   //       totalBudget += event.totalBudget || 0;
   //       if (new Date(event.startDate) > today) {
@@ -379,19 +438,19 @@ document.addEventListener("DOMContentLoaded", () => {
   //       }
   //       // TODO: count registrations if available
   //     });
-  
+
   //     document.getElementById("total-budget").textContent = `₹${totalBudget}`;
   //     document.getElementById("total-registrations").textContent = totalRegistrations;
   //     document.getElementById("upcoming-events").textContent = upcomingCount;
-  
+
   //     // TODO: update charts and table with event data
-  
+
   //   } catch (err) {
   //     console.error("Dashboard init error:", err);
   //   }
   // }
-  
-  
+
+
 
   function generateSampleData() {
     // Sample clubs
