@@ -789,31 +789,31 @@ You will receive an email notification once your registration is approved.
       e.preventDefault()
       if (searchInput) searchInput.focus()
     }
-  })
+  });
 
   // Toast Notification
   function showToast(message, title = "") {
     // Create toast element if it doesn't exist
-    let toast = document.querySelector(".toast")
-
+    let toast = document.querySelector(".toast");
+    
     if (!toast) {
-      toast = document.createElement("div")
-      toast.className = "toast"
-      document.body.appendChild(toast)
+      toast = document.createElement("div");
+      toast.className = "toast";
+      document.body.appendChild(toast);
     }
-
+    
     // Set message and show toast
     if (title) {
-      toast.innerHTML = `<strong>${title}</strong>: ${message}`
+      toast.innerHTML = `<strong>${title}</strong>: ${message}`;
     } else {
-      toast.textContent = message
+      toast.textContent = message;
     }
-    toast.classList.add("active")
-
+    toast.classList.add("active");
+    
     // Hide toast after 3 seconds
     setTimeout(() => {
-      toast.classList.remove("active")
-    }, 3000)
+      toast.classList.remove("active");
+    }, 3000);
   }
 
   // Initialize the page
@@ -1004,28 +1004,29 @@ You will receive an email notification once your registration is approved.
     if (!container) return;
   
     container.innerHTML = "";
-  
-    const filtered = window.allEvents.filter((event) => {
+    const events = window.allEvents || [];
+    const filteredEvents = events.filter(event => {
       const hasPrize = !!(event.prizes && (
         event.prizes.pool > 0 ||
         (event.prizes.first && event.prizes.first.amount > 0) ||
         (event.prizes.second && event.prizes.second.amount > 0) ||
         (event.prizes.third && event.prizes.third.amount > 0)
       ));
-  
+      
       const hasDL = !!event.hasDL;
-  
-      const prizeMatch =
-        prizeFilter === "all" ||
-        (prizeFilter === "withPrize" && hasPrize) ||
+      
+      const prizeMatch = 
+        prizeFilter === "all" || 
+        (prizeFilter === "withPrize" && hasPrize) || 
         (prizeFilter === "noPrize" && !hasPrize);
-  
-      const dlMatch =
-        dlFilter === "all" ||
-        (dlFilter === "withDL" && hasDL) ||
+        
+      const dlMatch = 
+        dlFilter === "all" || 
+        (dlFilter === "withDL" && hasDL) || 
         (dlFilter === "noDL" && !hasDL);
-  
+        
       return prizeMatch && dlMatch;
+    
     });
   
     if (filtered.length === 0) {
@@ -1076,28 +1077,34 @@ You will receive an email notification once your registration is approved.
 
   // Fetch event details by ID
   async function fetchEventDetails(eventId) {
-    showLoader("detailLoader")
-
+    showLoader("detailLoader");
+    
     try {
-      const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
-      const data = await response.json()
-
+      const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`);
+      const data = await response.json();
+      
       if (data.success && data.event) {
-        displayEventDetails(data.event)
+        displayEventDetails(data.event);
       } else {
-        const mockEvent = eventData[eventId]
+        // Fallback to mock data if available
+        const mockEvent = eventData[eventId];
         if (mockEvent) {
-          displayEventDetails(mockEvent)
+          displayEventDetails(mockEvent);
+        } else {
+          showToast("Error", "Event not found");
         }
       }
     } catch (error) {
-      console.error("Error fetching event details:", error)
-      const mockEvent = eventData[eventId]
+      console.error("Error fetching event details:", error);
+      // Fallback to mock data
+      const mockEvent = eventData[eventId];
       if (mockEvent) {
-        displayEventDetails(mockEvent)
+        displayEventDetails(mockEvent);
+      } else {
+        showToast("Error", "Failed to load event details");
       }
     } finally {
-      hideLoader("detailLoader")
+      hideLoader("detailLoader");
     }
   }
 

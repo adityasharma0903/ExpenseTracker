@@ -7,7 +7,9 @@ const dotenv = require("dotenv")
 const nodemailer = require("nodemailer")
 const path = require("path")
 const fs = require("fs")
-const cloudinary = require("cloudinary").v2 // Add Cloudinary
+const cloudinary = require("cloudinary").v2
+const multer = require("multer") // Add missing multer import
+const { CloudinaryStorage } = require("multer-storage-cloudinary")
 
 // Load environment variables
 dotenv.config()
@@ -19,21 +21,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-const { CloudinaryStorage } = require("multer-storage-cloudinary")
-
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "event-posters",
-    allowed_formats: ["jpg", "jpeg", "png"],
-    transformation: [{ width: 1080, height: 1350, crop: "limit" }],
-  },
-})
-
-const upload = multer({ storage }) // ✅ Final one
-
-
-
 const app = express()
 const PORT = process.env.PORT || 5000
 const JWT_SECRET =
@@ -43,6 +30,37 @@ const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb+srv://connectrevoliq:supportrevoliq@revoliq.i93q6.mongodb.net/?retryWrites=true&w=majority&appName=Revoliq"
 
+// Configure Cloudinary storage for multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "event-posters",
+    allowed_formats: ["jpg", "jpeg", "png"],
+    transformation: [{ width: 1080, height: 1350, crop: "limit" }],
+  },
+})
+
+// Initialize multer with Cloudinary storage
+const upload = multer({ storage })
+
+// Configure CORS
+const corsOptions = {
+  origin: [
+    "https://unibux.vercel.app",
+    "http://localhost:3000",
+    // Add any other allowed origins
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "x-auth-token"],
+  credentials: true,
+}
+
+// Apply middleware
+app.use(cors(corsOptions))
+app.use(express.json({ limit: "50mb" }))
+app.use(express.urlencoded({ extended: true, limit: "50mb" }))
+
+// Connect to MongoDB
 mongoose
   .connect(MONGODB_URI, {
     useNewUrlParser: true,
@@ -50,23 +68,6 @@ mongoose
   })
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err))
-
-// Middleware
-// Configure CORS
-const corsOptions = {
-  origin: [
-    "https://unibux.vercel.app", // Your frontend URL
-    "http://localhost:3000", // Local development URL (if needed)
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-  allowedHeaders: ["Content-Type", "x-auth-token"], // Allowed request headers
-  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-}
-
-// Apply CORS middleware with options
-app.use(cors(corsOptions))
-app.use(express.json({ limit: "50mb" }))
-app.use(express.urlencoded({ extended: true, limit: "50mb" }))
 
 // ==================== SCHEMAS & MODELS ====================
 
@@ -563,7 +564,7 @@ const auth = (req, res, next) => {
     // This is a simplified approach for the club management system
     try {
       // The token is in base64 format: clubId:timestamp
-      const tokenData = atob(token).split(":")
+      const tokenData = Buffer.from(token, "base64").toString().split(":")
       if (tokenData.length === 2) {
         req.clubId = tokenData[0]
         // Allow the request to proceed with just the club ID
@@ -827,7 +828,7 @@ const validateTeamRegistration = (req, res, next) => {
 
 // ==================== EMAIL FUNCTIONALITY ====================
 
-// Modify the existing sendApprovalEmail function to better handle attachments
+// Improved email sending function
 const sendApprovalEmail = async (team, customEmail = null) => {
   console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED")
 
@@ -1026,8 +1027,8 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
   }
 })
 
-// Configure Cloudinary storage for multer
-const cloudinaryStorage = multer.diskStorage({
+// Configure disk storage for temporary file uploads
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, "uploads")
     // Create directory if it doesn't exist
@@ -1041,22 +1042,25 @@ const cloudinaryStorage = multer.diskStorage({
   },
 })
 
-// const upload = multer({
-//   storage: cloudinaryStorage,
-//   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-// })
+// Create a multer instance for handling file uploads to disk
+const diskUpload = multer({
+  storage: diskStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+})
 
 // Helper function to upload file to Cloudinary
-async function uploadToCloudinary(filePath) {
+async function uploadToCloudinary(filePath, folder = "unibux") {
   try {
     // Upload the file to Cloudinary
     const result = await cloudinary.uploader.upload(filePath, {
       resource_type: "auto", // Automatically detect resource type
-      folder: "unibux", // Store in a specific folder in Cloudinary
+      folder: folder, // Store in a specific folder in Cloudinary
     })
 
     // Remove the temporary file after upload
-    fs.unlinkSync(filePath)
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
+    }
 
     return result.secure_url
   } catch (error) {
@@ -1070,7 +1074,7 @@ async function uploadToCloudinary(filePath) {
 }
 
 // Route to handle custom email with attachments
-app.post("/api/team-registrations/:id/custom-email", upload.array("attachments", 5), async (req, res) => {
+app.post("/api/team-registrations/:id/custom-email", diskUpload.array("attachments", 5), async (req, res) => {
   console.log("📧 CUSTOM EMAIL ROUTE CALLED for ID:", req.params.id)
 
   try {
@@ -1872,16 +1876,7 @@ app.post("/api/club-events", upload.single("poster"), async (req, res) => {
     const token = req.header("x-auth-token")
     console.log("Token received:", token)
 
-    const {
-      clubId,
-      name,
-      description,
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      venue,
-    } = req.body
+    const { clubId, name, description, startDate, endDate, startTime, endTime, venue } = req.body
 
     // Validation
     if (!clubId || !name || !description || !startDate || !endDate || !startTime || !endTime || !venue) {
@@ -1894,39 +1889,40 @@ app.post("/api/club-events", upload.single("poster"), async (req, res) => {
     // Collect event data
     const eventData = { ...req.body }
 
-    // ✅ Upload event poster to Cloudinary
-    if (req.file) {
-      try {
-        const cloudinaryUrl = await uploadToCloudinary(req.file.path)
-        eventData.poster = cloudinaryUrl
-        // Optionally delete local temp file
-        fs.unlinkSync(req.file.path)
-      } catch (uploadError) {
-        console.error("❌ Error uploading poster to Cloudinary:", uploadError)
-        eventData.poster = null
-      }
+    // Parse JSON strings if they exist
+    if (eventData.prizes && typeof eventData.prizes === "string") {
+      eventData.prizes = JSON.parse(eventData.prizes)
+    }
+    if (eventData.schedule && typeof eventData.schedule === "string") {
+      eventData.schedule = JSON.parse(eventData.schedule)
+    }
+    if (eventData.sponsors && typeof eventData.sponsors === "string") {
+      eventData.sponsors = JSON.parse(eventData.sponsors)
+    }
+    if (eventData.faqs && typeof eventData.faqs === "string") {
+      eventData.faqs = JSON.parse(eventData.faqs)
+    }
+    if (eventData.dutyLeave && typeof eventData.dutyLeave === "string") {
+      eventData.dutyLeave = JSON.parse(eventData.dutyLeave)
+    }
+    if (eventData.expectItems && typeof eventData.expectItems === "string") {
+      eventData.expectItems = JSON.parse(eventData.expectItems)
+    }
+    if (eventData.eligibilityCriteria && typeof eventData.eligibilityCriteria === "string") {
+      eventData.eligibilityCriteria = JSON.parse(eventData.eligibilityCriteria)
+    }
+    if (eventData.expenses && typeof eventData.expenses === "string") {
+      eventData.expenses = JSON.parse(eventData.expenses)
     }
 
-    // ✅ Handle sponsor logos (base64)
-    if (eventData.sponsors && Array.isArray(eventData.sponsors)) {
-      for (let i = 0; i < eventData.sponsors.length; i++) {
-        const sponsor = eventData.sponsors[i]
-        if (sponsor.logo && sponsor.logo.startsWith("data:")) {
-          try {
-            const base64Data = sponsor.logo.split(";base64,").pop()
-            const tempFilePath = path.join(__dirname, "uploads", `sponsor-${Date.now()}-${i}.png`)
-            fs.writeFileSync(tempFilePath, base64Data, { encoding: "base64" })
-
-            const logoUrl = await uploadToCloudinary(tempFilePath, "sponsor-logos")
-            eventData.sponsors[i].logo = logoUrl
-
-            // Clean up
-            fs.unlinkSync(tempFilePath)
-          } catch (logoErr) {
-            console.error("❌ Error uploading sponsor logo:", logoErr)
-            eventData.sponsors[i].logo = null
-          }
-        }
+    // ✅ Handle poster upload
+    if (req.file) {
+      try {
+        // The file is already uploaded to Cloudinary by the multer-storage-cloudinary middleware
+        eventData.poster = req.file.path || req.file.secure_url
+        console.log("✅ Poster uploaded to Cloudinary:", eventData.poster)
+      } catch (uploadError) {
+        console.error("❌ Error handling poster upload:", uploadError)
       }
     }
 
@@ -1995,51 +1991,37 @@ app.put("/api/club-events/:id", upload.single("poster"), async (req, res) => {
     // Create update data from request body
     const updateData = { ...req.body }
 
-    // Handle poster upload if provided
-    if (req.file) {
-      try {
-        // Upload to Cloudinary
-        const cloudinaryUrl = await uploadToCloudinary(req.file.path)
-        updateData.poster = cloudinaryUrl
-      } catch (uploadError) {
-        console.error("Error uploading poster to Cloudinary:", uploadError)
-        // Keep existing poster if upload fails
-      }
-    } else if (req.body.poster && req.body.poster.startsWith("data:")) {
-      // Handle base64 poster in request body
-      try {
-        const base64Data = req.body.poster.split(";base64,").pop()
-        const tempFilePath = path.join(__dirname, "uploads", `poster-${Date.now()}.png`)
-        fs.writeFileSync(tempFilePath, base64Data, { encoding: "base64" })
-
-        const cloudinaryUrl = await uploadToCloudinary(tempFilePath)
-        updateData.poster = cloudinaryUrl
-      } catch (posterError) {
-        console.error("Error uploading poster to Cloudinary:", posterError)
-        // Keep existing poster if upload fails
-      }
+    // Parse JSON strings if they exist
+    if (updateData.prizes && typeof updateData.prizes === "string") {
+      updateData.prizes = JSON.parse(updateData.prizes)
+    }
+    if (updateData.schedule && typeof updateData.schedule === "string") {
+      updateData.schedule = JSON.parse(updateData.schedule)
+    }
+    if (updateData.sponsors && typeof updateData.sponsors === "string") {
+      updateData.sponsors = JSON.parse(updateData.sponsors)
+    }
+    if (updateData.faqs && typeof updateData.faqs === "string") {
+      updateData.faqs = JSON.parse(updateData.faqs)
+    }
+    if (updateData.dutyLeave && typeof updateData.dutyLeave === "string") {
+      updateData.dutyLeave = JSON.parse(updateData.dutyLeave)
+    }
+    if (updateData.expectItems && typeof updateData.expectItems === "string") {
+      updateData.expectItems = JSON.parse(updateData.expectItems)
+    }
+    if (updateData.eligibilityCriteria && typeof updateData.eligibilityCriteria === "string") {
+      updateData.eligibilityCriteria = JSON.parse(updateData.eligibilityCriteria)
+    }
+    if (updateData.expenses && typeof updateData.expenses === "string") {
+      updateData.expenses = JSON.parse(updateData.expenses)
     }
 
-    // Handle sponsor logos if provided in the request body
-    if (updateData.sponsors && Array.isArray(updateData.sponsors)) {
-      for (let i = 0; i < updateData.sponsors.length; i++) {
-        const sponsor = updateData.sponsors[i]
-        if (sponsor.logo && sponsor.logo.startsWith("data:")) {
-          // Convert base64 to file and upload to Cloudinary
-          try {
-            const base64Data = sponsor.logo.split(";base64,").pop()
-            const tempFilePath = path.join(__dirname, "uploads", `sponsor-${Date.now()}-${i}.png`)
-            fs.writeFileSync(tempFilePath, base64Data, { encoding: "base64" })
-
-            const cloudinaryUrl = await uploadToCloudinary(tempFilePath)
-            updateData.sponsors[i].logo = cloudinaryUrl
-          } catch (logoError) {
-            console.error("Error uploading sponsor logo to Cloudinary:", logoError)
-            // Continue without logo if upload fails
-            updateData.sponsors[i].logo = null
-          }
-        }
-      }
+    // Handle poster upload if provided
+    if (req.file) {
+      // The file is already uploaded to Cloudinary by the multer-storage-cloudinary middleware
+      updateData.poster = req.file.path || req.file.secure_url
+      console.log("✅ Updated poster uploaded to Cloudinary:", updateData.poster)
     }
 
     // Find and update the event
@@ -2355,31 +2337,31 @@ const insertDefaultAccounts = async () => {
 }
 
 // Add this route to server.js
-app.post("/api/upload-image", upload.single('image'), async (req, res) => {
+app.post("/api/upload-image", diskUpload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
+      return res.status(400).json({ success: false, message: "No file uploaded" })
     }
 
     // Upload to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: "unibux_posters",
-    });
+    })
 
     // Remove the file from local storage
-    fs.unlinkSync(req.file.path);
+    fs.unlinkSync(req.file.path)
 
     // Return the Cloudinary URL
     res.json({
       success: true,
       url: result.secure_url,
-      public_id: result.public_id
-    });
+      public_id: result.public_id,
+    })
   } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
-    res.status(500).json({ success: false, message: "Failed to upload image" });
+    console.error("Error uploading to Cloudinary:", error)
+    res.status(500).json({ success: false, message: "Failed to upload image" })
   }
-});
+})
 
 // ==================== SERVER STARTUP ====================
 
