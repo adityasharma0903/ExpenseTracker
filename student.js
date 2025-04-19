@@ -1,33 +1,142 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const urlParams = new URLSearchParams(window.location.search); // Parse query parameters
+  const eventIdFromUrl = urlParams.get("event"); // Get event ID from the URL
+  const action = urlParams.get("action"); // Optional action (e.g., "view")
+
+  // Check if `eventId` exists in the URL
+  if (eventIdFromUrl && (!action || action === "view")) {
+    // If there's an event ID, fetch and display its details
+    fetchEventDetails(eventIdFromUrl);
+  } else {
+    // Otherwise, initialize the default student dashboard view
+    initializeStudentPage();
+  }
+});
+
+// Function to initialize the student dashboard
+function initializeStudentPage() {
+  const studentDashboard = document.getElementById("studentDashboard");
+  const eventDetailView = document.getElementById("eventDetailView");
+
+  // Show the student dashboard and hide the event detail view
+  if (studentDashboard) studentDashboard.style.display = "block";
+  if (eventDetailView) eventDetailView.style.display = "none";
+}
+
+// Function to fetch event details and display them
+async function fetchEventDetails(eventId) {
+  showLoader("detailLoader"); // Show loader while fetching
+
+  try {
+    // Fetch event details from the API
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`);
+    const data = await response.json();
+
+    if (data.success && data.event) {
+      displayEventDetails(data.event); // Display the event details
+    } else {
+      console.warn(`Event with ID "${eventId}" not found.`);
+      showToast("Error: Event not found");
+      initializeStudentPage(); // Redirect back to the student page if event not found
+    }
+  } catch (error) {
+    console.error("Error fetching event details:", error);
+    showToast("Error: Failed to fetch event details");
+    initializeStudentPage(); // Redirect back to the student page if an error occurs
+  } finally {
+    hideLoader("detailLoader"); // Hide loader after fetching
+  }
+}
+
+// Function to display the event details
+function displayEventDetails(event) {
+  const studentDashboard = document.getElementById("studentDashboard");
+  const eventDetailView = document.getElementById("eventDetailView");
+
+  // Hide the student dashboard and show the event detail view
+  if (studentDashboard) studentDashboard.style.display = "none";
+  if (eventDetailView) {
+    eventDetailView.style.display = "block";
+    eventDetailView.setAttribute("data-event-id", event._id || event.id);
+  }
+
+  // Populate the event detail view with event data
+  const defaultBanner = "https://source.unsplash.com/random/1200x400/?hackathon";
+  const defaultLogo = "https://source.unsplash.com/random/100x100/?tech";
+  const startDate = new Date(event.startDate);
+  const endDate = new Date(event.endDate);
+  const formattedDate = formatDateRange(startDate, endDate);
+
+  document.getElementById("eventBanner").src = event.poster || defaultBanner;
+  document.getElementById("organizerLogo").src = event.organizerLogo || defaultLogo;
+  document.getElementById("organizerName").textContent = event.organizer || "Event Organizer";
+  document.getElementById("eventTitle").textContent = event.name || "Untitled Event";
+  document.getElementById("eventDescription").innerHTML = event.description || "<p>No description available.</p>";
+  document.getElementById("eventDate").textContent = formattedDate || "N/A";
+  document.getElementById("eventTime").textContent = `${event.startTime || "N/A"} - ${event.endTime || "N/A"}`;
+  document.getElementById("eventVenue").textContent = event.venue || "N/A";
+
+  // Update additional details like team size, prizes, etc.
+  document.getElementById("teamSize").textContent =
+    event.teamMin && event.teamMax ? `${event.teamMin}-${event.teamMax} Members` : "N/A";
+  document.getElementById("prizePool").textContent = event.prizes?.pool
+    ? `₹${Number(event.prizes.pool).toLocaleString()}`
+    : "N/A";
+  document.getElementById("dutyLeave").textContent = event.dutyLeave?.available
+    ? `Available (${event.dutyLeave.days} Days)`
+    : "Not Available";
+  document.getElementById("registrationCount").innerHTML =
+    `<i class="fas fa-user-check"></i> ${event.registrationCount || "N/A"}`;
+  document.getElementById("registrationDeadline").innerHTML =
+    `<i class="fas fa-hourglass-half"></i> ${event.registrationDeadline || "Opens Soon"}`;
+
+  // Update tabs (prizes, schedule, FAQ)
+  updatePrizesTab(event.prizes);
+  updateScheduleTab(event.schedule);
+  updateFAQsTab(event.faqs);
+
+  // Set up social sharing
+  setupSocialSharing();
+
+  // Start countdown for the event
+  updateCountdownForEvent(event.startDate);
+}
+
+function initializePage() {
+  // Any other initialization logic, e.g., event listeners for filters, dropdown, etc.
+  console.log("Page initialized.");
+}
+
   // Profile Dropdown Toggle
-  const profileDropdownTrigger = document.getElementById("profileDropdownTrigger")
-  const profileDropdown = document.getElementById("profileDropdown")
+  const profileDropdownTrigger = document.getElementById("profileDropdownTrigger");
+  const profileDropdown = document.getElementById("profileDropdown");
   document.getElementById("prizeFilter").addEventListener("change", applyFilters);
   document.getElementById("dlFilter").addEventListener("change", applyFilters);
 
   function showLoader(id) {
-    const loader = document.getElementById(id)
-    if (loader) loader.style.display = "flex"
+    const loader = document.getElementById(id);
+    if (loader) loader.style.display = "flex";
   }
 
   function hideLoader(id) {
-    const loader = document.getElementById(id)
-    if (loader) loader.style.display = "none"
+    const loader = document.getElementById(id);
+    if (loader) loader.style.display = "none";
   }
 
   if (profileDropdownTrigger && profileDropdown) {
     profileDropdownTrigger.addEventListener("click", (e) => {
-      e.stopPropagation()
-      profileDropdown.classList.toggle("active")
-    })
+      e.stopPropagation();
+      profileDropdown.classList.toggle("active");
+    });
 
     // Close profile dropdown when clicking outside
     document.addEventListener("click", (e) => {
       if (profileDropdown.classList.contains("active") && !profileDropdown.contains(e.target)) {
-        profileDropdown.classList.remove("active")
+        profileDropdown.classList.remove("active");
       }
-    })
+    });
   }
+;
 
   // Event Card Click - Show Event Detail View
   const eventCards = document.querySelectorAll(".event-card")
@@ -430,32 +539,35 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Copy Link Button
-// Copy Link Button
-const copyLinkBtn = document.getElementById("copyLinkBtn");
-if (copyLinkBtn) {
-  copyLinkBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    // Get the current event ID
-const eventId = getCurrentEventId();
-// Create the event-specific URL
-const url = window.location.origin + window.location.pathname + "?event=" + eventId;
-
-    // Create a temporary input element
-    const tempInput = document.createElement("input");
-    tempInput.value = url;
-    document.body.appendChild(tempInput);
-
-    // Select and copy the URL
-    tempInput.select();
-    document.execCommand("copy");
-
-    // Remove the temporary input
-    document.body.removeChild(tempInput);
-
-    // Show success message
-    showToast("Link copied to clipboard!");
-  });
-}
+  const copyLinkBtn = document.getElementById("copyLinkBtn");
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Get the current event ID
+      const eventId = getCurrentEventId();
+      if (!eventId) {
+        console.error("Event ID not found for copy link.");
+        return;
+      }
+      // Create the event-specific URL
+      const url = `${window.location.origin}${window.location.pathname}?event=${eventId}`;
+      
+      // Create a temporary input element
+      const tempInput = document.createElement("input");
+      tempInput.value = url;
+      document.body.appendChild(tempInput);
+  
+      // Select and copy the URL
+      tempInput.select();
+      document.execCommand("copy");
+  
+      // Remove the temporary input
+      document.body.removeChild(tempInput);
+  
+      // Show success message
+      showToast("Link copied to clipboard!");
+    });
+  }
 
   // Registration Modal
   const registerBtn = document.getElementById("registerBtn")
@@ -656,18 +768,18 @@ const url = window.location.origin + window.location.pathname + "?event=" + even
   // Helper function to get current event ID
   function getCurrentEventId() {
     // Try to get from the modal data attribute
-    const modal = document.getElementById("registrationModal")
+    const modal = document.getElementById("registrationModal");
     if (modal && modal.getAttribute("data-event-id")) {
-      return modal.getAttribute("data-event-id")
+      return modal.getAttribute("data-event-id");
     }
-
+  
     // Try to get from the event detail view
-    const eventDetailView = document.getElementById("eventDetailView")
+    const eventDetailView = document.getElementById("eventDetailView");
     if (eventDetailView && eventDetailView.getAttribute("data-event-id")) {
-      return eventDetailView.getAttribute("data-event-id")
+      return eventDetailView.getAttribute("data-event-id");
     }
-
-    return null
+  
+    return null;
   }
 
   // Download Confirmation Button
@@ -798,51 +910,56 @@ You will receive an email notification once your registration is approved.
 
 
   // Set up social media sharing buttons
-function setupSocialSharing() {
-  const eventId = getCurrentEventId();
-  const eventTitle = document.getElementById("eventTitle").textContent;
-  const url = window.location.origin + window.location.pathname + "?event=" + eventId;
+  function setupSocialSharing() {
+    const eventId = getCurrentEventId(); // Event ID le lo
+    if (!eventId) {
+      console.error("Event ID not found for social sharing.");
+      return;
+    }
   
-  // Facebook share
-  const facebookBtn = document.querySelector(".social-share .facebook");
-  if (facebookBtn) {
-    facebookBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
-    });
-  }
+    const eventTitle = document.getElementById("eventTitle")?.textContent || "Event";
+    const url = `${window.location.origin}${window.location.pathname}?event=${eventId}`; // Event-specific URL banao
   
-  // WhatsApp share
-  const whatsappBtn = document.querySelector(".social-share .whatsapp");
-  if (whatsappBtn) {
-    whatsappBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Check out this event: ' + eventTitle + ' ' + url)}`, '_blank');
-    });
-  }
+    // Facebook share
+    const facebookBtn = document.querySelector(".social-share .facebook");
+    if (facebookBtn) {
+      facebookBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+      });
+    }
   
-  // Twitter share
-  const twitterBtn = document.querySelector(".social-share .twitter");
-  if (twitterBtn) {
-    twitterBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out this event: ' + eventTitle)}&url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
-    });
-  }
+    // WhatsApp share
+    const whatsappBtn = document.querySelector(".social-share .whatsapp");
+    if (whatsappBtn) {
+      whatsappBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Check out this event: ' + eventTitle + ' ' + url)}`, '_blank');
+      });
+    }
   
-  // LinkedIn share
-  const linkedinBtn = document.querySelector(".social-share .linkedin");
-  if (linkedinBtn) {
-    linkedinBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
-    });
+    // Twitter share
+    const twitterBtn = document.querySelector(".social-share .twitter");
+    if (twitterBtn) {
+      twitterBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out this event: ' + eventTitle)}&url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+      });
+    }
+  
+    // LinkedIn share
+    const linkedinBtn = document.querySelector(".social-share .linkedin");
+    if (linkedinBtn) {
+      linkedinBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+      });
+    }
   }
-}
 
   // Toast Notification
   function showToast(message, title = "") {
@@ -1129,28 +1246,24 @@ function setupSocialSharing() {
 
   // Fetch event details by ID
   async function fetchEventDetails(eventId) {
-    showLoader("detailLoader")
-
+    showLoader("detailLoader"); // Show loader while fetching
+  
     try {
-      const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`)
-      const data = await response.json()
-
+      // Fetch event details from API
+      const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`);
+      const data = await response.json();
+  
       if (data.success && data.event) {
-        displayEventDetails(data.event)
+        displayEventDetails(data.event); // Display the event details
       } else {
-        const mockEvent = eventData[eventId]
-        if (mockEvent) {
-          displayEventDetails(mockEvent)
-        }
+        console.warn(`Event with ID "${eventId}" not found.`);
+        showToast("Error: Event not found");
       }
     } catch (error) {
-      console.error("Error fetching event details:", error)
-      const mockEvent = eventData[eventId]
-      if (mockEvent) {
-        displayEventDetails(mockEvent)
-      }
+      console.error("Error fetching event details:", error);
+      showToast("Error: Failed to fetch event details");
     } finally {
-      hideLoader("detailLoader")
+      hideLoader("detailLoader"); // Hide loader after fetching
     }
   }
 
@@ -1158,104 +1271,100 @@ function setupSocialSharing() {
 
   // Display event details
   function displayEventDetails(event) {
-    const eventDetailView = document.getElementById("eventDetailView")
-    if (!eventDetailView) return
-
+    const eventDetailView = document.getElementById("eventDetailView");
+    if (!eventDetailView) return;
+  
     // Debug log to see the full event data
-    // console.log("Full event data:", event)
-
+    console.log("Full event data:", event);
+  
     // Set default values for missing fields
-    const defaultBanner = "https://source.unsplash.com/random/1200x400/?hackathon"
-    const defaultLogo = "https://source.unsplash.com/random/100x100/?tech"
-
-    const startDate = new Date(event.startDate)
-    const endDate = new Date(event.endDate)
-    const formattedDate = formatDateRange(startDate, endDate)
-
+    const defaultBanner = "https://source.unsplash.com/random/1200x400/?hackathon";
+    const defaultLogo = "https://source.unsplash.com/random/100x100/?tech";
+  
+    const startDate = new Date(event.startDate);
+    const endDate = new Date(event.endDate);
+    const formattedDate = formatDateRange(startDate, endDate);
+  
     // Store the event ID in the event detail view for later use
-    eventDetailView.setAttribute("data-event-id", event._id || event.id)
-
+    eventDetailView.setAttribute("data-event-id", event._id || event.id);
+  
     // Update event details in the DOM
-    document.getElementById("eventBanner").src = event.poster || defaultBanner
-    document.getElementById("organizerLogo").src = event.organizerLogo || defaultLogo
-    document.getElementById("organizerName").textContent = event.organizer || event.club || "Event Organizer"
-
+    document.getElementById("eventBanner").src = event.poster || defaultBanner;
+    document.getElementById("organizerLogo").src = event.organizerLogo || defaultLogo;
+    document.getElementById("organizerName").textContent = event.organizer || event.club || "Event Organizer";
+  
     // Update event tags
-    const eventTagsContainer = document.getElementById("eventTags")
-    eventTagsContainer.innerHTML = ""
-
-    const tags = [event.department, event.theme, "Technology", "Innovation"]
+    const eventTagsContainer = document.getElementById("eventTags");
+    eventTagsContainer.innerHTML = ""; // Clear existing tags
+  
+    const tags = [event.department, event.theme, "Technology", "Innovation"];
     tags.forEach((tag) => {
       if (tag) {
-        const tagElement = document.createElement("span")
-        tagElement.className = "tag"
-        tagElement.textContent = tag
-        eventTagsContainer.appendChild(tagElement)
+        const tagElement = document.createElement("span");
+        tagElement.className = "tag";
+        tagElement.textContent = tag;
+        eventTagsContainer.appendChild(tagElement);
       }
-    })
-
-    document.getElementById("eventTitle").textContent = event.name || event.title
-
-    // Format description for the HTML structure
-    let description = event.description || event.about || "<p>No description available.</p>"
+    });
+  
+    document.getElementById("eventTitle").textContent = event.name || event.title || "Untitled Event";
+  
+    // Format and update the description
+    let description = event.description || event.about || "<p>No description available.</p>";
     if (event.eligibilityCriteria && event.eligibilityCriteria.length > 0) {
-      description += "<h3>Eligibility Criteria:</h3><ul>"
+      description += "<h3>Eligibility Criteria:</h3><ul>";
       event.eligibilityCriteria.forEach((criteria) => {
-        description += `<li>${criteria}</li>`
-      })
-      description += "</ul>"
+        description += `<li>${criteria}</li>`;
+      });
+      description += "</ul>";
     }
-    document.getElementById("eventDescription").innerHTML = description
-
-    document.getElementById("eventDate").textContent = formattedDate
-    document.getElementById("eventTime").textContent = `${event.startTime || "N/A"} - ${event.endTime || "N/A"}`
-    document.getElementById("eventVenue").textContent = event.venue || "N/A"
-
-    // Team size - display teamMax from MongoDB
+    document.getElementById("eventDescription").innerHTML = description;
+  
+    // Update other event details
+    document.getElementById("eventDate").textContent = formattedDate || "N/A";
+    document.getElementById("eventTime").textContent = `${event.startTime || "N/A"} - ${event.endTime || "N/A"}`;
+    document.getElementById("eventVenue").textContent = event.venue || "N/A";
+  
+    // Team size
     document.getElementById("teamSize").textContent =
-      event.teamMin && event.teamMax ? `${event.teamMin}-${event.teamMax} Members` : "N/A"
-
-    // Prize pool - display actual prize data from MongoDB
+      event.teamMin && event.teamMax ? `${event.teamMin}-${event.teamMax} Members` : "N/A";
+  
+    // Prize pool
     document.getElementById("prizePool").textContent = event.prizes?.pool
       ? `₹${Number(event.prizes.pool).toLocaleString()}`
-      : "N/A"
-
+      : "N/A";
+  
     // Duty leave
-    const dutyLeave = event.dutyLeave?.available ? `Available (${event.dutyLeave.days} Days)` : "Not Available"
-    document.getElementById("dutyLeave").textContent = dutyLeave
-
+    const dutyLeave = event.dutyLeave?.available ? `Available (${event.dutyLeave.days} Days)` : "Not Available";
+    document.getElementById("dutyLeave").textContent = dutyLeave;
+  
     // Registration count
     document.getElementById("registrationCount").innerHTML =
-      `<i class="fas fa-user-check"></i> ${event.registrationCount || "N/A"}`
-
+      `<i class="fas fa-user-check"></i> ${event.registrationCount || "N/A"}`;
+  
     // Registration deadline
     document.getElementById("registrationDeadline").innerHTML =
-      `<i class="fas fa-hourglass-half"></i> ${event.registrationDeadline || "Opens Soon"}`
-
+      `<i class="fas fa-hourglass-half"></i> ${event.registrationDeadline || "Opens Soon"}`;
+  
     // Update modal event titles
-    document.getElementById("modalEventTitle").textContent = event.name || event.title
-    document.getElementById("successEventTitle").textContent = event.name || event.title
-    document.getElementById("confirmEventDate").textContent = formattedDate
-
-    // Update prizes tab with actual prize data
-    updatePrizesTab(event.prizes)
-
-    // Update schedule tab with actual schedule data
-    updateScheduleTab(event.schedule)
-
-    // Update FAQs tab with actual FAQ data
-    updateFAQsTab(event.faqs)
-
+    document.getElementById("modalEventTitle").textContent = event.name || event.title || "Untitled Event";
+    document.getElementById("successEventTitle").textContent = event.name || event.title || "Untitled Event";
+    document.getElementById("confirmEventDate").textContent = formattedDate || "N/A";
+  
+    // Update additional tabs
+    updatePrizesTab(event.prizes); // Prizes tab
+    updateScheduleTab(event.schedule); // Schedule tab
+    updateFAQsTab(event.faqs); // FAQs tab
+  
     // Show event detail view
-    eventDetailView.classList.add("active")
-    document.body.style.overflow = "hidden"
-
-    updateCountdownForEvent(event.startDate)
-    eventDetailView.classList.add("active")
-    document.body.style.overflow = "hidden"
-
-    // Add this line to set up social sharing
-  setupSocialSharing();
+    eventDetailView.classList.add("active");
+    document.body.style.overflow = "hidden";
+  
+    // Update countdown for the event
+    updateCountdownForEvent(event.startDate);
+  
+    // Set up social sharing
+    setupSocialSharing();
   }
 
   // Update prizes tab with event prize data
@@ -1681,4 +1790,47 @@ function setupSocialSharing() {
         console.error("Error fetching team details:", error)
       })
   }
-})
+
+
+  // Define the showLoader function
+function showLoader(id) {
+  const loader = document.getElementById(id);
+  if (loader) {
+    loader.style.display = "flex"; // Show the loader
+  } else {
+    console.warn(`Loader with ID "${id}" not found.`);
+  }
+}
+
+// Define the hideLoader function
+function hideLoader(id) {
+  const loader = document.getElementById(id);
+  if (loader) {
+    loader.style.display = "none"; // Hide the loader
+  } else {
+    console.warn(`Loader with ID "${id}" not found.`);
+  }
+}
+
+// Example usage in fetchAllEvents
+async function fetchAllEvents() {
+  showLoader("eventsLoader"); // Show loader at the start
+
+  try {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/club-events");
+    const data = await response.json();
+
+    if (data.success && Array.isArray(data.events)) {
+      renderEvents(data.events); // Render events
+    } else {
+      console.warn("No events found.");
+      renderMockEvents(); // Fallback to mock events
+    }
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    renderMockEvents(); // Fallback to mock events
+  } finally {
+    hideLoader("eventsLoader"); // Hide loader after fetching
+  }
+}
+
