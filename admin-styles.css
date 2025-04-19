@@ -2126,3 +2126,12 @@ textarea {
 .sidebar.active {
   left: 0; /* Fully open */
 }
+
+/* Ensure sidebar is visible on larger screens */
+@media (min-width: 993px) {
+  .sidebar {
+    left: 0; /* Sidebar should be visible on laptops and desktops */
+    width: var(--sidebar-width); /* Ensure full width */
+    position: fixed;
+  }
+}
