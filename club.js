@@ -2322,25 +2322,6 @@ function openReportTemplateModal(eventId) {
   modal.querySelector(".close-modal").addEventListener("click", () => {
     modal.style.display = "none";
   });
-
-  // Add this to your openEventDetailModal function or wherever you set up the event detail modal
-function setupEventDetailButtons(eventId) {
-  // Add Create Report button if it doesn't exist
-  const eventActions = document.querySelector(".event-detail-actions");
-  if (eventActions) {
-    // Check if the button already exists
-    if (!document.getElementById("btn-create-report")) {
-      const createReportBtn = document.createElement("button");
-      createReportBtn.id = "btn-create-report";
-      createReportBtn.className = "btn-primary-action";
-      createReportBtn.innerHTML = '<i class="fas fa-file-alt"></i> Create Report';
-      createReportBtn.addEventListener("click", () => {
-        openReportTemplateModal(eventId);
-      });
-      eventActions.appendChild(createReportBtn);
-    }
-  }
-}
 }
 
 // Function to handle template upload
@@ -4271,12 +4252,6 @@ document.getElementById("create-event-btn").addEventListener("click", () => {
 function setupDetailModalListeners() {
   // Add your event detail modal listeners here
   console.log("Event ID:", eventId) // Add this to check the value
-
-  // Add this to your setupDetailModalListeners function
-document.getElementById("btn-create-report").addEventListener("click", () => {
-  const eventId = document.getElementById("event-detail-modal").getAttribute("data-event-id");
-  openReportTemplateModal(eventId);
-});
 }
 
 // Fetch events from server
@@ -4430,7 +4405,6 @@ async function loadEvents() {
     hideLoader()
   }
 }
-
 
 // Load budget data
 async function loadBudgetData() {
@@ -4783,88 +4757,5 @@ async function updateTeamStatus(teamId, newStatus, customEmail = null) {
     throw error
   } finally {
     hideLoader() // Always hide loader when operation completes
-  }
-}
-
-
-// PDF Template Functions - Add these to your club.js file
-
-// Function to open the report template modal
-async function uploadAndFillTemplate(eventId) {
-  if (!window.reportTemplateFile) {
-    showToast("Error", "Please select a template file", "error");
-    return;
-  }
-
-  showLoader();
-
-  try {
-    const formData = new FormData();
-    formData.append("template", window.reportTemplateFile);
-
-    const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
-    formData.append("clubId", loggedInClub.id);
-
-    const uploadResponse = await fetch('https://expensetracker-qppb.onrender.com/api/upload-template', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const uploadResult = await uploadResponse.json();
-    if (!uploadResult.success) {
-      throw new Error(uploadResult.message || "Failed to upload template");
-    }
-
-    const token = localStorage.getItem("authToken");
-    const eventResponse = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
-      headers: { "x-auth-token": token },
-    });
-
-    const eventData = await eventResponse.json();
-    if (!eventData.success || !eventData.event) {
-      throw new Error("Failed to fetch event details");
-    }
-
-    const event = eventData.event;
-
-    // Prepare form data to fill the template
-    const fillFormData = {};
-    uploadResult.template.fields.forEach((field) => {
-      const fieldName = field.name;
-      if (fieldName.includes("name") || fieldName.includes("title")) {
-        fillFormData[fieldName] = event.name;
-      } else if (fieldName.includes("desc")) {
-        fillFormData[fieldName] = event.description;
-      } else if (fieldName.includes("date")) {
-        fillFormData[fieldName] = `${new Date(event.startDate).toLocaleDateString()} - ${new Date(event.endDate).toLocaleDateString()}`;
-      } else if (fieldName.includes("time")) {
-        fillFormData[fieldName] = `${event.startTime} - ${event.endTime}`;
-      } else if (fieldName.includes("venue")) {
-        fillFormData[fieldName] = event.venue;
-      } else {
-        fillFormData[fieldName] = ""; // Default value
-      }
-    });
-
-    const fillResponse = await fetch(
-      `https://expensetracker-qppb.onrender.com/api/fill-template/${uploadResult.template.id}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formData: fillFormData }),
-      }
-    );
-
-    const fillResult = await fillResponse.json();
-    if (!fillResult.success) {
-      throw new Error(fillResult.message || "Failed to fill template");
-    }
-
-    window.open(`https://expensetracker-qppb.onrender.com${fillResult.filledPdf.path}`, "_blank");
-  } catch (error) {
-    console.error("Error generating report:", error);
-    showToast("Error", error.message || "Failed to generate report", "error");
-  } finally {
-    hideLoader();
   }
 }
