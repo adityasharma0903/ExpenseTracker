@@ -2325,278 +2325,81 @@ function openReportTemplateModal(eventId) {
 }
 
 // Function to handle template upload
-// Function to handle template upload
 function handleTemplateUpload(e) {
-  const file = e.target.files[0]
-  const preview = document.getElementById("template-preview")
-  const fileNameDisplay = document.querySelector("#report-template-modal .file-name")
-
+  const file = e.target.files[0];
+  const preview = document.getElementById("template-preview");
+  const fileNameDisplay = document.querySelector("#report-template-modal .file-name");
+  
   if (file) {
     // Store the file for later use
-    window.reportTemplateFile = file
-
+    window.reportTemplateFile = file;
+    
     // Update file name display
-    fileNameDisplay.textContent = file.name
-
+    fileNameDisplay.textContent = file.name;
+    
     // Update preview
-    let iconClass = "fa-file-alt"
-    if (file.name.endsWith(".pdf")) {
-      iconClass = "fa-file-pdf"
-    } else if (file.name.endsWith(".docx")) {
-      iconClass = "fa-file-word"
-    } else if (file.name.endsWith(".html") || file.name.endsWith(".htm")) {
-      iconClass = "fa-file-code"
-    } else if (file.name.endsWith(".txt")) {
-      iconClass = "fa-file-text"
-    }
-
     preview.innerHTML = `
-      <i class="fas ${iconClass}"></i>
+      <i class="fas fa-file-${file.name.endsWith('.pdf') ? 'pdf' : 'word'}"></i>
       <span>${file.name}</span>
-    `
-
+    `;
+    
     // Enable create report button
-    document.getElementById("create-report-btn").disabled = false
+    document.getElementById("create-report-btn").disabled = false;
   } else {
-    window.reportTemplateFile = null
-    fileNameDisplay.textContent = "No file chosen"
-    preview.innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>'
-    document.getElementById("create-report-btn").disabled = true
+    window.reportTemplateFile = null;
+    fileNameDisplay.textContent = "No file chosen";
+    preview.innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
+    document.getElementById("create-report-btn").disabled = true;
   }
 }
 
-// Function to generate default report content
-function generateReportContent(event) {
-  const today = new Date()
-  const formattedDate = formatDate(today)
+// Function to generate event report
+async function generateEventReport(eventId) {
+  showLoader();
   
-  return `
-    <div class="report-header">
-      <h1>${event.name} - Event Report</h1>
-      <p>Generated on ${formattedDate}</p>
-    </div>
-    
-    <div class="report-section">
-      <h2>Event Overview</h2>
-      <p><strong>Description:</strong> ${event.description}</p>
-      <p><strong>Date:</strong> ${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}</p>
-      <p><strong>Time:</strong> ${event.startTime} - ${event.endTime}</p>
-      <p><strong>Venue:</strong> ${event.venue}</p>
-      <p><strong>Team Size:</strong> ${event.teamMin} - ${event.teamMax} members</p>
-    </div>
-    
-    <div class="report-section">
-      <h2>Event Details</h2>
-      <p>${event.about || "No additional details provided."}</p>
-      ${event.theme ? `<p><strong>Theme:</strong> ${event.theme}</p>` : ""}
-    </div>
-    
-    <div class="report-section">
-      <h2>Prize Distribution</h2>
-      <p><strong>Total Prize Pool:</strong> ₹${event.prizes?.pool || 0}</p>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>Position</th>
-            <th>Prize Amount</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>First Prize</td>
-            <td>₹${event.prizes?.first?.amount || 0}</td>
-            <td>${event.prizes?.first?.description || "-"}</td>
-          </tr>
-          <tr>
-            <td>Second Prize</td>
-            <td>₹${event.prizes?.second?.amount || 0}</td>
-            <td>${event.prizes?.second?.description || "-"}</td>
-          </tr>
-          <tr>
-            <td>Third Prize</td>
-            <td>₹${event.prizes?.third?.amount || 0}</td>
-            <td>${event.prizes?.third?.description || "-"}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="report-section">
-      <h2>Budget Overview</h2>
-      <p><strong>Total Budget:</strong> ₹${event.totalBudget || 0}</p>
-      
-      ${event.expenses && event.expenses.length > 0 ? `
-        <table>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${event.expenses.map(expense => `
-              <tr>
-                <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
-                <td>${expense.description}</td>
-                <td>₹${expense.amount}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      ` : '<p>No expenses recorded for this event.</p>'}
-    </div>
-    
-    <div class="report-footer">
-      <p>This report was automatically generated by UNIBUX Club Management System.</p>
-      <p>© ${today.getFullYear()} UNIBUX</p>
-    </div>
-  `
-}
-
-function replaceTemplatePlaceholders(template, event, teams = []) {
-  const placeholders = {
-    "{{EVENT_NAME}}": event.name,
-    "{{EVENT_DESCRIPTION}}": event.description,
-    "{{EVENT_START_DATE}}": formatDate(new Date(event.startDate)),
-    "{{EVENT_END_DATE}}": formatDate(new Date(event.endDate)),
-    "{{TEAM_LIST}}": teams.map(team => `<li>${team.teamName} (Leader: ${team.members[0]?.name || "N/A"})</li>`).join(""),
-    // Add more placeholders as needed
-  };
-
-  for (const [placeholder, value] of Object.entries(placeholders)) {
-    template = template.replace(new RegExp(placeholder, "g"), value);
-  }
-
-  return template;
-}
-
-async function generateEventReport(eventId) {
-  const token = localStorage.getItem("authToken");
-
   try {
     // Fetch event details
-    const eventResponse = await fetch(`/api/club-events/${eventId}`, { headers: { "x-auth-token": token } });
-    const { event } = await eventResponse.json();
-
-    // Fetch team registrations
-    const teamResponse = await fetch(`/api/team-registrations?eventId=${eventId}`, { headers: { "x-auth-token": token } });
-    const { teamRegistrations: teams } = await teamResponse.json();
-
-    // Process the template
-    const file = document.getElementById("custom-template-upload").files[0];
-    let templateContent = await processTemplateFile(file, event, teams);
-
-    // Render or download the report
-    const blob = new Blob([templateContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${event.name}-Report.html`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-  } catch (error) {
-    console.error("Error generating report:", error);
-    showToast("Error", "Failed to generate report", "error");
-  }
-}
-
-document.getElementById("generate-report-btn").addEventListener("click", async () => {
-  const templateInput = document.getElementById("pdf-template-upload");
-  if (!templateInput.files[0]) {
-    alert("Please upload a PDF template.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("template", templateInput.files[0]);
-
-  try {
-    const response = await fetch("/api/generate-pdf-report", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to generate report");
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "Event-Report.pdf";
-    a.click();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Error generating report:", error);
-    alert("Failed to generate report.");
-  }
-});
-
-// Function to generate event report
-// Function to generate event report
-async function generateEventReport(eventId) {
-  showLoader()
-
-  try {
-    // Fetch event details
-    const token = localStorage.getItem("authToken")
+    const token = localStorage.getItem("authToken");
     const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
       headers: {
         "x-auth-token": token,
       },
-    })
-
-    const data = await response.json()
-
+    });
+    
+    const data = await response.json();
+    
     if (!data.success || !data.event) {
-      showToast("Error", "Failed to fetch event details", "error")
-      hideLoader()
-      return
+      showToast("Error", "Failed to fetch event details", "error");
+      hideLoader();
+      return;
     }
-
-    const event = data.event
-
+    
+    const event = data.event;
+    
     // Close template modal
-    document.getElementById("report-template-modal").style.display = "none"
-
-    // Check if a template file was uploaded
-    if (window.reportTemplateFile) {
-      // Use the uploaded template
-      const reportContent = await processTemplateFile(window.reportTemplateFile, event)
-
-      // Set report title
-      document.getElementById("report-title").textContent = `${event.name} - Report (Custom Template)`
-
-      // Set report content
-      document.getElementById("report-content").innerHTML = reportContent
-    } else {
-      // Generate default report content
-      const reportContent = generateReportContent(event)
-
-      // Set report title
-      document.getElementById("report-title").textContent = `${event.name} - Report`
-
-      // Set report content
-      document.getElementById("report-content").innerHTML = reportContent
-    }
-
+    document.getElementById("report-template-modal").style.display = "none";
+    
+    // Generate report content
+    const reportContent = generateReportContent(event);
+    
+    // Set report title
+    document.getElementById("report-title").textContent = `${event.name} - Report`;
+    
+    // Set report content
+    document.getElementById("report-content").innerHTML = reportContent;
+    
     // Show report view modal
-    const reportModal = document.getElementById("report-view-modal")
-    reportModal.style.display = "block"
-
+    const reportModal = document.getElementById("report-view-modal");
+    reportModal.style.display = "block";
+    
     // Add event listeners
-    setupReportViewListeners(event)
-
-    hideLoader()
+    setupReportViewListeners(event);
+    
+    hideLoader();
   } catch (error) {
-    console.error("Error generating report:", error)
-    showToast("Error", "Failed to generate report", "error")
-    hideLoader()
+    console.error("Error generating report:", error);
+    showToast("Error", "Failed to generate report", "error");
+    hideLoader();
   }
 }
 
@@ -4601,134 +4404,6 @@ async function loadEvents() {
     console.error("Error loading events:", error)
     hideLoader()
   }
-}
-
-// Function to process the uploaded template file
-async function processTemplateFile(file, event) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = (e) => {
-      try {
-        let templateContent = e.target.result
-
-        // If it's a text file, process it directly
-        if (file.type === "text/plain" || file.type === "text/html") {
-          // Replace placeholders with actual event data
-          templateContent = replaceTemplatePlaceholders(templateContent, event)
-          resolve(templateContent)
-        }
-        // For PDF or DOCX files, we can't directly edit them in the browser
-        // So we'll extract the text and create a new HTML representation
-        else if (
-          file.type === "application/pdf" ||
-          file.type.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-        ) {
-          // Create a message about the template
-          const content = `
-            <div class="template-notice">
-              <h3>Custom Template Applied</h3>
-              <p>Your template "${file.name}" has been applied to this report.</p>
-              <p>The report data has been formatted according to your template structure.</p>
-            </div>
-            ${generateReportContent(event)}
-          `
-          resolve(content)
-        } else {
-          // Unsupported file type
-          showToast("Error", "Unsupported template file type", "error")
-          resolve(generateReportContent(event)) // Fall back to default
-        }
-      } catch (error) {
-        console.error("Error processing template:", error)
-        reject(error)
-      }
-    }
-
-    reader.onerror = () => {
-      reject(new Error("Failed to read template file"))
-    }
-
-    // Read the file as text
-    if (file.type === "text/plain" || file.type === "text/html") {
-      reader.readAsText(file)
-    } else {
-      // For binary files, read as data URL
-      reader.readAsDataURL(file)
-    }
-  })
-}
-
-// Function to replace template placeholders with actual event data
-function replaceTemplatePlaceholders(template, event) {
-  // Define all possible placeholders and their values
-  const placeholders = {
-    "{{EVENT_NAME}}": event.name,
-    "{{EVENT_DESCRIPTION}}": event.description,
-    "{{EVENT_START_DATE}}": formatDate(new Date(event.startDate)),
-    "{{EVENT_END_DATE}}": formatDate(new Date(event.endDate)),
-    "{{EVENT_START_TIME}}": event.startTime,
-    "{{EVENT_END_TIME}}": event.endTime,
-    "{{EVENT_VENUE}}": event.venue,
-    "{{EVENT_TEAM_MIN}}": event.teamMin,
-    "{{EVENT_TEAM_MAX}}": event.teamMax,
-    "{{EVENT_ABOUT}}": event.about || "No additional details provided.",
-    "{{EVENT_THEME}}": event.theme || "No theme specified",
-    "{{EVENT_PRIZE_POOL}}": `₹${event.prizes?.pool || 0}`,
-    "{{EVENT_FIRST_PRIZE}}": `₹${event.prizes?.first?.amount || 0}`,
-    "{{EVENT_FIRST_PRIZE_DESC}}": event.prizes?.first?.description || "",
-    "{{EVENT_SECOND_PRIZE}}": `₹${event.prizes?.second?.amount || 0}`,
-    "{{EVENT_SECOND_PRIZE_DESC}}": event.prizes?.second?.description || "",
-    "{{EVENT_THIRD_PRIZE}}": `₹${event.prizes?.third?.amount || 0}`,
-    "{{EVENT_THIRD_PRIZE_DESC}}": event.prizes?.third?.description || "",
-    "{{EVENT_TOTAL_BUDGET}}": `₹${event.totalBudget || 0}`,
-    "{{GENERATION_DATE}}": formatDate(new Date()),
-    "{{CURRENT_YEAR}}": new Date().getFullYear(),
-  }
-
-  // Replace all placeholders in the template
-  let processedTemplate = template
-  for (const [placeholder, value] of Object.entries(placeholders)) {
-    processedTemplate = processedTemplate.replace(new RegExp(placeholder, "g"), value)
-  }
-
-  // Handle expenses table if the placeholder exists
-  if (processedTemplate.includes("{{EXPENSES_TABLE}}")) {
-    let expensesTable = ""
-
-    if (event.expenses && event.expenses.length > 0) {
-      expensesTable = `
-        <table>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${event.expenses
-              .map(
-                (expense) => `
-              <tr>
-                <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
-                <td>${expense.description}</td>
-                <td>₹${expense.amount}</td>
-              </tr>
-            `,
-              )
-              .join("")}
-          </tbody>
-        </table>
-      `
-    } else {
-      expensesTable = "<p>No expenses recorded for this event.</p>"
-    }
-
-    processedTemplate = processedTemplate.replace("{{EXPENSES_TABLE}}", expensesTable)
-  }
-
-  return processedTemplate
 }
 
 // Load budget data
