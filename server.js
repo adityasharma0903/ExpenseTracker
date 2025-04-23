@@ -2369,13 +2369,11 @@ app.post("/api/upload-image", diskUpload.single("image"), async (req, res) => {
 const uploadsDir = path.join(__dirname, 'uploads');
 const outputDir = path.join(__dirname, 'output');
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+fs.mkdir(uploadsDir, { recursive: true }, (err) => {
+  if (err) throw err;
+  console.log('Uploads directory is ready.');
+});
 
-if (!fs.existsSync(outputDir)) {
-  fs.mkdirSync(outputDir, { recursive: true });
-}
 
 // Configure disk storage for PDF templates
 const pdfStorage = multer.diskStorage({

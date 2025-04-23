@@ -4799,96 +4799,67 @@ async function uploadAndFillTemplate(eventId) {
   showLoader();
 
   try {
-    // First, upload the template
     const formData = new FormData();
     formData.append("template", window.reportTemplateFile);
 
     const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
     formData.append("clubId", loggedInClub.id);
 
-    const uploadResponse = await fetch("https://expensetracker-qppb.onrender.com/api/upload-template", {
-      method: "POST",
+    const uploadResponse = await fetch('https://expensetracker-qppb.onrender.com/api/upload-template', {
+      method: 'POST',
       body: formData,
     });
 
-    // Check if the response is not OK
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text(); // Read the error response as text
-      console.error("Upload error response:", errorText);
-      throw new Error(`Failed to upload template. Status: ${uploadResponse.status} - ${uploadResponse.statusText}`);
+    const uploadResult = await uploadResponse.json();
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.message || "Failed to upload template");
     }
 
-    const uploadResult = await uploadResponse.json(); // Parse JSON only if response is OK
-
-    // Now fetch event data to fill the template
     const token = localStorage.getItem("authToken");
     const eventResponse = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
-      headers: {
-        "x-auth-token": token,
-      },
+      headers: { "x-auth-token": token },
     });
 
     const eventData = await eventResponse.json();
-
     if (!eventData.success || !eventData.event) {
       throw new Error("Failed to fetch event details");
     }
 
     const event = eventData.event;
 
-    // Prepare form data based on the template fields
-    const formDataToFill = {};
-
-    // Map event data to form fields
+    // Prepare form data to fill the template
+    const fillFormData = {};
     uploadResult.template.fields.forEach((field) => {
       const fieldName = field.name;
-
-      // Try to match field names with event properties
       if (fieldName.includes("name") || fieldName.includes("title")) {
-        formDataToFill[fieldName] = event.name;
-      } else if (fieldName.includes("desc") || fieldName.includes("description")) {
-        formDataToFill[fieldName] = event.description;
+        fillFormData[fieldName] = event.name;
+      } else if (fieldName.includes("desc")) {
+        fillFormData[fieldName] = event.description;
       } else if (fieldName.includes("date")) {
-        formDataToFill[fieldName] = `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
+        fillFormData[fieldName] = `${new Date(event.startDate).toLocaleDateString()} - ${new Date(event.endDate).toLocaleDateString()}`;
       } else if (fieldName.includes("time")) {
-        formDataToFill[fieldName] = `${event.startTime} - ${event.endTime}`;
-      } else if (fieldName.includes("venue") || fieldName.includes("location")) {
-        formDataToFill[fieldName] = event.venue;
-      } else if (fieldName.includes("budget")) {
-        formDataToFill[fieldName] = `₹${event.totalBudget || 0}`;
-      } else if (fieldName.includes("club")) {
-        formDataToFill[fieldName] = loggedInClub.name;
+        fillFormData[fieldName] = `${event.startTime} - ${event.endTime}`;
+      } else if (fieldName.includes("venue")) {
+        fillFormData[fieldName] = event.venue;
       } else {
-        // Default value for unmatched fields
-        formDataToFill[fieldName] = "";
+        fillFormData[fieldName] = ""; // Default value
       }
     });
 
-    // Fill the template with the form data
     const fillResponse = await fetch(
       `https://expensetracker-qppb.onrender.com/api/fill-template/${uploadResult.template.id}`,
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ formData: formDataToFill }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData: fillFormData }),
       }
     );
 
     const fillResult = await fillResponse.json();
-
     if (!fillResult.success) {
       throw new Error(fillResult.message || "Failed to fill template");
     }
 
-    // Close the template modal
-    document.getElementById("report-template-modal").style.display = "none";
-
-    // Show success message
-    showToast("Success", "Report generated successfully", "success");
-
-    // Open the filled PDF in a new tab
     window.open(`https://expensetracker-qppb.onrender.com${fillResult.filledPdf.path}`, "_blank");
   } catch (error) {
     console.error("Error generating report:", error);
