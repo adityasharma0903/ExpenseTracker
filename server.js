@@ -2590,6 +2590,74 @@ app.delete('/api/templates/:id', async (req, res) => {
   }
 });
 
+app.post('/api/fill-template/:id', async (req, res) => {
+  try {
+    const template = await Template.findById(req.params.id);
+    if (!template) {
+      return res.status(404).json({ success: false, message: 'Template not found' });
+    }
+
+    const { formData } = req.body;
+    if (!formData) {
+      return res.status(400).json({ success: false, message: 'No form data provided' });
+    }
+
+    // Read the PDF template
+    const pdfBytes = fs.readFileSync(template.path);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const form = pdfDoc.getForm();
+
+    // Debugging: Log available fields in the template
+    const fields = form.getFields();
+    console.log("Available fields in template:");
+    fields.forEach(field => console.log(field.getName()));
+
+    // Populate fields
+    Object.keys(formData).forEach(fieldName => {
+      const field = form.getField(fieldName);
+      if (field) {
+        console.log(`Populating field: ${fieldName} with value: ${formData[fieldName]}`);
+        if (field.constructor.name === 'PDFTextField') {
+          field.setText(formData[fieldName]);
+        } else if (field.constructor.name === 'PDFCheckBox') {
+          if (formData[fieldName] === true || formData[fieldName] === 'true') {
+            field.check();
+          } else {
+            field.uncheck();
+          }
+        } else if (field.constructor.name === 'PDFDropdown') {
+          field.select(formData[fieldName]);
+        } else if (field.constructor.name === 'PDFRadioGroup') {
+          field.select(formData[fieldName]);
+        }
+      } else {
+        console.warn(`Field not found: ${fieldName}`);
+      }
+    });
+
+    // Flatten the form (optional - makes the form non-editable)
+    form.flatten();
+
+    // Save the filled PDF
+    const filledPdfBytes = await pdfDoc.save();
+    const outputFilename = `filled-${Date.now()}.pdf`;
+    const outputPath = path.join(outputDir, outputFilename);
+
+    fs.writeFileSync(outputPath, filledPdfBytes);
+
+    res.json({
+      success: true,
+      message: 'PDF filled successfully',
+      filledPdf: {
+        filename: outputFilename,
+        path: `/output/${outputFilename}` // URL path for download
+      }
+    });
+  } catch (error) {
+    console.error('Error filling template:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
 
 // ==================== SERVER STARTUP ====================
 
