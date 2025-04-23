@@ -1597,6 +1597,131 @@ app.get("/api/events", async (req, res) => {
   }
 })
 
+const fs = require("fs");
+const { PDFDocument, rgb } = require("pdf-lib");
+
+app.post("/api/generate-pdf-report", async (req, res) => {
+  try {
+    // Check if a PDF template is uploaded
+    if (!req.files || !req.files.template) {
+      return res.status(400).send({ success: false, message: "No PDF template uploaded" });
+    }
+
+    const pdfTemplateBuffer = req.files.template.data;
+
+    // Load the uploaded PDF template
+    const pdfDoc = await PDFDocument.load(pdfTemplateBuffer);
+
+    // Get the first page of the PDF
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+
+    // Event data (you would fetch this dynamically)
+    const eventData = {
+      title: "Shape Your Future: Explore Career Opportunities with Aurus Tech",
+      date: "10th January 2025",
+      venue: "Piazza Block, First Floor, Chitkara University, Punjab Campus",
+      sdg: "4, 9",
+      studentsEnrolled: "142",
+      studentsAttended: "142",
+      resourcePersons: "Shilpa Sasi, Manager - Human Resources",
+      objectives: [
+        "The session successfully enhanced participants' knowledge about career opportunities and industry expectations in the engineering sector.",
+        "Through interactive discussions and presentations, attendees gained deeper insights into the services and opportunities offered by Aurus Tech.",
+        "Overall, the pre-placement talk and interviews provided a valuable platform for students to enhance their knowledge, clarify doubts, connect with industry experts, and explore potential career paths.",
+      ],
+      outcomes: [
+        "The outcomes of the event helped attendees strengthen their skill set and make informed career decisions.",
+      ],
+    };
+
+    // Add text to the PDF (e.g., event details)
+    firstPage.drawText(`Title of the Event: ${eventData.title}`, {
+      x: 50,
+      y: 700,
+      size: 12,
+      color: rgb(0, 0, 0),
+    });
+
+    firstPage.drawText(`Date of the Event: ${eventData.date}`, {
+      x: 50,
+      y: 680,
+      size: 12,
+      color: rgb(0, 0, 0),
+    });
+
+    firstPage.drawText(`Venue: ${eventData.venue}`, {
+      x: 50,
+      y: 660,
+      size: 12,
+      color: rgb(0, 0, 0),
+    });
+
+    firstPage.drawText(`SDG Number: ${eventData.sdg}`, {
+      x: 50,
+      y: 640,
+      size: 12,
+      color: rgb(0, 0, 0),
+    });
+
+    firstPage.drawText(`Number of Students Enrolled: ${eventData.studentsEnrolled}`, {
+      x: 50,
+      y: 620,
+      size: 12,
+      color: rgb(0, 0, 0),
+    });
+
+    firstPage.drawText(`Number of Students Attended: ${eventData.studentsAttended}`, {
+      x: 50,
+      y: 600,
+      size: 12,
+      color: rgb(0, 0, 0),
+    });
+
+    firstPage.drawText(`Resource Persons: ${eventData.resourcePersons}`, {
+      x: 50,
+      y: 580,
+      size: 12,
+      color: rgb(0, 0, 0),
+    });
+
+    // Add objectives
+    firstPage.drawText("Objectives:", { x: 50, y: 560, size: 12, color: rgb(0, 0, 0) });
+    eventData.objectives.forEach((objective, index) => {
+      firstPage.drawText(`${index + 1}. ${objective}`, {
+        x: 70,
+        y: 540 - index * 20,
+        size: 10,
+        color: rgb(0, 0, 0),
+      });
+    });
+
+    // Add outcomes
+    firstPage.drawText("Outcomes:", { x: 50, y: 460, size: 12, color: rgb(0, 0, 0) });
+    eventData.outcomes.forEach((outcome, index) => {
+      firstPage.drawText(`${index + 1}. ${outcome}`, {
+        x: 70,
+        y: 440 - index * 20,
+        size: 10,
+        color: rgb(0, 0, 0),
+      });
+    });
+
+    // Save the modified PDF
+    const pdfBytes = await pdfDoc.save();
+
+    // Send the PDF as a response
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${eventData.title}-Report.pdf"`,
+    });
+    res.send(pdfBytes);
+  } catch (error) {
+    console.error("Error generating PDF report:", error);
+    res.status(500).send({ success: false, message: "Server error" });
+  }
+});
+
 // @route   GET api/club-events/:id
 // @desc    Get club event by ID
 // @access  Public

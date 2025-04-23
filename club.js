@@ -2504,6 +2504,39 @@ async function generateEventReport(eventId) {
   }
 }
 
+document.getElementById("generate-report-btn").addEventListener("click", async () => {
+  const templateInput = document.getElementById("pdf-template-upload");
+  if (!templateInput.files[0]) {
+    alert("Please upload a PDF template.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("template", templateInput.files[0]);
+
+  try {
+    const response = await fetch("/api/generate-pdf-report", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate report");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Event-Report.pdf";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error generating report:", error);
+    alert("Failed to generate report.");
+  }
+});
+
 // Function to generate event report
 // Function to generate event report
 async function generateEventReport(eventId) {
