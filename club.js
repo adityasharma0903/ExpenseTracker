@@ -4790,90 +4790,36 @@ async function updateTeamStatus(teamId, newStatus, customEmail = null) {
 // PDF Template Functions - Add these to your club.js file
 
 // Function to open the report template modal
-function openReportTemplateModal(eventId) {
-  const modal = document.getElementById("report-template-modal");
-  modal.setAttribute("data-event-id", eventId);
-  
-  // Reset form
-  document.getElementById("report-template").value = "";
-  document.querySelector("#report-template-modal .file-name").textContent = "No file chosen";
-  document.getElementById("template-preview").innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
-  
-  // Add event listener to file input
-  const fileInput = document.getElementById("report-template");
-  fileInput.addEventListener("change", handleTemplateUpload);
-  
-  // Add event listener to create report button
-  document.getElementById("create-report-btn").addEventListener("click", () => {
-    uploadAndFillTemplate(eventId);
-  });
-  
-  // Show modal
-  modal.style.display = "block";
-  
-  // Add event listener to close button
-  modal.querySelector(".close-modal").addEventListener("click", () => {
-    modal.style.display = "none";
-  });
-}
-
-// Function to handle template upload
-function handleTemplateUpload(e) {
-  const file = e.target.files[0];
-  const preview = document.getElementById("template-preview");
-  const fileNameDisplay = document.querySelector("#report-template-modal .file-name");
-  
-  if (file) {
-    // Store the file for later use
-    window.reportTemplateFile = file;
-    
-    // Update file name display
-    fileNameDisplay.textContent = file.name;
-    
-    // Update preview
-    preview.innerHTML = `
-      <i class="fas fa-file-${file.name.endsWith('.pdf') ? 'pdf' : 'word'}"></i>
-      <span>${file.name}</span>
-    `;
-    
-    // Enable create report button
-    document.getElementById("create-report-btn").disabled = false;
-  } else {
-    window.reportTemplateFile = null;
-    fileNameDisplay.textContent = "No file chosen";
-    preview.innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
-    document.getElementById("create-report-btn").disabled = true;
-  }
-}
-
-// Function to upload and fill template
 async function uploadAndFillTemplate(eventId) {
   if (!window.reportTemplateFile) {
     showToast("Error", "Please select a template file", "error");
     return;
   }
-  
+
   showLoader();
-  
+
   try {
     // First, upload the template
     const formData = new FormData();
-    formData.append('template', window.reportTemplateFile);
-    
+    formData.append("template", window.reportTemplateFile);
+
     const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
-    formData.append('clubId', loggedInClub.id);
-    
-    const uploadResponse = await fetch('https://expensetracker-qppb.onrender.com/api/upload-template', {
-      method: 'POST',
-      body: formData
+    formData.append("clubId", loggedInClub.id);
+
+    const uploadResponse = await fetch("https://expensetracker-qppb.onrender.com/api/upload-template", {
+      method: "POST",
+      body: formData,
     });
-    
-    const uploadResult = await uploadResponse.json();
-    
-    if (!uploadResult.success) {
-      throw new Error(uploadResult.message || 'Failed to upload template');
+
+    // Check if the response is not OK
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text(); // Read the error response as text
+      console.error("Upload error response:", errorText);
+      throw new Error(`Failed to upload template. Status: ${uploadResponse.status} - ${uploadResponse.statusText}`);
     }
-    
+
+    const uploadResult = await uploadResponse.json(); // Parse JSON only if response is OK
+
     // Now fetch event data to fill the template
     const token = localStorage.getItem("authToken");
     const eventResponse = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
@@ -4881,67 +4827,69 @@ async function uploadAndFillTemplate(eventId) {
         "x-auth-token": token,
       },
     });
-    
+
     const eventData = await eventResponse.json();
-    
+
     if (!eventData.success || !eventData.event) {
-      throw new Error('Failed to fetch event details');
+      throw new Error("Failed to fetch event details");
     }
-    
+
     const event = eventData.event;
-    
+
     // Prepare form data based on the template fields
-    // const formData = {};
-    
+    const formDataToFill = {};
+
     // Map event data to form fields
-    uploadResult.template.fields.forEach(field => {
+    uploadResult.template.fields.forEach((field) => {
       const fieldName = field.name;
-      
+
       // Try to match field names with event properties
-      if (fieldName.includes('name') || fieldName.includes('title')) {
-        formData[fieldName] = event.name;
-      } else if (fieldName.includes('desc') || fieldName.includes('description')) {
-        formData[fieldName] = event.description;
-      } else if (fieldName.includes('date')) {
-        formData[fieldName] = `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
-      } else if (fieldName.includes('time')) {
-        formData[fieldName] = `${event.startTime} - ${event.endTime}`;
-      } else if (fieldName.includes('venue') || fieldName.includes('location')) {
-        formData[fieldName] = event.venue;
-      } else if (fieldName.includes('budget')) {
-        formData[fieldName] = `₹${event.totalBudget || 0}`;
-      } else if (fieldName.includes('club')) {
-        formData[fieldName] = loggedInClub.name;
+      if (fieldName.includes("name") || fieldName.includes("title")) {
+        formDataToFill[fieldName] = event.name;
+      } else if (fieldName.includes("desc") || fieldName.includes("description")) {
+        formDataToFill[fieldName] = event.description;
+      } else if (fieldName.includes("date")) {
+        formDataToFill[fieldName] = `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
+      } else if (fieldName.includes("time")) {
+        formDataToFill[fieldName] = `${event.startTime} - ${event.endTime}`;
+      } else if (fieldName.includes("venue") || fieldName.includes("location")) {
+        formDataToFill[fieldName] = event.venue;
+      } else if (fieldName.includes("budget")) {
+        formDataToFill[fieldName] = `₹${event.totalBudget || 0}`;
+      } else if (fieldName.includes("club")) {
+        formDataToFill[fieldName] = loggedInClub.name;
       } else {
         // Default value for unmatched fields
-        formData[fieldName] = '';
+        formDataToFill[fieldName] = "";
       }
     });
-    
+
     // Fill the template with the form data
-    const fillResponse = await fetch(`https://expensetracker-qppb.onrender.com/api/fill-template/${uploadResult.template.id}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ formData })
-    });
-    
+    const fillResponse = await fetch(
+      `https://expensetracker-qppb.onrender.com/api/fill-template/${uploadResult.template.id}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ formData: formDataToFill }),
+      }
+    );
+
     const fillResult = await fillResponse.json();
-    
+
     if (!fillResult.success) {
-      throw new Error(fillResult.message || 'Failed to fill template');
+      throw new Error(fillResult.message || "Failed to fill template");
     }
-    
+
     // Close the template modal
     document.getElementById("report-template-modal").style.display = "none";
-    
+
     // Show success message
     showToast("Success", "Report generated successfully", "success");
-    
+
     // Open the filled PDF in a new tab
-    window.open(`https://expensetracker-qppb.onrender.com${fillResult.filledPdf.path}`, '_blank');
-    
+    window.open(`https://expensetracker-qppb.onrender.com${fillResult.filledPdf.path}`, "_blank");
   } catch (error) {
     console.error("Error generating report:", error);
     showToast("Error", error.message || "Failed to generate report", "error");
