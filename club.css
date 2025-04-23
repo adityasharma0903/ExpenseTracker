@@ -4176,3 +4176,12 @@ textarea {
   max-width: 900px;
   width: 90%;
 }
+
+.btn-report-detail {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-report-detail:hover {
+  background-color: #059669;
+}

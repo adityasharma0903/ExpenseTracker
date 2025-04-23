@@ -2291,6 +2291,12 @@ async function openEventDetailModal(id) {
   }
 }
 
+// Add event listener for the Create Report button
+document.getElementById("btn-create-report").addEventListener("click", () => {
+  const eventId = document.getElementById("event-detail-modal").getAttribute("data-event-id");
+  openReportTemplateModal(eventId);
+});
+
 function openReportTemplateModal(eventId) {
   const modal = document.getElementById("report-template-modal");
   modal.setAttribute("data-event-id", eventId);
