@@ -1602,13 +1602,17 @@ app.get("/api/events", async (req, res) => {
 // @access  Public
 app.get("/api/club-events/:id", async (req, res) => {
   try {
-    const event = await ClubEvent.findById(req.params.id) // Fetch event by ID
+    // Fetch the event by ID
+    const event = await ClubEvent.findById(req.params.id);
     if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" })
+      return res.status(404).json({ success: false, message: "Event not found" });
     }
 
+    // Fetch teams registered for the event
+    const teams = await TeamRegistration.find({ eventId: req.params.id });
+
     // Log the event data for debugging
-    console.log("Event data from database:", JSON.stringify(event, null, 2))
+    console.log("Event data from database:", JSON.stringify(event, null, 2));
 
     // Ensure all necessary fields are included in the response with proper structure
     res.json({
@@ -1634,15 +1638,16 @@ app.get("/api/club-events/:id", async (req, res) => {
         organizer: event.organizer || event.club || "Event Organizer",
         organizerLogo: event.organizerLogo || null,
         eligibilityCriteria: event.eligibilityCriteria || [],
-        registrationCount: event.registrationCount || 0,
+        registrationCount: teams.length, // Updated to use the number of registered teams
         registrationDeadline: event.registrationDeadline || "Open",
       },
-    })
+      teams, // Include team data in the response
+    });
   } catch (error) {
-    console.error("Error fetching club event:", error)
-    res.status(500).json({ success: false, message: "Server error" })
+    console.error("Error fetching club event:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-})
+});
 
 // @route   GET api/events/:id
 // @desc    Get event by ID

@@ -2456,6 +2456,54 @@ function generateReportContent(event) {
   `
 }
 
+function replaceTemplatePlaceholders(template, event, teams = []) {
+  const placeholders = {
+    "{{EVENT_NAME}}": event.name,
+    "{{EVENT_DESCRIPTION}}": event.description,
+    "{{EVENT_START_DATE}}": formatDate(new Date(event.startDate)),
+    "{{EVENT_END_DATE}}": formatDate(new Date(event.endDate)),
+    "{{TEAM_LIST}}": teams.map(team => `<li>${team.teamName} (Leader: ${team.members[0]?.name || "N/A"})</li>`).join(""),
+    // Add more placeholders as needed
+  };
+
+  for (const [placeholder, value] of Object.entries(placeholders)) {
+    template = template.replace(new RegExp(placeholder, "g"), value);
+  }
+
+  return template;
+}
+
+async function generateEventReport(eventId) {
+  const token = localStorage.getItem("authToken");
+
+  try {
+    // Fetch event details
+    const eventResponse = await fetch(`/api/club-events/${eventId}`, { headers: { "x-auth-token": token } });
+    const { event } = await eventResponse.json();
+
+    // Fetch team registrations
+    const teamResponse = await fetch(`/api/team-registrations?eventId=${eventId}`, { headers: { "x-auth-token": token } });
+    const { teamRegistrations: teams } = await teamResponse.json();
+
+    // Process the template
+    const file = document.getElementById("custom-template-upload").files[0];
+    let templateContent = await processTemplateFile(file, event, teams);
+
+    // Render or download the report
+    const blob = new Blob([templateContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${event.name}-Report.html`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error("Error generating report:", error);
+    showToast("Error", "Failed to generate report", "error");
+  }
+}
+
 // Function to generate event report
 // Function to generate event report
 async function generateEventReport(eventId) {
