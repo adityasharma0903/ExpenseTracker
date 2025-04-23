@@ -2496,10 +2496,16 @@ app.post('/api/fill-template/:id', async (req, res) => {
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const form = pdfDoc.getForm();
     
+    // Debugging: Log available fields in the template
+    const fields = form.getFields();
+    console.log("Available fields in template:");
+    fields.forEach(field => console.log(field.getName()));
+    
     // Fill the form fields with the provided data
     Object.keys(formData).forEach(fieldName => {
       const field = form.getField(fieldName);
       if (field) {
+        console.log(`Filling field: ${fieldName} with value: ${formData[fieldName]}`);
         if (field.constructor.name === 'PDFTextField') {
           field.setText(formData[fieldName]);
         } else if (field.constructor.name === 'PDFCheckBox') {
@@ -2513,11 +2519,18 @@ app.post('/api/fill-template/:id', async (req, res) => {
         } else if (field.constructor.name === 'PDFRadioGroup') {
           field.select(formData[fieldName]);
         }
+      } else {
+        console.warn(`Field not found in template: ${fieldName}`);
       }
     });
     
     // Flatten the form (optional - makes the form non-editable)
     form.flatten();
+    
+    // Ensure output directory exists
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
     
     // Save the filled PDF
     const filledPdfBytes = await pdfDoc.save();
