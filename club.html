@@ -1438,6 +1438,61 @@
     <div class="loader"></div>
   </div>
 
+  <!-- Add this right before the closing </body> tag -->
+  <!-- Report Template Upload Modal -->
+  <div id="report-template-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-file-alt"></i> Create Event Report</h2>
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="report-template">Upload your template of report</label>
+          <div class="file-input-container">
+            <input type="file" id="report-template" accept=".docx,.pdf">
+            <label for="report-template" class="file-input-label">
+              <i class="fas fa-upload"></i> Choose File
+            </label>
+            <span class="file-name">No file chosen</span>
+          </div>
+        </div>
+        <div id="template-preview" class="template-preview">
+          <i class="fas fa-file-alt"></i>
+          <span>No template selected</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="create-report-btn" class="btn-primary">
+          <i class="fas fa-file-alt"></i> Create Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report View Modal -->
+  <div id="report-view-modal" class="modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2><i class="fas fa-file-alt"></i> <span id="report-title">Event Report</span></h2>
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+      </div>
+      <div class="modal-body">
+        <div class="report-actions">
+          <button id="edit-report-btn" class="btn-primary">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button id="download-report-btn" class="btn-primary">
+            <i class="fas fa-download"></i> Download PDF
+          </button>
+        </div>
+        <div id="report-content" class="report-content" contenteditable="false">
+          <!-- Report content will be generated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Toast Notification -->
   <div id="toast-container" class="toast-container"></div>

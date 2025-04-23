@@ -4071,3 +4071,108 @@ textarea {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Report Template Modal Styles */
+.template-preview {
+  margin-top: 1rem;
+  width: 100%;
+  height: 150px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background-size: cover;
+  background-position: center;
+  transition: var(--transition);
+}
+
+.template-preview i {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+/* Report View Modal Styles */
+.report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.report-content {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 2rem;
+  min-height: 500px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-sm);
+  font-family: 'Times New Roman', Times, serif;
+  line-height: 1.6;
+}
+
+.report-content[contenteditable="true"] {
+  border: 2px solid var(--primary-color);
+  outline: none;
+}
+
+.report-content h1, 
+.report-content h2, 
+.report-content h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.report-content p {
+  margin-bottom: 1rem;
+}
+
+.report-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.report-content table, 
+.report-content th, 
+.report-content td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.report-content th {
+  background-color: #f2f2f2;
+  text-align: left;
+}
+
+.report-section {
+  margin-bottom: 2rem;
+}
+
+.report-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.report-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Add this to your existing modal-lg class or create it if it doesn't exist */
+.modal-lg {
+  max-width: 900px;
+  width: 90%;
+}

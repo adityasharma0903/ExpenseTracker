@@ -449,6 +449,20 @@ function toggleSidebar() {
 // Open create event modal
 function openCreateEventModal() {
   const modal = document.getElementById("create-event-modal")
+  const eventActions = document.querySelector(".event-detail-actions");
+  if (eventActions) {
+    // Check if the button already exists
+    if (!document.getElementById("create-report-event")) {
+      const createReportBtn = document.createElement("button");
+      createReportBtn.id = "create-report-event";
+      createReportBtn.className = "btn-primary-action";
+      createReportBtn.innerHTML = '<i class="fas fa-file-alt"></i> Create Report of this Event';
+      createReportBtn.addEventListener("click", () => {
+        openReportTemplateModal(eventId);
+      });
+      eventActions.appendChild(createReportBtn);
+    }
+  }
   modal.style.display = "block"
 
   // Reset form
@@ -780,6 +794,13 @@ function setupDetailModalListeners(eventId) {
     closeButton.addEventListener("click", () => {
       modal.style.display = "none"
     })
+  }
+
+  const createReportBtn = document.getElementById("create-report-event");
+  if (createReportBtn) {
+    createReportBtn.addEventListener("click", () => {
+      openReportTemplateModal(eventId);
+    });
   }
 
   // ✅ Tab Switching Logic
@@ -2267,6 +2288,335 @@ async function openEventDetailModal(id) {
     showToast("Error", `Failed to fetch event details: ${error.message}`, "error")
   } finally {
     hideLoader() // ✅ Always hide loader
+  }
+}
+
+function openReportTemplateModal(eventId) {
+  const modal = document.getElementById("report-template-modal");
+  modal.setAttribute("data-event-id", eventId);
+  
+  // Reset form
+  document.getElementById("report-template").value = "";
+  document.querySelector("#report-template-modal .file-name").textContent = "No file chosen";
+  document.getElementById("template-preview").innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
+  
+  // Add event listener to file input
+  const fileInput = document.getElementById("report-template");
+  fileInput.addEventListener("change", handleTemplateUpload);
+  
+  // Add event listener to create report button
+  document.getElementById("create-report-btn").addEventListener("click", () => {
+    generateEventReport(eventId);
+  });
+  
+  // Show modal
+  modal.style.display = "block";
+  
+  // Add event listener to close button
+  modal.querySelector(".close-modal").addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+}
+
+// Function to handle template upload
+function handleTemplateUpload(e) {
+  const file = e.target.files[0];
+  const preview = document.getElementById("template-preview");
+  const fileNameDisplay = document.querySelector("#report-template-modal .file-name");
+  
+  if (file) {
+    // Store the file for later use
+    window.reportTemplateFile = file;
+    
+    // Update file name display
+    fileNameDisplay.textContent = file.name;
+    
+    // Update preview
+    preview.innerHTML = `
+      <i class="fas fa-file-${file.name.endsWith('.pdf') ? 'pdf' : 'word'}"></i>
+      <span>${file.name}</span>
+    `;
+    
+    // Enable create report button
+    document.getElementById("create-report-btn").disabled = false;
+  } else {
+    window.reportTemplateFile = null;
+    fileNameDisplay.textContent = "No file chosen";
+    preview.innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
+    document.getElementById("create-report-btn").disabled = true;
+  }
+}
+
+// Function to generate event report
+async function generateEventReport(eventId) {
+  showLoader();
+  
+  try {
+    // Fetch event details
+    const token = localStorage.getItem("authToken");
+    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success || !data.event) {
+      showToast("Error", "Failed to fetch event details", "error");
+      hideLoader();
+      return;
+    }
+    
+    const event = data.event;
+    
+    // Close template modal
+    document.getElementById("report-template-modal").style.display = "none";
+    
+    // Generate report content
+    const reportContent = generateReportContent(event);
+    
+    // Set report title
+    document.getElementById("report-title").textContent = `${event.name} - Report`;
+    
+    // Set report content
+    document.getElementById("report-content").innerHTML = reportContent;
+    
+    // Show report view modal
+    const reportModal = document.getElementById("report-view-modal");
+    reportModal.style.display = "block";
+    
+    // Add event listeners
+    setupReportViewListeners(event);
+    
+    hideLoader();
+  } catch (error) {
+    console.error("Error generating report:", error);
+    showToast("Error", "Failed to generate report", "error");
+    hideLoader();
+  }
+}
+
+// Function to generate report content
+function generateReportContent(event) {
+  const today = new Date();
+  const formattedDate = formatDate(today);
+  
+  return `
+    <div class="report-header">
+      <h1>${event.name} - Event Report</h1>
+      <p>Generated on ${formattedDate}</p>
+    </div>
+    
+    <div class="report-section">
+      <h2>Event Overview</h2>
+      <p><strong>Description:</strong> ${event.description}</p>
+      <p><strong>Date:</strong> ${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}</p>
+      <p><strong>Time:</strong> ${event.startTime} - ${event.endTime}</p>
+      <p><strong>Venue:</strong> ${event.venue}</p>
+      <p><strong>Team Size:</strong> ${event.teamMin} - ${event.teamMax} members</p>
+    </div>
+    
+    <div class="report-section">
+      <h2>Event Details</h2>
+      <p>${event.about || "No additional details provided."}</p>
+      ${event.theme ? `<p><strong>Theme:</strong> ${event.theme}</p>` : ""}
+    </div>
+    
+    <div class="report-section">
+      <h2>Prize Distribution</h2>
+      <p><strong>Total Prize Pool:</strong> ₹${event.prizes?.pool || 0}</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th>Prize Amount</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>First Prize</td>
+            <td>₹${event.prizes?.first?.amount || 0}</td>
+            <td>${event.prizes?.first?.description || "-"}</td>
+          </tr>
+          <tr>
+            <td>Second Prize</td>
+            <td>₹${event.prizes?.second?.amount || 0}</td>
+            <td>${event.prizes?.second?.description || "-"}</td>
+          </tr>
+          <tr>
+            <td>Third Prize</td>
+            <td>₹${event.prizes?.third?.amount || 0}</td>
+            <td>${event.prizes?.third?.description || "-"}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="report-section">
+      <h2>Budget Overview</h2>
+      <p><strong>Total Budget:</strong> ₹${event.totalBudget || 0}</p>
+      
+      ${event.expenses && event.expenses.length > 0 ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${event.expenses.map(expense => `
+              <tr>
+                <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
+                <td>${expense.description}</td>
+                <td>₹${expense.amount}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : '<p>No expenses recorded for this event.</p>'}
+    </div>
+    
+    <div class="report-footer">
+      <p>This report was automatically generated by UNIBUX Club Management System.</p>
+      <p>© ${today.getFullYear()} UNIBUX</p>
+    </div>
+  `;
+}
+
+// Function to setup report view listeners
+function setupReportViewListeners(event) {
+  const reportModal = document.getElementById("report-view-modal");
+  const reportContent = document.getElementById("report-content");
+  const editBtn = document.getElementById("edit-report-btn");
+  const downloadBtn = document.getElementById("download-report-btn");
+  
+  // Close button
+  reportModal.querySelector(".close-modal").addEventListener("click", () => {
+    reportModal.style.display = "none";
+  });
+  
+  // Edit button
+  editBtn.addEventListener("click", () => {
+    const isEditable = reportContent.getAttribute("contenteditable") === "true";
+    
+    if (isEditable) {
+      // Save changes
+      reportContent.setAttribute("contenteditable", "false");
+      editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+      showToast("Success", "Report changes saved", "success");
+    } else {
+      // Enable editing
+      reportContent.setAttribute("contenteditable", "true");
+      reportContent.focus();
+      editBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    }
+  });
+  
+  // Download button
+  downloadBtn.addEventListener("click", () => {
+    downloadReportAsPDF(event.name);
+  });
+}
+
+// Function to download report as PDF
+function downloadReportAsPDF(eventName) {
+  showLoader();
+  
+  try {
+    const reportContent = document.getElementById("report-content");
+    const reportTitle = document.getElementById("report-title").textContent;
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Add content to the new window
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${reportTitle}</title>
+        <style>
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+          }
+          .report-content {
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          .report-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #ddd;
+          }
+          .report-section {
+            margin-bottom: 2rem;
+          }
+          .report-footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #ddd;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+          }
+          table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+          }
+          th {
+            background-color: #f2f2f2;
+            text-align: left;
+          }
+          h1, h2, h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+          }
+          p {
+            margin-bottom: 1rem;
+          }
+          @media print {
+            body {
+              padding: 0;
+            }
+            .report-content {
+              max-width: 100%;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="report-content">
+          ${reportContent.innerHTML}
+        </div>
+      </body>
+      </html>
+    `);
+    
+    // Wait for content to load
+    printWindow.document.close();
+    printWindow.onload = function() {
+      // Print the window to PDF
+      printWindow.print();
+      hideLoader();
+    };
+  } catch (error) {
+    console.error("Error downloading report:", error);
+    showToast("Error", "Failed to download report", "error");
+    hideLoader();
   }
 }
 
