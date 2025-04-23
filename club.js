@@ -2322,6 +2322,25 @@ function openReportTemplateModal(eventId) {
   modal.querySelector(".close-modal").addEventListener("click", () => {
     modal.style.display = "none";
   });
+
+  // Add this to your openEventDetailModal function or wherever you set up the event detail modal
+function setupEventDetailButtons(eventId) {
+  // Add Create Report button if it doesn't exist
+  const eventActions = document.querySelector(".event-detail-actions");
+  if (eventActions) {
+    // Check if the button already exists
+    if (!document.getElementById("btn-create-report")) {
+      const createReportBtn = document.createElement("button");
+      createReportBtn.id = "btn-create-report";
+      createReportBtn.className = "btn-primary-action";
+      createReportBtn.innerHTML = '<i class="fas fa-file-alt"></i> Create Report';
+      createReportBtn.addEventListener("click", () => {
+        openReportTemplateModal(eventId);
+      });
+      eventActions.appendChild(createReportBtn);
+    }
+  }
+}
 }
 
 // Function to handle template upload
@@ -4252,6 +4271,12 @@ document.getElementById("create-event-btn").addEventListener("click", () => {
 function setupDetailModalListeners() {
   // Add your event detail modal listeners here
   console.log("Event ID:", eventId) // Add this to check the value
+
+  // Add this to your setupDetailModalListeners function
+document.getElementById("btn-create-report").addEventListener("click", () => {
+  const eventId = document.getElementById("event-detail-modal").getAttribute("data-event-id");
+  openReportTemplateModal(eventId);
+});
 }
 
 // Fetch events from server
@@ -4405,6 +4430,7 @@ async function loadEvents() {
     hideLoader()
   }
 }
+
 
 // Load budget data
 async function loadBudgetData() {
@@ -4757,5 +4783,169 @@ async function updateTeamStatus(teamId, newStatus, customEmail = null) {
     throw error
   } finally {
     hideLoader() // Always hide loader when operation completes
+  }
+}
+
+
+// PDF Template Functions - Add these to your club.js file
+
+// Function to open the report template modal
+function openReportTemplateModal(eventId) {
+  const modal = document.getElementById("report-template-modal");
+  modal.setAttribute("data-event-id", eventId);
+  
+  // Reset form
+  document.getElementById("report-template").value = "";
+  document.querySelector("#report-template-modal .file-name").textContent = "No file chosen";
+  document.getElementById("template-preview").innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
+  
+  // Add event listener to file input
+  const fileInput = document.getElementById("report-template");
+  fileInput.addEventListener("change", handleTemplateUpload);
+  
+  // Add event listener to create report button
+  document.getElementById("create-report-btn").addEventListener("click", () => {
+    uploadAndFillTemplate(eventId);
+  });
+  
+  // Show modal
+  modal.style.display = "block";
+  
+  // Add event listener to close button
+  modal.querySelector(".close-modal").addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+}
+
+// Function to handle template upload
+function handleTemplateUpload(e) {
+  const file = e.target.files[0];
+  const preview = document.getElementById("template-preview");
+  const fileNameDisplay = document.querySelector("#report-template-modal .file-name");
+  
+  if (file) {
+    // Store the file for later use
+    window.reportTemplateFile = file;
+    
+    // Update file name display
+    fileNameDisplay.textContent = file.name;
+    
+    // Update preview
+    preview.innerHTML = `
+      <i class="fas fa-file-${file.name.endsWith('.pdf') ? 'pdf' : 'word'}"></i>
+      <span>${file.name}</span>
+    `;
+    
+    // Enable create report button
+    document.getElementById("create-report-btn").disabled = false;
+  } else {
+    window.reportTemplateFile = null;
+    fileNameDisplay.textContent = "No file chosen";
+    preview.innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
+    document.getElementById("create-report-btn").disabled = true;
+  }
+}
+
+// Function to upload and fill template
+async function uploadAndFillTemplate(eventId) {
+  if (!window.reportTemplateFile) {
+    showToast("Error", "Please select a template file", "error");
+    return;
+  }
+  
+  showLoader();
+  
+  try {
+    // First, upload the template
+    const formData = new FormData();
+    formData.append('template', window.reportTemplateFile);
+    
+    const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
+    formData.append('clubId', loggedInClub.id);
+    
+    const uploadResponse = await fetch('https://expensetracker-qppb.onrender.com/api/upload-template', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const uploadResult = await uploadResponse.json();
+    
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.message || 'Failed to upload template');
+    }
+    
+    // Now fetch event data to fill the template
+    const token = localStorage.getItem("authToken");
+    const eventResponse = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+    
+    const eventData = await eventResponse.json();
+    
+    if (!eventData.success || !eventData.event) {
+      throw new Error('Failed to fetch event details');
+    }
+    
+    const event = eventData.event;
+    
+    // Prepare form data based on the template fields
+    // const formData = {};
+    
+    // Map event data to form fields
+    uploadResult.template.fields.forEach(field => {
+      const fieldName = field.name;
+      
+      // Try to match field names with event properties
+      if (fieldName.includes('name') || fieldName.includes('title')) {
+        formData[fieldName] = event.name;
+      } else if (fieldName.includes('desc') || fieldName.includes('description')) {
+        formData[fieldName] = event.description;
+      } else if (fieldName.includes('date')) {
+        formData[fieldName] = `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`;
+      } else if (fieldName.includes('time')) {
+        formData[fieldName] = `${event.startTime} - ${event.endTime}`;
+      } else if (fieldName.includes('venue') || fieldName.includes('location')) {
+        formData[fieldName] = event.venue;
+      } else if (fieldName.includes('budget')) {
+        formData[fieldName] = `₹${event.totalBudget || 0}`;
+      } else if (fieldName.includes('club')) {
+        formData[fieldName] = loggedInClub.name;
+      } else {
+        // Default value for unmatched fields
+        formData[fieldName] = '';
+      }
+    });
+    
+    // Fill the template with the form data
+    const fillResponse = await fetch(`https://expensetracker-qppb.onrender.com/api/fill-template/${uploadResult.template.id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ formData })
+    });
+    
+    const fillResult = await fillResponse.json();
+    
+    if (!fillResult.success) {
+      throw new Error(fillResult.message || 'Failed to fill template');
+    }
+    
+    // Close the template modal
+    document.getElementById("report-template-modal").style.display = "none";
+    
+    // Show success message
+    showToast("Success", "Report generated successfully", "success");
+    
+    // Open the filled PDF in a new tab
+    window.open(`https://expensetracker-qppb.onrender.com${fillResult.filledPdf.path}`, '_blank');
+    
+  } catch (error) {
+    console.error("Error generating report:", error);
+    showToast("Error", error.message || "Failed to generate report", "error");
+  } finally {
+    hideLoader();
   }
 }
