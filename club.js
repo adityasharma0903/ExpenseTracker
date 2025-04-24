@@ -2405,93 +2405,200 @@ async function generateEventReport(eventId) {
 
 // Function to generate report content
 function generateReportContent(event) {
-  const today = new Date();
-  const formattedDate = formatDate(today);
-  
-  return `
-    <div class="report-header">
-      <h1>${event.name} - Event Report</h1>
-      <p>Generated on ${formattedDate}</p>
-    </div>
-    
-    <div class="report-section">
-      <h2>Event Overview</h2>
-      <p><strong>Description:</strong> ${event.description}</p>
-      <p><strong>Date:</strong> ${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}</p>
-      <p><strong>Time:</strong> ${event.startTime} - ${event.endTime}</p>
-      <p><strong>Venue:</strong> ${event.venue}</p>
-      <p><strong>Team Size:</strong> ${event.teamMin} - ${event.teamMax} members</p>
-    </div>
-    
-    <div class="report-section">
-      <h2>Event Details</h2>
-      <p>${event.about || "No additional details provided."}</p>
-      ${event.theme ? `<p><strong>Theme:</strong> ${event.theme}</p>` : ""}
-    </div>
-    
-    <div class="report-section">
-      <h2>Prize Distribution</h2>
-      <p><strong>Total Prize Pool:</strong> ₹${event.prizes?.pool || 0}</p>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>Position</th>
-            <th>Prize Amount</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>First Prize</td>
-            <td>₹${event.prizes?.first?.amount || 0}</td>
-            <td>${event.prizes?.first?.description || "-"}</td>
-          </tr>
-          <tr>
-            <td>Second Prize</td>
-            <td>₹${event.prizes?.second?.amount || 0}</td>
-            <td>${event.prizes?.second?.description || "-"}</td>
-          </tr>
-          <tr>
-            <td>Third Prize</td>
-            <td>₹${event.prizes?.third?.amount || 0}</td>
-            <td>${event.prizes?.third?.description || "-"}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="report-section">
-      <h2>Budget Overview</h2>
-      <p><strong>Total Budget:</strong> ₹${event.totalBudget || 0}</p>
-      
-      ${event.expenses && event.expenses.length > 0 ? `
+  const template = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Chitkara University Event Details</title>
+        <style>
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            body {
+                font-family: 'Times New Roman', Times, serif;
+                width: 210mm;
+                margin: 0 auto;
+                padding: 15mm;
+                line-height: 1.3;
+                color: black;
+                background-color: white;
+                box-sizing: border-box;
+                border: 1px solid #000;
+            }
+            
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+            
+            .chitkara-logo {
+                display: flex;
+                align-items: center;
+                width: 25%;
+            }
+            
+            .chitkara-logo img {
+                height: 50px;
+            }
+            
+            .chitkara-text {
+                margin-left: 5px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            
+            .department-title {
+                text-align: center;
+                font-weight: bold;
+                font-size: 14px;
+                line-height: 1.4;
+                width: 50%;
+            }
+            
+            .explore-logo {
+                width: 25%;
+                text-align: right;
+            }
+            
+            .explore-logo img {
+                height: 35px;
+            }
+            
+            .event-details-title {
+                text-align: center;
+                border: 1px solid black;
+                padding: 5px 0;
+                font-weight: bold;
+                margin: 15px 0;
+                font-size: 14px;
+            }
+            
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 15px;
+                font-size: 12px;
+            }
+            
+            table, th, td {
+                border: 1px solid black;
+            }
+            
+            th, td {
+                padding: 6px 8px;
+                text-align: left;
+                vertical-align: top;
+            }
+            
+            th {
+                width: 30%;
+                font-weight: bold;
+            }
+            
+            .section-title {
+                font-weight: bold;
+                margin-top: 15px;
+                margin-bottom: 8px;
+                text-decoration: underline;
+                font-size: 12px;
+            }
+            
+            p {
+                text-align: justify;
+                margin: 8px 0;
+                font-size: 12px;
+                text-indent: 30px;
+            }
+            
+            ol {
+                margin-top: 5px;
+                margin-left: 20px;
+                padding-left: 15px;
+                font-size: 12px;
+            }
+            
+            li {
+                margin-bottom: 8px;
+                text-align: justify;
+                padding-right: 5px;
+            }
+            
+            sup {
+                font-size: 8px;
+                vertical-align: super;
+            }
+            
+            .outcomes-text {
+                margin: 5px 0;
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="chitkara-logo">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iNTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHRleHQgeD0iNSIgeT0iMTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSIjMDAwIj5DSElUS0FSQTwvdGV4dD48dGV4dCB4PSI1IiB5PSIyNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgiIGZpbGw9IiMwMDAiPlVOSVZFUlNJVFk8L3RleHQ+PHJlY3QgeD0iNTAiIHk9IjUiIHdpZHRoPSIyNSIgaGVpZ2h0PSIyNSIgZmlsbD0iI2UwMCIvPjwvc3ZnPg==" alt="Chitkara University Logo">
+            </div>
+            <div class="department-title">
+                Department of Computer Science & Engineering<br>
+                Chitkara University Institute of Engineering & Technology
+            </div>
+            <div class="explore-logo">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMzUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHRleHQgeD0iNSIgeT0iMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iI2YwMCI+ZXhwbENyZTwvdGV4dD48dGV4dCB4PSI0NSIgeT0iMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzAwMCI+TGFiPC90ZXh0PjxjaXJjbGUgY3g9IjYwIiBjeT0iMTUiIHI9IjEwIiBzdHJva2U9IiNmMDAiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==" alt="Explore Lab Logo">
+            </div>
+        </div>
+
+        <div class="event-details-title">EVENT DETAILS</div>
+
         <table>
-          <thead>
             <tr>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Amount</th>
+                <th>Title of the Event</th>
+                <td>${event.title}</td>
             </tr>
-          </thead>
-          <tbody>
-            ${event.expenses.map(expense => `
-              <tr>
-                <td>${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</td>
-                <td>${expense.description}</td>
-                <td>₹${expense.amount}</td>
-              </tr>
-            `).join('')}
-          </tbody>
+            <tr>
+                <th>Date of the Event</th>
+                <td>${event.date}</td>
+            </tr>
+            <tr>
+                <th>Venue</th>
+                <td>${event.venue}</td>
+            </tr>
+            <tr>
+                <th>SDG Number</th>
+                <td>${event.sdg || "N/A"}</td>
+            </tr>
+            <tr>
+                <th>Number of Students Enrolled</th>
+                <td>${event.studentsEnrolled}</td>
+            </tr>
+            <tr>
+                <th>Number of Students Attended</th>
+                <td>${event.studentsAttended}</td>
+            </tr>
+            <tr>
+                <th>Resource Persons</th>
+                <td>${event.resourcePersons}</td>
+            </tr>
         </table>
-      ` : '<p>No expenses recorded for this event.</p>'}
-    </div>
-    
-    <div class="report-footer">
-      <p>This report was automatically generated by UNIBUX Club Management System.</p>
-      <p>© ${today.getFullYear()} UNIBUX</p>
-    </div>
+
+        <div class="section-title">Objectives:</div>
+        <p>${event.objectives}</p>
+
+        <div class="section-title">Outcomes:</div>
+        <p class="outcomes-text">The outcomes are:</p>
+        <ol>
+            ${event.outcomes.map(outcome => `<li>${outcome}</li>`).join("")}
+        </ol>
+    </body>
+    </html>
   `;
+
+  return template;
 }
 
 // Function to setup report view listeners
