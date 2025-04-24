@@ -10,14 +10,6 @@ const fs = require("fs")
 const cloudinary = require("cloudinary").v2
 const multer = require("multer") // Add missing multer import
 const { CloudinaryStorage } = require("multer-storage-cloudinary")
-const PizZip = require("pizzip");
-const Docxtemplater = require("docxtemplater");
-// const { ClubEvent } = require("./models/ClubEvent"); // Import your ClubEvent model
-// const path = require("path");
-
-// Example: Construct a file path on the server
-const filePath = path.join(__dirname, "uploads", "file.txt");
-console.log("Server file path:", filePath);
 
 // Load environment variables
 dotenv.config()
@@ -50,14 +42,6 @@ const storage = new CloudinaryStorage({
 
 // Initialize multer with Cloudinary storage
 const upload = multer({ storage })
-const uploadsDir = path.join(__dirname, "uploads");
-const outputsDir = path.join(__dirname, "outputs");
-
-// Create directories if they don't exist
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
-if (!fs.existsSync(outputsDir)) fs.mkdirSync(outputsDir);
-
-console.log("Directories ensured: uploads and outputs");
 
 // Configure CORS
 const corsOptions = {
@@ -2378,56 +2362,6 @@ app.post("/api/upload-image", diskUpload.single("image"), async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to upload image" })
   }
 })
-
-// Route to upload .docx template and generate report
-app.post("/api/generate-report", upload.single("template"), async (req, res) => {
-  const filePath = req.file.path; // Path to the uploaded template
-  const { eventId } = req.body;
-
-  try {
-    // Fetch event details from the database
-    const event = await ClubEvent.findById(eventId);
-    if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" });
-    }
-
-    // Replace placeholders with event data
-    const eventData = {
-      event_name: event.name,
-      event_date: event.startDate.toISOString().split("T")[0], // Format date as YYYY-MM-DD
-      venue: event.venue,
-      organizer: "UNIBUX Club Manager", // Example organizer
-      description: event.description,
-    };
-
-    // Read the uploaded template file
-    const content = fs.readFileSync(filePath, "binary");
-    const zip = new PizZip(content);
-
-    // Load the template into Docxtemplater
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-    doc.setData(eventData);
-
-    // Render the document (replace placeholders with data)
-    doc.render();
-
-    // Generate the final .docx file
-    const buffer = doc.getZip().generate({ type: "nodebuffer" });
-    const outputPath = path.join(__dirname, "outputs", `${Date.now()}-report.docx`);
-    fs.writeFileSync(outputPath, buffer);
-
-    // Send the generated file to the client
-    res.download(outputPath, "event-report.docx", () => {
-      // Cleanup: Delete temporary files
-      fs.unlinkSync(filePath);
-      fs.unlinkSync(outputPath);
-    });
-  } catch (err) {
-    console.error("Error generating the report:", err);
-    res.status(500).json({ success: false, message: "Error generating the report" });
-  }
-});
-
 
 // ==================== SERVER STARTUP ====================
 
