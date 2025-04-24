@@ -1,4 +1,10 @@
 // import { Chart } from "@/components/ui/chart"
+const uploadsDir = path.join(__dirname, "uploads");
+const outputsDir = path.join(__dirname, "outputs");
+
+// Create directories if they don't exist
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(outputsDir)) fs.mkdirSync(outputsDir);
 // Initialize the application when the DOM is loaded
 document.addEventListener("DOMContentLoaded", async () => {
   showLoader() // 👈 loader starts
@@ -4758,4 +4764,57 @@ async function updateTeamStatus(teamId, newStatus, customEmail = null) {
   } finally {
     hideLoader() // Always hide loader when operation completes
   }
+}
+
+// Function to upload a .docx template and generate a report
+async function uploadTemplateAndGenerateReport(eventId) {
+  const fileInput = document.getElementById("template-upload");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Please upload a .docx template.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("template", file);
+  formData.append("eventId", eventId);
+
+  showLoader(); // Show loading animation
+
+  try {
+    const response = await fetch("/api/generate-report", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate the report.");
+    }
+
+    // Download the generated report
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "event-report.docx";
+    link.click();
+
+    alert("Report generated successfully!");
+  } catch (error) {
+    console.error("Error generating the report:", error);
+    alert("Error generating the report. Please try again.");
+  } finally {
+    hideLoader(); // Hide loading animation
+  }
+}
+
+// Function to attach event listeners for report generation
+function setupReportTemplateListeners() {
+  const generateReportBtn = document.getElementById("generate-report-btn");
+
+  generateReportBtn.addEventListener("click", () => {
+    const eventId = document.getElementById("event-id").value; // Replace with your event ID logic
+    uploadTemplateAndGenerateReport(eventId);
+  });
 }
