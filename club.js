@@ -3,6 +3,8 @@ const uploadsDir = path.join(__dirname, "uploads");
 const outputsDir = path.join(__dirname, "outputs");
 const filePath = "uploads/file.txt"; // Use a simple string for the file path
 console.log("File path:", filePath);
+const url = new URL(window.location.href);
+console.log("Pathname:", url.pathname); // Get current path
 // Create directories if they don't exist
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 if (!fs.existsSync(outputsDir)) fs.mkdirSync(outputsDir);
