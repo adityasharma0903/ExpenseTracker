@@ -6,8 +6,8 @@ console.log("File path:", filePath);
 const url = new URL(window.location.href);
 console.log("Pathname:", url.pathname); // Get current path
 // Create directories if they don't exist
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
-if (!fs.existsSync(outputsDir)) fs.mkdirSync(outputsDir);
+// if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+// if (!fs.existsSync(outputsDir)) fs.mkdirSync(outputsDir);
 // Initialize the application when the DOM is loaded
 document.addEventListener("DOMContentLoaded", async () => {
   showLoader() // 👈 loader starts

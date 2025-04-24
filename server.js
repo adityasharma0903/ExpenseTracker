@@ -50,6 +50,14 @@ const storage = new CloudinaryStorage({
 
 // Initialize multer with Cloudinary storage
 const upload = multer({ storage })
+const uploadsDir = path.join(__dirname, "uploads");
+const outputsDir = path.join(__dirname, "outputs");
+
+// Create directories if they don't exist
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(outputsDir)) fs.mkdirSync(outputsDir);
+
+console.log("Directories ensured: uploads and outputs");
 
 // Configure CORS
 const corsOptions = {
