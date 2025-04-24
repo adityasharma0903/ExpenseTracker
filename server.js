@@ -12,7 +12,12 @@ const multer = require("multer") // Add missing multer import
 const { CloudinaryStorage } = require("multer-storage-cloudinary")
 const PizZip = require("pizzip");
 const Docxtemplater = require("docxtemplater");
-const { ClubEvent } = require("./models/ClubEvent"); // Import your ClubEvent model
+// const { ClubEvent } = require("./models/ClubEvent"); // Import your ClubEvent model
+// const path = require("path");
+
+// Example: Construct a file path on the server
+const filePath = path.join(__dirname, "uploads", "file.txt");
+console.log("Server file path:", filePath);
 
 // Load environment variables
 dotenv.config()
@@ -2414,6 +2419,7 @@ app.post("/api/generate-report", upload.single("template"), async (req, res) => 
     res.status(500).json({ success: false, message: "Error generating the report" });
   }
 });
+
 
 // ==================== SERVER STARTUP ====================
 
