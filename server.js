@@ -2242,101 +2242,38 @@ app.get("/api/approved-teams", async (req, res) => {
 // Route to generate report from template
 app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
   try {
-    console.log("📄 Generate report request received");
-    
+    const { eventId, eventName, eventDetails } = req.body;
+
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "No template file provided" });
+      return res.status(400).json({ success: false, message: "No template file uploaded." });
     }
-    
-    const eventId = req.body.eventId;
-    if (!eventId) {
-      return res.status(400).json({ success: false, message: "No event ID provided" });
-    }
-    
-    console.log(`📄 Generating report for event ID: ${eventId}`);
-    console.log(`📄 Template file: ${req.file.path}`);
-    
-    // Get event data
-    const event = await ClubEvent.findById(eventId);
-    if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" });
-    }
-    
-    // Get team registrations for this event
-    const teamRegistrations = await TeamRegistration.find({ eventId });
-    
-    // Prepare data for template
-    const data = {
-      eventName: event.name,
-      eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
-      eventTime: `${event.startTime} - ${event.endTime}`,
-      eventVenue: event.venue,
-      eventDescription: event.description,
-      eventBudget: `₹${event.totalBudget || 0}`,
-      clubName: event.clubId, // You might want to map this to a readable name
-      teamCount: teamRegistrations.length,
-      prizePool: `₹${event.prizes?.pool || 0}`,
-      // Add more data as needed
-    };
-    
-    console.log("📄 Data prepared for template:", data);
-    
-    // Read the template file
-    const templateContent = fs.readFileSync(req.file.path);
-    const zip = new PizZip(templateContent);
-    
-    // Create docxtemplater instance
-    const doc = new docxtemplater();
-    doc.loadZip(zip);
-    
-    // Set the data
-    doc.setData(data);
-    
-    // Render the document
-    try {
-      doc.render();
-    } catch (error) {
-      console.error("📄 Error rendering template:", error);
-      return res.status(500).json({ 
-        success: false, 
-        message: "Error rendering template", 
-        error: error.message 
-      });
-    }
-    
-    // Generate output
-    const buf = doc.getZip().generate({ type: "nodebuffer" });
-    
-    // Save the generated file
-    const outputPath = path.join(uploadsDir, `report_${eventId}_${Date.now()}.docx`);
-    fs.writeFileSync(outputPath, buf);
-    
-    console.log(`📄 Report generated and saved to: ${outputPath}`);
-    
-    // Send the file as response
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-    res.setHeader("Content-Disposition", `attachment; filename="report_${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.docx"`);
-    res.send(buf);
-    
-    // Clean up - delete the template file after a delay
-    setTimeout(() => {
-      try {
-        fs.unlinkSync(req.file.path);
-        console.log(`📄 Deleted template file: ${req.file.path}`);
-      } catch (err) {
-        console.error(`📄 Error deleting template file: ${err.message}`);
-      }
-    }, 5000);
-    
-  } catch (error) {
-    console.error("📄 Error generating report:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error", 
-      error: error.message 
+
+    const templatePath = req.file.path;
+    const content = fs.readFileSync(templatePath, "binary");
+    const zip = new PizZip(content);
+    const doc = new docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.setData(JSON.parse(eventDetails));
+    doc.render();
+
+    const buffer = doc.getZip().generate({ type: "nodebuffer" });
+
+    const outputPath = path.join(__dirname, "uploads", `report_${eventId}.docx`);
+    fs.writeFileSync(outputPath, buffer);
+
+    res.status(200).json({
+      success: true,
+      message: "Report generated successfully",
+      downloadUrl: `/uploads/report_${eventId}.docx`,
     });
+  } catch (error) {
+    console.error("❌ Report generation failed:", error);
+    res.status(500).json({ success: false, message: "Failed to generate report" });
   }
 });
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 // Route to update report content
 app.post("/api/update-report", express.json({ limit: "10mb" }), async (req, res) => {
