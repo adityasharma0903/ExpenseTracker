@@ -1474,24 +1474,47 @@
   </div>
 
   <!-- Report View Modal -->
-  <div id="report-view-modal" class="modal">
-    <div class="modal-content modal-lg">
+  <div id="report-template-modal" class="modal">
+    <div class="modal-content">
       <div class="modal-header">
-        <h2><i class="fas fa-file-alt"></i> <span id="report-title">Event Report</span></h2>
+        <h2><i class="fas fa-file-alt"></i> Create Event Report</h2>
         <span class="close-modal"><i class="fas fa-times"></i></span>
       </div>
       <div class="modal-body">
-        <div class="report-actions">
-          <button id="edit-report-btn" class="btn-primary">
-            <i class="fas fa-edit"></i> Edit
-          </button>
-          <button id="download-report-btn" class="btn-primary">
-            <i class="fas fa-download"></i> Download PDF
-          </button>
+        <div class="form-group">
+          <label for="report-template">Upload your template of report (.docx)</label>
+          <div class="file-input-container">
+            <input type="file" id="report-template" accept=".docx">
+            <label for="report-template" class="file-input-label">
+              <i class="fas fa-upload"></i> Choose File
+            </label>
+            <span class="file-name">No file chosen</span>
+          </div>
         </div>
-        <div id="report-content" class="report-content" contenteditable="false">
-          <!-- Report content will be generated here -->
+        <div id="template-preview" class="template-preview">
+          <i class="fas fa-file-alt"></i>
+          <span>No template selected</span>
         </div>
+        <div class="template-info">
+          <h3><i class="fas fa-info-circle"></i> Available Placeholders</h3>
+          <p>Your template can include these placeholders that will be replaced with event data:</p>
+          <ul class="placeholders-list">
+            <li><code>{eventName}</code> - Name of the event</li>
+            <li><code>{eventDate}</code> - Event date</li>
+            <li><code>{eventTime}</code> - Event time</li>
+            <li><code>{eventVenue}</code> - Event venue</li>
+            <li><code>{eventDescription}</code> - Event description</li>
+            <li><code>{eventBudget}</code> - Total event budget</li>
+            <li><code>{clubName}</code> - Club name</li>
+            <li><code>{teamCount}</code> - Number of registered teams</li>
+            <li><code>{prizePool}</code> - Total prize pool</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="create-report-btn" class="btn-primary">
+          <i class="fas fa-file-alt"></i> Generate Report
+        </button>
       </div>
     </div>
   </div>

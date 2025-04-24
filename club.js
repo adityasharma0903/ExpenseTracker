@@ -2300,24 +2300,24 @@ document.getElementById("btn-create-report").addEventListener("click", () => {
 function openReportTemplateModal(eventId) {
   const modal = document.getElementById("report-template-modal");
   modal.setAttribute("data-event-id", eventId);
-  
+
   // Reset form
   document.getElementById("report-template").value = "";
   document.querySelector("#report-template-modal .file-name").textContent = "No file chosen";
   document.getElementById("template-preview").innerHTML = '<i class="fas fa-file-alt"></i><span>No template selected</span>';
-  
+
   // Add event listener to file input
   const fileInput = document.getElementById("report-template");
   fileInput.addEventListener("change", handleTemplateUpload);
-  
+
   // Add event listener to create report button
   document.getElementById("create-report-btn").addEventListener("click", () => {
     generateEventReport(eventId);
   });
-  
+
   // Show modal
   modal.style.display = "block";
-  
+
   // Add event listener to close button
   modal.querySelector(".close-modal").addEventListener("click", () => {
     modal.style.display = "none";
@@ -2329,20 +2329,20 @@ function handleTemplateUpload(e) {
   const file = e.target.files[0];
   const preview = document.getElementById("template-preview");
   const fileNameDisplay = document.querySelector("#report-template-modal .file-name");
-  
+
   if (file) {
     // Store the file for later use
     window.reportTemplateFile = file;
-    
+
     // Update file name display
     fileNameDisplay.textContent = file.name;
-    
+
     // Update preview
     preview.innerHTML = `
-      <i class="fas fa-file-${file.name.endsWith('.pdf') ? 'pdf' : 'word'}"></i>
+      <i class="fas fa-file-word" style="color: #2b579a;"></i>
       <span>${file.name}</span>
     `;
-    
+
     // Enable create report button
     document.getElementById("create-report-btn").disabled = false;
   } else {
@@ -2352,62 +2352,257 @@ function handleTemplateUpload(e) {
     document.getElementById("create-report-btn").disabled = true;
   }
 }
-
-// Function to generate event report
-async function generateEventReport(eventId) {
-  showLoader();
-  
+async function fetchEventById(eventId) {
   try {
-    // Fetch event details
     const token = localStorage.getItem("authToken");
-    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events/${eventId}`, {
+    const response = await fetch(`/api/club-events/${eventId}`, {
       headers: {
         "x-auth-token": token,
       },
     });
-    
+
     const data = await response.json();
-    
+
     if (!data.success || !data.event) {
-      showToast("Error", "Failed to fetch event details", "error");
+      throw new Error("Failed to fetch event details");
+    }
+
+    return data.event;
+  } catch (error) {
+    console.error("Error fetching event:", error);
+    throw error;
+  }
+}
+// Function to generate event report
+async function generateEventReport(eventId) {
+  showLoader();
+
+  try {
+    if (!window.reportTemplateFile) {
+      showToast("Error", "Please upload a template file", "error");
       hideLoader();
       return;
     }
-    
-    const event = data.event;
-    
+
+    // Create FormData to send the template file
+    const formData = new FormData();
+    formData.append("template", window.reportTemplateFile);
+    formData.append("eventId", eventId);
+
+    // Send the template to the server
+    const response = await fetch("/api/generate-report", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    }
+
+    // Get the response as blob
+    const blob = await response.blob();
+
+    // Store the blob for later use
+    window.generatedDocxBlob = blob;
+
     // Close template modal
     document.getElementById("report-template-modal").style.display = "none";
-    
-    // Generate report content
-    const reportContent = generateReportContent(event);
-    
-    // Set report title
-    document.getElementById("report-title").textContent = `${event.name} - Report`;
-    
-    // Set report content
-    document.getElementById("report-content").innerHTML = reportContent;
-    
-    // Show report view modal
-    const reportModal = document.getElementById("report-view-modal");
-    reportModal.style.display = "block";
-    
-    // Add event listeners
-    setupReportViewListeners(event);
-    
+
+    // Show the preview modal
+    const previewModal = document.getElementById("docx-preview-modal");
+    previewModal.style.display = "block";
+
+    // Set the title
+    const event = await fetchEventById(eventId);
+    document.getElementById("docx-preview-title").textContent = `${event.name} - Report Preview`;
+
+    // Show preview
+    await showDocxPreview(blob);
+
+    // Setup event listeners
+    setupDocxPreviewListeners(eventId, event.name);
+
     hideLoader();
   } catch (error) {
     console.error("Error generating report:", error);
-    showToast("Error", "Failed to generate report", "error");
+    showToast("Error", "Failed to generate report: " + error.message, "error");
     hideLoader();
   }
+}
+
+async function showDocxPreview(blob) {
+  const container = document.getElementById("docx-preview-container");
+  container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading preview...</div>';
+
+  try {
+    // Convert DOCX to HTML using mammoth.js (loaded from CDN)
+    if (typeof mammoth === 'undefined') {
+      // Load mammoth.js if not already loaded
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js");
+    }
+
+    const result = await mammoth.convertToHtml({ arrayBuffer: await blob.arrayBuffer() });
+
+    // Display the HTML
+    container.innerHTML = `<div class="document-content">${result.value}</div>`;
+
+    // Store the text content for editing
+    window.docxTextContent = result.value;
+    document.getElementById("docx-content-editor").value = result.value;
+
+  } catch (error) {
+    console.error("Error previewing DOCX:", error);
+    container.innerHTML = `<div class="error-message">Error previewing document: ${error.message}</div>`;
+  }
+}
+
+function setupDocxPreviewListeners(eventId, eventName) {
+  const previewModal = document.getElementById("docx-preview-modal");
+  const editBtn = document.getElementById("edit-docx-btn");
+  const downloadDocxBtn = document.getElementById("download-docx-btn");
+  const downloadPdfBtn = document.getElementById("download-pdf-btn");
+  const saveBtn = document.getElementById("save-docx-content");
+  const previewContainer = document.getElementById("docx-preview-container");
+  const editContainer = document.getElementById("docx-edit-container");
+
+  // Close button
+  previewModal.querySelector(".close-modal").addEventListener("click", () => {
+    previewModal.style.display = "none";
+  });
+
+  // Edit button
+  editBtn.addEventListener("click", () => {
+    previewContainer.classList.add("hidden");
+    editContainer.classList.remove("hidden");
+    editBtn.innerHTML = '<i class="fas fa-eye"></i> Show Preview';
+
+    // Toggle button function
+    editBtn.onclick = () => {
+      if (previewContainer.classList.contains("hidden")) {
+        // Switch to preview
+        previewContainer.classList.remove("hidden");
+        editContainer.classList.add("hidden");
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Content';
+      } else {
+        // Switch to edit
+        previewContainer.classList.add("hidden");
+        editContainer.classList.remove("hidden");
+        editBtn.innerHTML = '<i class="fas fa-eye"></i> Show Preview';
+      }
+    };
+  });
+
+  // Save button
+  saveBtn.addEventListener("click", async () => {
+    const newContent = document.getElementById("docx-content-editor").value;
+
+    // Update preview
+    previewContainer.querySelector(".document-content").innerHTML = newContent;
+
+    // Update stored content
+    window.docxTextContent = newContent;
+
+    // Switch to preview
+    previewContainer.classList.remove("hidden");
+    editContainer.classList.add("hidden");
+    editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Content';
+
+    showToast("Success", "Content updated", "success");
+
+    // Send updated content to server to regenerate DOCX
+    try {
+      showLoader();
+
+      const response = await fetch("/api/update-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          eventId,
+          htmlContent: newContent
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the updated blob
+      const blob = await response.blob();
+      window.generatedDocxBlob = blob;
+
+      hideLoader();
+    } catch (error) {
+      console.error("Error updating report:", error);
+      showToast("Warning", "Preview updated but failed to update document for download", "warning");
+      hideLoader();
+    }
+  });
+
+  // Download DOCX button
+  downloadDocxBtn.addEventListener("click", () => {
+    if (!window.generatedDocxBlob) {
+      showToast("Error", "No document available for download", "error");
+      return;
+    }
+
+    // Create download link
+    const url = URL.createObjectURL(window.generatedDocxBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${eventName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // Download PDF button
+  downloadPdfBtn.addEventListener("click", async () => {
+    try {
+      showLoader();
+
+      // Send request to convert DOCX to PDF
+      const formData = new FormData();
+      formData.append("docx", window.generatedDocxBlob);
+
+      const response = await fetch("/api/convert-to-pdf", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the PDF blob
+      const pdfBlob = await response.blob();
+
+      // Create download link
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${eventName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      hideLoader();
+    } catch (error) {
+      console.error("Error converting to PDF:", error);
+      showToast("Error", "Failed to convert to PDF: " + error.message, "error");
+      hideLoader();
+    }
+  });
 }
 
 // Function to generate report content
 function generateReportContent(event) {
   const today = new Date();
   const formattedDate = formatDate(today);
-  
+
   return `
     <div class="report-header">
       <h1>${event.name} - Event Report</h1>
@@ -2500,16 +2695,16 @@ function setupReportViewListeners(event) {
   const reportContent = document.getElementById("report-content");
   const editBtn = document.getElementById("edit-report-btn");
   const downloadBtn = document.getElementById("download-report-btn");
-  
+
   // Close button
   reportModal.querySelector(".close-modal").addEventListener("click", () => {
     reportModal.style.display = "none";
   });
-  
+
   // Edit button
   editBtn.addEventListener("click", () => {
     const isEditable = reportContent.getAttribute("contenteditable") === "true";
-    
+
     if (isEditable) {
       // Save changes
       reportContent.setAttribute("contenteditable", "false");
@@ -2522,7 +2717,7 @@ function setupReportViewListeners(event) {
       editBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
     }
   });
-  
+
   // Download button
   downloadBtn.addEventListener("click", () => {
     downloadReportAsPDF(event.name);
@@ -2532,14 +2727,14 @@ function setupReportViewListeners(event) {
 // Function to download report as PDF
 function downloadReportAsPDF(eventName) {
   showLoader();
-  
+
   try {
     const reportContent = document.getElementById("report-content");
     const reportTitle = document.getElementById("report-title").textContent;
-    
+
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
-    
+
     // Add content to the new window
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -2611,10 +2806,10 @@ function downloadReportAsPDF(eventName) {
       </body>
       </html>
     `);
-    
+
     // Wait for content to load
     printWindow.document.close();
-    printWindow.onload = function() {
+    printWindow.onload = function () {
       // Print the window to PDF
       printWindow.print();
       hideLoader();

@@ -4185,3 +4185,81 @@ textarea {
 .btn-report-detail:hover {
   background-color: #059669;
 }
+
+/* Add these styles for the DOCX preview and editing */
+.docx-preview-container {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  margin-top: 20px;
+  min-height: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.docx-edit-container {
+  margin-top: 20px;
+}
+
+.docx-edit-container textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.placeholders-list {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 10px;
+}
+
+.placeholders-list li {
+  padding: 5px 0;
+}
+
+.placeholders-list code {
+  background-color: #f5f5f5;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  color: #e83e8c;
+}
+
+/* Style for the document preview */
+.document-content {
+  font-family: 'Times New Roman', Times, serif;
+  line-height: 1.6;
+}
+
+.document-content h1, 
+.document-content h2, 
+.document-content h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.document-content p {
+  margin-bottom: 1rem;
+}
+
+.document-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.document-content table, 
+.document-content th, 
+.document-content td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.document-content th {
+  background-color: #f2f2f2;
+  text-align: left;
+}

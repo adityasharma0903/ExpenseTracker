@@ -10,6 +10,49 @@ const fs = require("fs")
 const cloudinary = require("cloudinary").v2
 const multer = require("multer") // Add missing multer import
 const { CloudinaryStorage } = require("multer-storage-cloudinary")
+const docxtemplater = require("docxtemplater");
+const PizZip = require("pizzip");
+const fs = require("fs");
+const path = require("path");
+const { PDFDocument } = require("pdf-lib");
+const libre = require("libreoffice-convert");
+const { promisify } = require("util");
+const mammoth = require("mammoth");
+const cheerio = require("cheerio");
+const tmp = require("tmp");
+
+
+const libreConvert = promisify(libre.convert);
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+
+// Configure multer storage for report templates
+const reportStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `template_${Date.now()}_${file.originalname}`);
+  }
+});
+
+const reportUpload = multer({ 
+  storage: reportStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept only .docx files
+    if (file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only .docx files are allowed"), false);
+    }
+  }
+});
 
 // Load environment variables
 dotenv.config()
@@ -2196,7 +2239,222 @@ app.get("/api/approved-teams", async (req, res) => {
     })
   }
 })
+// Route to generate report from template
+app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
+  try {
+    console.log("📄 Generate report request received");
+    
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No template file provided" });
+    }
+    
+    const eventId = req.body.eventId;
+    if (!eventId) {
+      return res.status(400).json({ success: false, message: "No event ID provided" });
+    }
+    
+    console.log(`📄 Generating report for event ID: ${eventId}`);
+    console.log(`📄 Template file: ${req.file.path}`);
+    
+    // Get event data
+    const event = await ClubEvent.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: "Event not found" });
+    }
+    
+    // Get team registrations for this event
+    const teamRegistrations = await TeamRegistration.find({ eventId });
+    
+    // Prepare data for template
+    const data = {
+      eventName: event.name,
+      eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
+      eventTime: `${event.startTime} - ${event.endTime}`,
+      eventVenue: event.venue,
+      eventDescription: event.description,
+      eventBudget: `₹${event.totalBudget || 0}`,
+      clubName: event.clubId, // You might want to map this to a readable name
+      teamCount: teamRegistrations.length,
+      prizePool: `₹${event.prizes?.pool || 0}`,
+      // Add more data as needed
+    };
+    
+    console.log("📄 Data prepared for template:", data);
+    
+    // Read the template file
+    const templateContent = fs.readFileSync(req.file.path);
+    const zip = new PizZip(templateContent);
+    
+    // Create docxtemplater instance
+    const doc = new docxtemplater();
+    doc.loadZip(zip);
+    
+    // Set the data
+    doc.setData(data);
+    
+    // Render the document
+    try {
+      doc.render();
+    } catch (error) {
+      console.error("📄 Error rendering template:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error rendering template", 
+        error: error.message 
+      });
+    }
+    
+    // Generate output
+    const buf = doc.getZip().generate({ type: "nodebuffer" });
+    
+    // Save the generated file
+    const outputPath = path.join(uploadsDir, `report_${eventId}_${Date.now()}.docx`);
+    fs.writeFileSync(outputPath, buf);
+    
+    console.log(`📄 Report generated and saved to: ${outputPath}`);
+    
+    // Send the file as response
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename="report_${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.docx"`);
+    res.send(buf);
+    
+    // Clean up - delete the template file after a delay
+    setTimeout(() => {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log(`📄 Deleted template file: ${req.file.path}`);
+      } catch (err) {
+        console.error(`📄 Error deleting template file: ${err.message}`);
+      }
+    }, 5000);
+    
+  } catch (error) {
+    console.error("📄 Error generating report:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+});
 
+// Route to update report content
+app.post("/api/update-report", express.json({ limit: "10mb" }), async (req, res) => {
+  try {
+    const { eventId, htmlContent } = req.body;
+    
+    if (!eventId || !htmlContent) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+    
+    // Get event data
+    const event = await ClubEvent.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: "Event not found" });
+    }
+    
+    // Create a temporary HTML file
+    const htmlPath = path.join(uploadsDir, `report_${eventId}_${Date.now()}.html`);
+    
+    // Add basic HTML structure around the content
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>${event.name} - Report</title>
+        <style>
+          body { font-family: 'Times New Roman', Times, serif; line-height: 1.6; }
+          h1, h2, h3 { margin-top: 1.5rem; margin-bottom: 1rem; }
+          p { margin-bottom: 1rem; }
+          table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+          table, th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f2f2f2; text-align: left; }
+        </style>
+      </head>
+      <body>
+        ${htmlContent}
+      </body>
+      </html>
+    `;
+    
+    fs.writeFileSync(htmlPath, fullHtml);
+    
+    // Convert HTML to DOCX using libreoffice
+    const outputPath = path.join(uploadsDir, `report_${eventId}_${Date.now()}.docx`);
+    
+    // Use libreoffice to convert HTML to DOCX
+    const htmlFile = fs.readFileSync(htmlPath);
+    const docxBuffer = await libreConvert(htmlFile, ".docx", undefined);
+    
+    // Save the DOCX file
+    fs.writeFileSync(outputPath, docxBuffer);
+    
+    // Send the file as response
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename="report_${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.docx"`);
+    res.send(docxBuffer);
+    
+    // Clean up - delete temporary files after a delay
+    setTimeout(() => {
+      try {
+        fs.unlinkSync(htmlPath);
+        fs.unlinkSync(outputPath);
+        console.log(`📄 Deleted temporary files`);
+      } catch (err) {
+        console.error(`📄 Error deleting temporary files: ${err.message}`);
+      }
+    }, 5000);
+    
+  } catch (error) {
+    console.error("📄 Error updating report:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+});
+
+// Route to convert DOCX to PDF
+app.post("/api/convert-to-pdf", reportUpload.single("docx"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No DOCX file provided" });
+    }
+    
+    console.log(`📄 Converting DOCX to PDF: ${req.file.path}`);
+    
+    // Read the DOCX file
+    const docxBuffer = fs.readFileSync(req.file.path);
+    
+    // Convert DOCX to PDF using libreoffice
+    const pdfBuffer = await libreConvert(docxBuffer, ".pdf", undefined);
+    
+    // Send the PDF file as response
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="report.pdf"`);
+    res.send(pdfBuffer);
+    
+    // Clean up - delete the DOCX file after a delay
+    setTimeout(() => {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log(`📄 Deleted DOCX file: ${req.file.path}`);
+      } catch (err) {
+        console.error(`📄 Error deleting DOCX file: ${err.message}`);
+      }
+    }, 5000);
+    
+  } catch (error) {
+    console.error("📄 Error converting to PDF:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+});
 // ==================== ADMIN DASHBOARD ROUTES ====================
 
 // @route   GET api/admin/club-data
