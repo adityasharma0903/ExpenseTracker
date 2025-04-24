@@ -1,6 +1,6 @@
 // import { Chart } from "@/components/ui/chart"
-const uploadsDir = path.join(__dirname, "uploads");
-const outputsDir = path.join(__dirname, "outputs");
+const uploadsDir = "/uploads"; // Use a relative or absolute path as a string
+const outputsDir = "/outputs"; // Use a relative or absolute path as a string
 const filePath = "uploads/file.txt"; // Use a simple string for the file path
 console.log("File path:", filePath);
 const url = new URL(window.location.href);
