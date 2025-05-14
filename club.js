@@ -2389,8 +2389,32 @@ async function generateEventReport(eventId) {
     formData.append("template", window.reportTemplateFile);
     formData.append("eventId", eventId);
 
+    // Get event data to include in the report
+    const event = await fetchEvents().then(events => 
+      events.find(e => e._id === eventId || e.id === eventId)
+    );
+
+    if (!event) {
+      throw new Error("Event not found");
+    }
+
+    // Add event details to the form data
+    const eventDetails = {
+      eventName: event.name,
+      eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
+      eventTime: `${event.startTime} - ${event.endTime}`,
+      eventVenue: event.venue,
+      eventDescription: event.description,
+      eventBudget: event.totalBudget || 0,
+      clubName: event.clubId,
+      teamCount: event.teams || 0,
+      prizePool: event.prizes?.pool || 0
+    };
+
+    formData.append("eventDetails", JSON.stringify(eventDetails));
+
     // Send the template to the server
-    const response = await fetch("/api/generate-report", {
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
       method: "POST",
       body: formData
     });
@@ -2399,29 +2423,23 @@ async function generateEventReport(eventId) {
       throw new Error(`Server returned ${response.status}: ${response.statusText}`);
     }
 
-    // Get the response as blob
-    const blob = await response.blob();
+    // Get the response data
+    const data = await response.json();
 
-    // Store the blob for later use
-    window.generatedDocxBlob = blob;
+    if (!data.success) {
+      throw new Error(data.message || "Failed to generate report");
+    }
 
-    // Close template modal
-    document.getElementById("report-template-modal").style.display = "none";
+    // Download the generated report
+    const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-    // Show the preview modal
-    const previewModal = document.getElementById("docx-preview-modal");
-    previewModal.style.display = "block";
-
-    // Set the title
-    const event = await fetchEventById(eventId);
-    document.getElementById("docx-preview-title").textContent = `${event.name} - Report Preview`;
-
-    // Show preview
-    await showDocxPreview(blob);
-
-    // Setup event listeners
-    setupDocxPreviewListeners(eventId, event.name);
-
+    showToast("Success", "Report generated successfully", "success");
     hideLoader();
   } catch (error) {
     console.error("Error generating report:", error);
