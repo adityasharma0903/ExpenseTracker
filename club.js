@@ -2352,7 +2352,6 @@ function handleTemplateUpload(e) {
     document.getElementById("create-report-btn").disabled = true;
   }
 }
-
 async function fetchEventById(eventId) {
   try {
     const token = localStorage.getItem("authToken");
@@ -2390,32 +2389,26 @@ async function generateEventReport(eventId) {
     formData.append("template", window.reportTemplateFile);
     formData.append("eventId", eventId);
 
-    // Get event data directly from the event detail modal
-    // This ensures we're using the event data that's already loaded
-    const eventTitle = document.getElementById("detail-event-title").textContent;
-    const eventDescription = document.getElementById("detail-event-description").textContent;
-    const eventDate = document.getElementById("detail-event-date").textContent;
-    const eventTime = document.getElementById("detail-event-time").textContent;
-    const eventVenue = document.getElementById("detail-event-venue").textContent;
-    const eventBudget = document.getElementById("detail-event-budget").textContent.replace("₹", "");
-    const eventTeamSize = document.getElementById("detail-event-team-size").textContent;
-    const eventPrizePool = document.getElementById("detail-event-prize-pool").textContent.replace("₹", "");
-    
-    // Get club name from logged in user
-    const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
-    const clubName = loggedInClub ? loggedInClub.name : "UNIBUX Club";
+    // Get event data to include in the report
+    const event = await fetchEvents().then(events => 
+      events.find(e => e._id === eventId || e.id === eventId)
+    );
 
-    // Create event details object
+    if (!event) {
+      throw new Error("Event not found");
+    }
+
+    // Add event details to the form data
     const eventDetails = {
-      eventName: eventTitle,
-      eventDate: eventDate,
-      eventTime: eventTime,
-      eventVenue: eventVenue,
-      eventDescription: eventDescription,
-      eventBudget: eventBudget,
-      clubName: clubName,
-      teamSize: eventTeamSize,
-      prizePool: eventPrizePool
+      eventName: event.name,
+      eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
+      eventTime: `${event.startTime} - ${event.endTime}`,
+      eventVenue: event.venue,
+      eventDescription: event.description,
+      eventBudget: event.totalBudget || 0,
+      clubName: event.clubId,
+      teamCount: event.teams || 0,
+      prizePool: event.prizes?.pool || 0
     };
 
     formData.append("eventDetails", JSON.stringify(eventDetails));
@@ -2441,7 +2434,7 @@ async function generateEventReport(eventId) {
     const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
     const a = document.createElement("a");
     a.href = downloadUrl;
-    a.download = `${eventTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
+    a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
