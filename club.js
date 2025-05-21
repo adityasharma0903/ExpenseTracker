@@ -2357,61 +2357,21 @@ async function fetchEventById(eventId) {
 // This is the fixed generateEventReport function for club.js
 // Modify your generateEventReport function to handle more complex data
 
-/**
- * Generates a report for an event using a template
- * @param {string} eventId - The ID of the event to generate a report for
- * @param {Object} options - Optional configuration
- * @param {boolean} options.saveToHistory - Whether to save the report to history (default: true)
- * @param {boolean} options.showProgress - Whether to show progress updates (default: true)
- * @param {number} options.retryAttempts - Number of retry attempts for failed requests (default: 2)
- * @returns {Promise<Object>} - A promise that resolves to the report data
- */
-async function generateEventReport(eventId, options = {}) {
-  // Default options
-  const config = {
-    saveToHistory: true,
-    showProgress: true,
-    retryAttempts: 2,
-    ...options
-  };
-  
-  console.log("[ReportGen] Generating report for event:", eventId, "with options:", config);
-  
-  // Track progress
-  let progressSteps = 0;
-  const totalSteps = 6;
-  
-  function updateProgress(message) {
-    progressSteps++;
-    if (config.showProgress) {
-      const percent = Math.round((progressSteps / totalSteps) * 100);
-      showProgressToast("Generating Report", `${message} (${percent}%)`, percent);
-    }
-    console.log(`[ReportGen] Progress ${progressSteps}/${totalSteps}: ${message}`);
-  }
+async function generateEventReport(eventId) {
+  console.log("[ReportGen] Generating report for event:", eventId);
 
   try {
-    // Check if a template file has been uploaded
     if (!window.reportTemplateFile) {
       showToast("Error", "Please upload a template file", "error");
-      return null;
+      return;
     }
 
     showLoader();
-    updateProgress("Validating template");
 
-    // Validate template file
-    if (!validateTemplateFile(window.reportTemplateFile)) {
-      showToast("Error", "Invalid template file. Please upload a valid DOCX file.", "error");
-      hideLoader();
-      return null;
-    }
-
-    // Fetch all events
-    updateProgress("Fetching event data");
+    // Fetch event data
     let events;
     try {
-      events = await fetchEventsWithRetry(config.retryAttempts);
+      events = await fetchEvents();
       if (!events || events.length === 0) {
         throw new Error("No events found");
       }
@@ -2419,7 +2379,7 @@ async function generateEventReport(eventId, options = {}) {
       console.error("[ReportGen] Error fetching events:", fetchError);
       showToast("Error", "Failed to fetch events: " + fetchError.message, "error");
       hideLoader();
-      return null;
+      return;
     }
     
     // Find the event - convert IDs to strings for comparison
@@ -2432,16 +2392,15 @@ async function generateEventReport(eventId, options = {}) {
       console.error("[ReportGen] Event not found. eventId:", eventId);
       showToast("Error", `Event not found (ID: ${eventId})`, "error");
       hideLoader();
-      return null;
+      return;
     }
 
     console.log("[ReportGen] Found event:", event.name);
-    
-    // Check template variables if possible
-    updateProgress("Analyzing template");
-    let templateVars = [];
+    console.log("[ReportGen] FULL EVENT OBJECT:", JSON.stringify(event, null, 2));
+
+    // Check template variables
     try {
-      templateVars = await checkTemplateVariables(window.reportTemplateFile);
+      const templateVars = await checkTemplateVariables(window.reportTemplateFile);
       console.log("[ReportGen] Template variables:", templateVars);
     } catch (templateError) {
       console.warn("[ReportGen] Could not check template variables:", templateError);
@@ -2449,13 +2408,8 @@ async function generateEventReport(eventId, options = {}) {
     }
 
     // Create a new FormData object
-    updateProgress("Preparing data");
     const formData = new FormData();
-    
-    // Add template file to FormData
     formData.append("template", window.reportTemplateFile);
-    
-    // Add event ID to FormData
     formData.append("eventId", eventId);
 
     // Format dates properly
@@ -2465,77 +2419,80 @@ async function generateEventReport(eventId, options = {}) {
     const formattedEndDate = formatDate(endDate);
     
     // Enhanced event details object with fallbacks for all values
-    const eventDetails = buildEventDetailsObject(event, startDate, endDate, formattedStartDate, formattedEndDate);
-    
-    // Check for missing variables
-    if (templateVars.length > 0) {
-      const missingVars = templateVars.filter(v => 
-        !(v in eventDetails) && 
-        !v.startsWith('#') && 
-        !v.startsWith('/') &&
-        !v.includes('.')
-      );
+    const eventDetails = {
+      // Basic event info
+      eventName: event.name || "Unnamed Event",
+      eventDescription: event.description || "No description available",
+      eventDate: `${formattedStartDate} - ${formattedEndDate}`,
+      eventStartDateFormatted: formatDate(startDate, { day: 'numeric', month: 'long', year: 'numeric' }),
+      eventTime: `${event.startTime || "00:00"} - ${event.endTime || "00:00"}`,
+      eventVenue: event.venue || "TBD",
+      generatedDate: formatDate(new Date(), { month: 'short', day: 'numeric', year: 'numeric' }),
       
-      if (missingVars.length > 0) {
-        console.warn("[ReportGen] Template contains variables that are not in the data:", missingVars);
-        
-        // Add default values for missing variables
-        missingVars.forEach(varName => {
-          eventDetails[varName] = `[No data for ${varName}]`;
-        });
-      }
-    }
+      // Team info
+      teamSizeMin: event.teamMin || 1,
+      teamSizeMax: event.teamMax || 5,
+      teamSize: `${event.teamMin || 1} - ${event.teamMax || 5} members`,
+      
+      // Organization info
+      organizerName: event.organizer || event.clubId || "Chitkara University",
+      collaborator: event.collaborator || "SAP Labs India Pvt. Ltd.",
+      
+      // Theme info
+      themes: event.theme || "Sustainable Business, Preventing Digital Fraud, Ethics in AI Models for Business",
+      theme: event.theme || "Sustainable Business, Preventing Digital Fraud, Ethics in AI Models for Business",
+      
+      // Prize information
+      prizePool: event.prizePool || 210000,
+      firstPrize: event.firstPrize || 150000,
+      firstPrizeDescription: event.firstPrizeDescription || "prize given to the first winner",
+      secondPrize: event.secondPrize || 100000,
+      secondPrizeDescription: event.secondPrizeDescription || "-",
+      thirdPrize: event.thirdPrize || 50000,
+      thirdPrizeDescription: event.thirdPrizeDescription || "-",
+      
+      // Budget information
+      totalBudget: event.totalBudget || 310000,
+      
+      // Budget items
+      venueDescription: "stay",
+      venueAmount: 50000,
+      refreshmentsDescription: "breakfast lunch dinner",
+      refreshmentsAmount: 50000,
+      prizesDescription: "prizes",
+      prizesAmount: 210000,
+      
+      // Dynamic budget items
+      expenses: [
+        { category: "Venue", description: "stay", amount: 50000 },
+        { category: "Refreshments", description: "breakfast lunch dinner", amount: 50000 },
+        { category: "Prizes", description: "prizes", amount: 210000 }
+      ],
+      
+      // Year for copyright
+      currentYear: new Date().getFullYear(),
+      
+      // Add all original event properties to catch any we missed
+      ...event
+    };
     
-    // Log event details for debugging
+    console.log("[ReportGen] FULL EVENT DETAILS:", JSON.stringify(eventDetails, null, 2));
     console.log("[ReportGen] Available data keys:", Object.keys(eventDetails));
     
     // Add event details to FormData
     formData.append("eventDetails", JSON.stringify(eventDetails));
-    
+
     // Send to the server
-    updateProgress("Generating document");
     console.log("[ReportGen] Sending request to server...");
-    
-    let response;
-    let retryCount = 0;
-    
-    while (retryCount <= config.retryAttempts) {
-      try {
-        response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
-          method: "POST",
-          body: formData
-        });
-        
-        if (response.ok) break;
-        
-        // If we get here, the response was not ok
-        const errorText = await response.text();
-        console.error(`[ReportGen] Server error response (attempt ${retryCount + 1}/${config.retryAttempts + 1}):`, errorText);
-        
-        if (retryCount === config.retryAttempts) {
-          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-        }
-        
-        // Wait before retrying (exponential backoff)
-        const waitTime = Math.pow(2, retryCount) * 1000;
-        console.log(`[ReportGen] Retrying in ${waitTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        
-        retryCount++;
-      } catch (fetchError) {
-        if (retryCount === config.retryAttempts) {
-          throw fetchError;
-        }
-        
-        console.error(`[ReportGen] Fetch error (attempt ${retryCount + 1}/${config.retryAttempts + 1}):`, fetchError);
-        
-        // Wait before retrying (exponential backoff)
-        const waitTime = Math.pow(2, retryCount) * 1000;
-        console.log(`[ReportGen] Retrying in ${waitTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        
-        retryCount++;
-      }
+    const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[ReportGen] Server error response:", errorText);
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -2544,742 +2501,30 @@ async function generateEventReport(eventId, options = {}) {
       throw new Error(data.message || "Failed to generate report");
     }
 
-    updateProgress("Preparing preview");
-    
-    // Get download and editable preview URLs
+    // Get download and preview URLs
     const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
-    const editablePreviewUrl = `https://expensetracker-qppb.onrender.com/api/edit-report/${data.fileName || data.downloadUrl.split('/').pop()}`;
+    const previewUrl = `https://expensetracker-qppb.onrender.com/api/preview-report/${data.fileName || data.downloadUrl.split('/').pop()}`;
     
     console.log("[ReportGen] Download URL:", downloadUrl);
-    console.log("[ReportGen] Editable Preview URL:", editablePreviewUrl);
+    console.log("[ReportGen] Preview URL:", previewUrl);
     
-    // Save to report history if enabled
-    if (config.saveToHistory) {
-      saveReportToHistory({
-        eventId,
-        eventName: event.name,
-        templateName: window.reportTemplateFile.name,
-        timestamp: new Date().toISOString(),
-        downloadUrl,
-        editablePreviewUrl,
-        fileName: data.fileName
-      });
-    }
+    // Open preview in new tab
+    window.open(previewUrl, '_blank');
     
-    updateProgress("Opening preview");
+    // Also provide download link
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     
-    // Open editable preview in new tab
-    window.open(editablePreviewUrl, '_blank');
-    
-    // Show success message
-    showToast("Success", "Report generated successfully. Preview opened in new tab.", "success");
-    
-    // Return report data
-    return {
-      success: true,
-      eventId,
-      eventName: event.name,
-      downloadUrl,
-      editablePreviewUrl,
-      fileName: data.fileName
-    };
+    showToast("Success", "Report generated successfully", "success");
   } catch (error) {
     console.error("[ReportGen] Error generating report:", error);
     showToast("Error", "Failed to generate report: " + error.message, "error");
-    return {
-      success: false,
-      error: error.message
-    };
   } finally {
     hideLoader();
-    if (config.showProgress) {
-      hideProgressToast();
-    }
-  }
-}
-
-/**
- * Validates a template file
- * @param {File} file - The file to validate
- * @returns {boolean} - Whether the file is valid
- */
-function validateTemplateFile(file) {
-  if (!file || !(file instanceof File)) {
-    console.error("[ReportGen] Invalid template file:", file);
-    return false;
-  }
-  
-  // Check file type
-  const validTypes = [
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-    'application/msword' // .doc
-  ];
-  
-  if (!validTypes.includes(file.type)) {
-    console.error("[ReportGen] Invalid file type:", file.type);
-    return false;
-  }
-  
-  // Check file size (max 10MB)
-  const maxSize = 10 * 1024 * 1024;
-  if (file.size > maxSize) {
-    console.error("[ReportGen] File too large:", file.size);
-    return false;
-  }
-  
-  return true;
-}
-
-/**
- * Fetches events with retry logic
- * @param {number} maxRetries - Maximum number of retry attempts
- * @returns {Promise<Array>} - A promise that resolves to the events array
- */
-async function fetchEventsWithRetry(maxRetries = 2) {
-  let retryCount = 0;
-  
-  while (retryCount <= maxRetries) {
-    try {
-      const events = await fetchEvents();
-      return events;
-    } catch (error) {
-      if (retryCount === maxRetries) {
-        throw error;
-      }
-      
-      console.error(`[ReportGen] Error fetching events (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
-      
-      // Wait before retrying (exponential backoff)
-      const waitTime = Math.pow(2, retryCount) * 1000;
-      console.log(`[ReportGen] Retrying in ${waitTime}ms...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      
-      retryCount++;
-    }
-  }
-}
-
-/**
- * Builds the event details object
- * @param {Object} event - The event object
- * @param {Date} startDate - The start date
- * @param {Date} endDate - The end date
- * @param {string} formattedStartDate - The formatted start date
- * @param {string} formattedEndDate - The formatted end date
- * @returns {Object} - The event details object
- */
-function buildEventDetailsObject(event, startDate, endDate, formattedStartDate, formattedEndDate) {
-  return {
-    // Basic event info
-    eventName: event.name || "Unnamed Event",
-    eventDescription: event.description || "No description available",
-    eventDate: `${formattedStartDate} - ${formattedEndDate}`,
-    eventStartDateFormatted: formatDate(startDate, { day: 'numeric', month: 'long', year: 'numeric' }),
-    eventEndDateFormatted: formatDate(endDate, { day: 'numeric', month: 'long', year: 'numeric' }),
-    eventTime: `${event.startTime || "00:00"} - ${event.endTime || "00:00"}`,
-    eventVenue: event.venue || "TBD",
-    generatedDate: formatDate(new Date(), { month: 'short', day: 'numeric', year: 'numeric' }),
-    
-    // Team info
-    teamSizeMin: event.teamMin || 1,
-    teamSizeMax: event.teamMax || 5,
-    teamSize: `${event.teamMin || 1} - ${event.teamMax || 5} members`,
-    
-    // Organization info
-    organizerName: event.organizer || event.clubId || "Chitkara University",
-    collaborator: event.collaborator || "SAP Labs India Pvt. Ltd.",
-    
-    // Theme info
-    themes: event.theme || "Sustainable Business, Preventing Digital Fraud, Ethics in AI Models for Business",
-    theme: event.theme || "Sustainable Business, Preventing Digital Fraud, Ethics in AI Models for Business",
-    
-    // Prize information
-    prizePool: event.prizePool || 210000,
-    firstPrize: event.firstPrize || 150000,
-    firstPrizeDescription: event.firstPrizeDescription || "prize given to the first winner",
-    secondPrize: event.secondPrize || 100000,
-    secondPrizeDescription: event.secondPrizeDescription || "-",
-    thirdPrize: event.thirdPrize || 50000,
-    thirdPrizeDescription: event.thirdPrizeDescription || "-",
-    
-    // Budget information
-    totalBudget: event.totalBudget || 310000,
-    
-    // Budget items
-    venueDescription: "stay",
-    venueAmount: 50000,
-    refreshmentsDescription: "breakfast lunch dinner",
-    refreshmentsAmount: 50000,
-    prizesDescription: "prizes",
-    prizesAmount: 210000,
-    
-    // Dynamic budget items
-    expenses: [
-      { category: "Venue", description: "stay", amount: 50000 },
-      { category: "Refreshments", description: "breakfast lunch dinner", amount: 50000 },
-      { category: "Prizes", description: "prizes", amount: 210000 }
-    ],
-    
-    // Year for copyright
-    currentYear: new Date().getFullYear(),
-    
-    // Add all original event properties to catch any we missed
-    ...event
-  };
-}
-
-/**
- * Checks a template file for variables
- * @param {File} templateFile - The template file to check
- * @returns {Promise<string[]>} - A promise that resolves to an array of variable names
- */
-async function checkTemplateVariables(templateFile) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      try {
-        const content = e.target.result;
-        
-        // Simple regex to find template variables in the form {variableName}
-        const regex = /\{([^{}]+)\}/g;
-        const templateVars = [];
-        let match;
-        
-        while ((match = regex.exec(content)) !== null) {
-          templateVars.push(match[1]);
-        }
-        
-        console.log("[TemplateCheck] Variables found in template:", templateVars);
-        resolve(templateVars);
-      } catch (error) {
-        console.error("[TemplateCheck] Error checking template:", error);
-        reject(error);
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsBinaryString(templateFile);
-  });
-}
-
-/**
- * Formats a date with the specified options
- * @param {Date} date - The date to format
- * @param {Object} options - The formatting options
- * @returns {string} - The formatted date string
- */
-function formatDate(date, options = {}) {
-  if (!date || isNaN(date.getTime())) {
-    return "N/A";
-  }
-  
-  const defaultOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  };
-  
-  return date.toLocaleDateString('en-US', {...defaultOptions, ...options});
-}
-
-/**
- * Shows a progress toast message
- * @param {string} title - The toast title
- * @param {string} message - The toast message
- * @param {number} percent - The progress percentage
- */
-function showProgressToast(title, message, percent) {
-  // Check if we have a progress toast
-  let progressToast = document.getElementById("progress-toast");
-  
-  // Create one if it doesn't exist
-  if (!progressToast) {
-    progressToast = document.createElement("div");
-    progressToast.id = "progress-toast";
-    progressToast.style.position = "fixed";
-    progressToast.style.bottom = "20px";
-    progressToast.style.left = "20px";
-    progressToast.style.zIndex = "9999";
-    progressToast.style.backgroundColor = "#2c3e50";
-    progressToast.style.color = "white";
-    progressToast.style.padding = "15px";
-    progressToast.style.borderRadius = "4px";
-    progressToast.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
-    progressToast.style.minWidth = "300px";
-    document.body.appendChild(progressToast);
-  }
-  
-  // Update content
-  progressToast.innerHTML = `
-    <div style="font-weight: bold; margin-bottom: 5px;">${title}</div>
-    <div style="margin-bottom: 10px;">${message}</div>
-    <div style="background-color: #34495e; height: 10px; border-radius: 5px; overflow: hidden;">
-      <div style="background-color: #3498db; height: 100%; width: ${percent}%;"></div>
-    </div>
-  `;
-  
-  // Show the toast
-  progressToast.style.display = "block";
-}
-
-/**
- * Hides the progress toast
- */
-function hideProgressToast() {
-  const progressToast = document.getElementById("progress-toast");
-  if (progressToast) {
-    progressToast.style.display = "none";
-  }
-}
-
-/**
- * Shows a toast message
- * @param {string} title - The toast title
- * @param {string} message - The toast message
- * @param {string} type - The toast type (success, error, warning, info)
- * @param {number} duration - The toast duration in milliseconds
- */
-function showToast(title, message, type = "info", duration = 5000) {
-  // Check if we have a toast container
-  let toastContainer = document.getElementById("toast-container");
-  
-  // Create one if it doesn't exist
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.id = "toast-container";
-    toastContainer.style.position = "fixed";
-    toastContainer.style.top = "20px";
-    toastContainer.style.right = "20px";
-    toastContainer.style.zIndex = "9999";
-    document.body.appendChild(toastContainer);
-  }
-  
-  // Create toast element
-  const toast = document.createElement("div");
-  toast.style.minWidth = "300px";
-  toast.style.margin = "0 0 10px 0";
-  toast.style.padding = "15px";
-  toast.style.borderRadius = "4px";
-  toast.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
-  toast.style.display = "flex";
-  toast.style.flexDirection = "column";
-  toast.style.transition = "all 0.3s ease";
-  
-  // Set background color based on type
-  switch (type) {
-    case "success":
-      toast.style.backgroundColor = "#4CAF50";
-      toast.style.color = "white";
-      break;
-    case "error":
-      toast.style.backgroundColor = "#F44336";
-      toast.style.color = "white";
-      break;
-    case "warning":
-      toast.style.backgroundColor = "#FF9800";
-      toast.style.color = "white";
-      break;
-    default:
-      toast.style.backgroundColor = "#2196F3";
-      toast.style.color = "white";
-  }
-  
-  // Add title
-  const titleElement = document.createElement("div");
-  titleElement.style.fontWeight = "bold";
-  titleElement.style.marginBottom = "5px";
-  titleElement.textContent = title;
-  toast.appendChild(titleElement);
-  
-  // Add message - support HTML content
-  const messageElement = document.createElement("div");
-  messageElement.innerHTML = message;
-  toast.appendChild(messageElement);
-  
-  // Add to container
-  toastContainer.appendChild(toast);
-  
-  // Remove after duration
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    setTimeout(() => {
-      toastContainer.removeChild(toast);
-    }, 300);
-  }, duration);
-}
-
-/**
- * Shows the loader
- */
-function showLoader() {
-  const loader = document.getElementById("loader");
-  if (loader) {
-    loader.style.display = "flex";
-  }
-}
-
-/**
- * Hides the loader
- */
-function hideLoader() {
-  const loader = document.getElementById("loader");
-  if (loader) {
-    loader.style.display = "none";
-  }
-}
-
-/**
- * Saves a report to the history
- * @param {Object} report - The report data
- */
-function saveReportToHistory(report) {
-  try {
-    // Get existing history
-    let history = JSON.parse(localStorage.getItem('reportHistory') || '[]');
-    
-    // Add new report
-    history.unshift(report);
-    
-    // Limit history to 20 items
-    if (history.length > 20) {
-      history = history.slice(0, 20);
-    }
-    
-    // Save back to localStorage
-    localStorage.setItem('reportHistory', JSON.stringify(history));
-    
-    console.log("[ReportGen] Report saved to history:", report);
-  } catch (error) {
-    console.error("[ReportGen] Error saving report to history:", error);
-  }
-}
-
-/**
- * Gets the report history
- * @returns {Array} - The report history
- */
-function getReportHistory() {
-  try {
-    return JSON.parse(localStorage.getItem('reportHistory') || '[]');
-  } catch (error) {
-    console.error("[ReportGen] Error getting report history:", error);
-    return [];
-  }
-}
-
-/**
- * Clears the report history
- */
-function clearReportHistory() {
-  localStorage.removeItem('reportHistory');
-  console.log("[ReportGen] Report history cleared");
-}
-
-/**
- * Shows the report history UI
- */
-function showReportHistory() {
-  const history = getReportHistory();
-  
-  if (history.length === 0) {
-    showToast("History", "No reports have been generated yet", "info");
-    return;
-  }
-  
-  // Create modal
-  const modal = document.createElement("div");
-  modal.style.position = "fixed";
-  modal.style.top = "0";
-  modal.style.left = "0";
-  modal.style.width = "100%";
-  modal.style.height = "100%";
-  modal.style.backgroundColor = "rgba(0,0,0,0.5)";
-  modal.style.zIndex = "9999";
-  modal.style.display = "flex";
-  modal.style.justifyContent = "center";
-  modal.style.alignItems = "center";
-  
-  // Create modal content
-  const content = document.createElement("div");
-  content.style.backgroundColor = "white";
-  content.style.borderRadius = "4px";
-  content.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
-  content.style.width = "80%";
-  content.style.maxWidth = "800px";
-  content.style.maxHeight = "80%";
-  content.style.overflow = "auto";
-  content.style.padding = "20px";
-  
-  // Add header
-  const header = document.createElement("div");
-  header.style.display = "flex";
-  header.style.justifyContent = "space-between";
-  header.style.alignItems = "center";
-  header.style.marginBottom = "20px";
-  
-  const title = document.createElement("h2");
-  title.textContent = "Report History";
-  title.style.margin = "0";
-  
-  const closeButton = document.createElement("button");
-  closeButton.textContent = "×";
-  closeButton.style.background = "none";
-  closeButton.style.border = "none";
-  closeButton.style.fontSize = "24px";
-  closeButton.style.cursor = "pointer";
-  closeButton.onclick = () => document.body.removeChild(modal);
-  
-  header.appendChild(title);
-  header.appendChild(closeButton);
-  content.appendChild(header);
-  
-  // Add history items
-  const list = document.createElement("div");
-  
-  history.forEach((report, index) => {
-    const item = document.createElement("div");
-    item.style.padding = "15px";
-    item.style.borderBottom = index < history.length - 1 ? "1px solid #eee" : "none";
-    
-    const itemHeader = document.createElement("div");
-    itemHeader.style.display = "flex";
-    itemHeader.style.justifyContent = "space-between";
-    itemHeader.style.alignItems = "center";
-    itemHeader.style.marginBottom = "10px";
-    
-    const itemTitle = document.createElement("div");
-    itemTitle.style.fontWeight = "bold";
-    itemTitle.textContent = report.eventName || "Unnamed Event";
-    
-    const itemDate = document.createElement("div");
-    itemDate.style.color = "#666";
-    itemDate.textContent = new Date(report.timestamp).toLocaleString();
-    
-    itemHeader.appendChild(itemTitle);
-    itemHeader.appendChild(itemDate);
-    
-    const itemDetails = document.createElement("div");
-    itemDetails.style.marginBottom = "10px";
-    itemDetails.textContent = `Template: ${report.templateName || "Unknown"}`;
-    
-    const itemActions = document.createElement("div");
-    itemActions.style.display = "flex";
-    itemActions.style.gap = "10px";
-    
-    const previewButton = document.createElement("button");
-    previewButton.textContent = "Open Preview";
-    previewButton.style.padding = "5px 10px";
-    previewButton.style.backgroundColor = "#3498db";
-    previewButton.style.color = "white";
-    previewButton.style.border = "none";
-    previewButton.style.borderRadius = "4px";
-    previewButton.style.cursor = "pointer";
-    previewButton.onclick = () => window.open(report.editablePreviewUrl, '_blank');
-    
-    const downloadButton = document.createElement("button");
-    downloadButton.textContent = "Download";
-    downloadButton.style.padding = "5px 10px";
-    downloadButton.style.backgroundColor = "#4CAF50";
-    downloadButton.style.color = "white";
-    downloadButton.style.border = "none";
-    downloadButton.style.borderRadius = "4px";
-    downloadButton.style.cursor = "pointer";
-    downloadButton.onclick = () => {
-      const a = document.createElement("a");
-      a.href = report.downloadUrl;
-      a.download = report.fileName || "report.docx";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-    
-    itemActions.appendChild(previewButton);
-    itemActions.appendChild(downloadButton);
-    
-    item.appendChild(itemHeader);
-    item.appendChild(itemDetails);
-    item.appendChild(itemActions);
-    
-    list.appendChild(item);
-  });
-  
-  content.appendChild(list);
-  
-  // Add clear history button
-  const clearButton = document.createElement("button");
-  clearButton.textContent = "Clear History";
-  clearButton.style.marginTop = "20px";
-  clearButton.style.padding = "10px 15px";
-  clearButton.style.backgroundColor = "#F44336";
-  clearButton.style.color = "white";
-  clearButton.style.border = "none";
-  clearButton.style.borderRadius = "4px";
-  clearButton.style.cursor = "pointer";
-  clearButton.onclick = () => {
-    clearReportHistory();
-    document.body.removeChild(modal);
-    showToast("History", "Report history cleared", "success");
-  };
-  
-  content.appendChild(clearButton);
-  
-  // Add modal to body
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-  
-  // Close modal when clicking outside
-  modal.onclick = (e) => {
-    if (e.target === modal) {
-      document.body.removeChild(modal);
-    }
-  };
-}
-
-/**
- * Checks a template file for variables
- * @param {File} templateFile - The template file to check
- * @returns {Promise<string[]>} - A promise that resolves to an array of variable names
- */
-async function checkTemplateVariables(templateFile) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      try {
-        const content = e.target.result;
-        
-        // Simple regex to find template variables in the form {variableName}
-        const regex = /\{([^{}]+)\}/g;
-        const templateVars = [];
-        let match;
-        
-        while ((match = regex.exec(content)) !== null) {
-          templateVars.push(match[1]);
-        }
-        
-        console.log("[TemplateCheck] Variables found in template:", templateVars);
-        resolve(templateVars);
-      } catch (error) {
-        console.error("[TemplateCheck] Error checking template:", error);
-        reject(error);
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsBinaryString(templateFile);
-  });
-}
-
-/**
- * Formats a date with the specified options
- * @param {Date} date - The date to format
- * @param {Object} options - The formatting options
- * @returns {string} - The formatted date string
- */
-function formatDate(date, options = {}) {
-  if (!date || isNaN(date.getTime())) {
-    return "N/A";
-  }
-  
-  const defaultOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  };
-  
-  return date.toLocaleDateString('en-US', {...defaultOptions, ...options});
-}
-
-/**
- * Shows a toast message
- * @param {string} title - The toast title
- * @param {string} message - The toast message
- * @param {string} type - The toast type (success, error, warning, info)
- * @param {number} duration - The toast duration in milliseconds
- */
-function showToast(title, message, type = "info", duration = 5000) {
-  // Check if we have a toast container
-  let toastContainer = document.getElementById("toast-container");
-  
-  // Create one if it doesn't exist
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.id = "toast-container";
-    toastContainer.style.position = "fixed";
-    toastContainer.style.top = "20px";
-    toastContainer.style.right = "20px";
-    toastContainer.style.zIndex = "9999";
-    document.body.appendChild(toastContainer);
-  }
-  
-  // Create toast element
-  const toast = document.createElement("div");
-  toast.style.minWidth = "300px";
-  toast.style.margin = "0 0 10px 0";
-  toast.style.padding = "15px";
-  toast.style.borderRadius = "4px";
-  toast.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
-  toast.style.display = "flex";
-  toast.style.flexDirection = "column";
-  toast.style.transition = "all 0.3s ease";
-  
-  // Set background color based on type
-  switch (type) {
-    case "success":
-      toast.style.backgroundColor = "#4CAF50";
-      toast.style.color = "white";
-      break;
-    case "error":
-      toast.style.backgroundColor = "#F44336";
-      toast.style.color = "white";
-      break;
-    case "warning":
-      toast.style.backgroundColor = "#FF9800";
-      toast.style.color = "white";
-      break;
-    default:
-      toast.style.backgroundColor = "#2196F3";
-      toast.style.color = "white";
-  }
-  
-  // Add title
-  const titleElement = document.createElement("div");
-  titleElement.style.fontWeight = "bold";
-  titleElement.style.marginBottom = "5px";
-  titleElement.textContent = title;
-  toast.appendChild(titleElement);
-  
-  // Add message - support HTML content
-  const messageElement = document.createElement("div");
-  messageElement.innerHTML = message;
-  toast.appendChild(messageElement);
-  
-  // Add to container
-  toastContainer.appendChild(toast);
-  
-  // Remove after duration
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    setTimeout(() => {
-      toastContainer.removeChild(toast);
-    }, 300);
-  }, duration);
-}
-
-/**
- * Shows the loader
- */
-function showLoader() {
-  const loader = document.getElementById("loader");
-  if (loader) {
-    loader.style.display = "flex";
-  }
-}
-
-/**
- * Hides the loader
- */
-function hideLoader() {
-  const loader = document.getElementById("loader");
-  if (loader) {
-    loader.style.display = "none";
   }
 }
 
