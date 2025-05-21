@@ -2445,6 +2445,16 @@ async function generateEventReport(eventId) {
   } finally {
     hideLoader();
   }
+
+
+  // Update this line in your generateEventReport function
+const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
+  method: "POST",
+  body: formData
+});
+
+// And also update this line
+const downloadUrl = `YOUR_ACTUAL_SERVER_URL${data.downloadUrl}`;
 }
 
 // Improved fetchEvents function
