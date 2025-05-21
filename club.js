@@ -2366,11 +2366,11 @@ async function generateEventReport(eventId) {
 
     showLoader();
 
-    // Fetch all events with proper error handling
+    // Fetch all events
     const events = await fetchEvents();
     
     if (!events || events.length === 0) {
-      console.error("[ReportGen] No events found at all");
+      console.error("[ReportGen] No events found");
       showToast("Error", "No events found", "error");
       hideLoader();
       return;
@@ -2378,14 +2378,14 @@ async function generateEventReport(eventId) {
     
     console.log("[ReportGen] All event IDs:", events.map(e => e._id || e.id));
     
-    // Improved event finding logic - convert both to strings for comparison
+    // Find the event - convert IDs to strings for comparison
     const event = events.find(e => 
       String(e._id) === String(eventId) || 
       String(e.id) === String(eventId)
     );
 
     if (!event) {
-      console.error("[ReportGen] Event not found. eventId:", eventId, "All IDs:", events.map(e => e._id || e.id));
+      console.error("[ReportGen] Event not found. eventId:", eventId);
       showToast("Error", `Event not found (ID: ${eventId})`, "error");
       hideLoader();
       return;
@@ -2393,12 +2393,12 @@ async function generateEventReport(eventId) {
 
     console.log("[ReportGen] Found event:", event.name);
 
-    // Prepare form data - MAKE SURE THIS IS DEFINED CORRECTLY
+    // Create a new FormData object
     const formData = new FormData();
     formData.append("template", window.reportTemplateFile);
     formData.append("eventId", eventId);
 
-    // Prepare event details for the report
+    // Prepare event details
     const eventDetails = {
       eventName: event.name || "",
       eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
@@ -2411,16 +2411,20 @@ async function generateEventReport(eventId) {
       prizePool: event.prizes?.pool || 0
     };
     
-    // Make sure to use the formData variable defined above
+    // Add event details to formData
     formData.append("eventDetails", JSON.stringify(eventDetails));
+    
+    console.log("[ReportGen] Sending request to server with formData:", formData);
 
     // Send to the server
     const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
       method: "POST",
-      body: formData  // Use the formData variable defined above
+      body: formData
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[ReportGen] Server error response:", errorText);
       throw new Error(`Server returned ${response.status}: ${response.statusText}`);
     }
 
@@ -2432,16 +2436,11 @@ async function generateEventReport(eventId) {
 
     // Download the generated report
     const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
+    window.open(downloadUrl, '_blank');
+    
     showToast("Success", "Report generated successfully", "success");
   } catch (error) {
-    console.error("Error generating report:", error);
+    console.error("[ReportGen] Error generating report:", error);
     showToast("Error", "Failed to generate report: " + error.message, "error");
   } finally {
     hideLoader();
