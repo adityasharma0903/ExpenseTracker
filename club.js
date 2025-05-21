@@ -2390,11 +2390,16 @@ async function generateEventReport(eventId) {
     formData.append("eventId", eventId);
 
     // Get event data to include in the report
-    const event = await fetchEvents().then(events => 
-      events.find(e => String(e._id) === String(eventId) || String(e.id) === String(eventId))
+    const events = await fetchEvents();
+    console.log("Looking for eventId:", eventId);
+    console.log("Available event IDs:", events.map(e => e._id || e.id));
+    const event = events.find(
+      e => String(e._id) === String(eventId) || String(e.id) === String(eventId)
     );
 
     if (!event) {
+      showToast("Error", "Event not found (ID: " + eventId + ")", "error");
+      hideLoader();
       throw new Error("Event not found");
     }
 
