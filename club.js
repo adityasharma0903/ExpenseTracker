@@ -2393,30 +2393,31 @@ async function generateEventReport(eventId) {
 
     console.log("[ReportGen] Found event:", event.name);
 
-    // Prepare form data
+    // Prepare form data - MAKE SURE THIS IS DEFINED CORRECTLY
     const formData = new FormData();
     formData.append("template", window.reportTemplateFile);
     formData.append("eventId", eventId);
 
     // Prepare event details for the report
     const eventDetails = {
-      eventName: event.name,
+      eventName: event.name || "",
       eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
-      eventTime: `${event.startTime} - ${event.endTime}`,
-      eventVenue: event.venue,
-      eventDescription: event.description,
+      eventTime: `${event.startTime || ""} - ${event.endTime || ""}`,
+      eventVenue: event.venue || "",
+      eventDescription: event.description || "",
       eventBudget: event.totalBudget || 0,
-      clubName: event.clubId,
+      clubName: event.clubId || "",
       teamCount: event.teams || 0,
       prizePool: event.prizes?.pool || 0
     };
     
+    // Make sure to use the formData variable defined above
     formData.append("eventDetails", JSON.stringify(eventDetails));
 
     // Send to the server
     const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
       method: "POST",
-      body: formData
+      body: formData  // Use the formData variable defined above
     });
 
     if (!response.ok) {
@@ -2445,16 +2446,6 @@ async function generateEventReport(eventId) {
   } finally {
     hideLoader();
   }
-
-
-  // Update this line in your generateEventReport function
-const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
-  method: "POST",
-  body: formData
-});
-
-// And also update this line
-const downloadUrl = `YOUR_ACTUAL_SERVER_URL${data.downloadUrl}`;
 }
 
 // Improved fetchEvents function
