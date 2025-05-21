@@ -1640,6 +1640,42 @@ app.get("/api/events", async (req, res) => {
   }
 })
 
+
+
+
+// Fetch all club events
+app.get("/api/club-events", async (req, res) => {
+  try {
+    const events = await ClubEvent.find();
+    res.json(events);
+  } catch (error) {
+    console.error("❌ Error fetching club events:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+// ✅ Get club events by clubId
+app.get("/api/club-events", async (req, res) => {
+  try {
+    const { clubId } = req.query;
+
+    let query = {};
+    if (clubId) {
+      query.clubId = clubId;
+    }
+
+    const events = await ClubEvent.find(query);
+    res.json({
+      success: true,
+      events,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching club events:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
 // @route   GET api/club-events/:id
 // @desc    Get club event by ID
 // @access  Public
