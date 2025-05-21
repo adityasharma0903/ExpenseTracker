@@ -2413,17 +2413,26 @@ async function generateEventReport(eventId) {
     // Add event ID to FormData
     formData.append("eventId", eventId);
 
-    // Prepare event details - with fallbacks for all properties
+    // Prepare event details - MAKE SURE THESE MATCH YOUR TEMPLATE VARIABLES
     const eventDetails = {
+      // These should match EXACTLY what's in your template
       eventName: event.name || "Unnamed Event",
-      eventDate: `${formatDate(new Date(event.startDate || Date.now()))} - ${formatDate(new Date(event.endDate || Date.now()))}`,
-      eventTime: `${event.startTime || "N/A"} - ${event.endTime || "N/A"}`,
-      eventVenue: event.venue || "N/A",
-      eventDescription: event.description || "No description available",
+      eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
+      eventTime: `${event.startTime || ""} - ${event.endTime || ""}`,
+      eventVenue: event.venue || "",
+      eventDescription: event.description || "",
       eventBudget: event.totalBudget || 0,
-      clubName: event.clubId || "N/A",
+      clubName: getClubName(event.clubId) || event.clubId || "",
       teamCount: event.teams || 0,
-      prizePool: (event.prizes && event.prizes.pool) || 0
+      prizePool: (event.prizes && event.prizes.pool) || 0,
+      
+      // Add any other fields your template might use
+      organizerName: getClubName(event.clubId) || event.clubId || "",
+      eventType: event.eventType || "Competition",
+      participantCount: event.participantCount || 0,
+      
+      // Add all event properties to ensure we cover all template variables
+      ...event
     };
     
     // Log event details to verify
@@ -2438,12 +2447,11 @@ async function generateEventReport(eventId) {
       console.log(pair[0] + ': ' + (pair[0] === 'template' ? 'File object' : pair[1]));
     }
 
-    // Send to the server with proper headers
+    // Send to the server
     console.log("[ReportGen] Sending request to server...");
     const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
       method: "POST",
-      body: formData,
-      // Don't set Content-Type header - browser will set it with boundary for FormData
+      body: formData
     });
 
     // Check for server errors
@@ -2459,11 +2467,17 @@ async function generateEventReport(eventId) {
       throw new Error(data.message || "Failed to generate report");
     }
 
-    // Download the generated report
+    // Get download and preview URLs
     const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
-    console.log("[ReportGen] Download URL:", downloadUrl);
+    const previewUrl = `https://expensetracker-qppb.onrender.com/api/preview-report/${data.fileName || data.downloadUrl.split('/').pop()}`;
     
-    // Create and click a download link
+    console.log("[ReportGen] Download URL:", downloadUrl);
+    console.log("[ReportGen] Preview URL:", previewUrl);
+    
+    // Open preview in new tab
+    window.open(previewUrl, '_blank');
+    
+    // Also provide download link
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;

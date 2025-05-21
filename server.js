@@ -2276,6 +2276,8 @@ app.post("/api/test-upload", reportUpload.single("file"), (req, res) => {
 });
 
 
+// Add this to your server.js file - this is the complete implementation for the report generation endpoint
+
 // Route to generate report from template - IMPROVED VERSION
 app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
   console.log("📄 Report generation request received");
@@ -2356,6 +2358,28 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
       console.error("📄 Database error when verifying event:", dbError);
       // Continue anyway with client data
       console.log("📄 Continuing with client-provided data despite database error");
+    }
+
+    // Extract template variables for debugging
+    try {
+      const text = zip.file("word/document.xml").asText();
+      const regex = /\{([^{}]+)\}/g;
+      const templateVars = [];
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        templateVars.push(match[1]);
+      }
+      
+      console.log("📄 Template variables found:", templateVars);
+      console.log("📄 Data keys provided:", Object.keys(data));
+      
+      // Check for missing variables
+      const missingVars = templateVars.filter(v => !(v in data));
+      if (missingVars.length > 0) {
+        console.warn("📄 Warning: Template contains variables that are not in the data:", missingVars);
+      }
+    } catch (err) {
+      console.error("📄 Error extracting template variables:", err);
     }
 
     // Verify template file exists and is accessible
@@ -2531,6 +2555,7 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
       success: true,
       message: "Report generated successfully",
       downloadUrl: downloadUrl,
+      fileName: outputFileName,
       fileSize: outputStats.size
     });
     
@@ -2556,122 +2581,76 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
   }
 });
 
-// Route to update report content
-app.post("/api/update-report", express.json({ limit: "10mb" }), async (req, res) => {
+// Add a preview endpoint
+app.get("/api/preview-report/:filename", async (req, res) => {
   try {
-    const { eventId, htmlContent } = req.body;
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, "uploads", filename);
     
-    if (!eventId || !htmlContent) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: "Report file not found" });
     }
     
-    // Get event data
-    const event = await ClubEvent.findById(eventId);
-    if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" });
-    }
+    // Read the DOCX file
+    const content = fs.readFileSync(filePath);
     
-    // Create a temporary HTML file
-    const htmlPath = path.join(uploadsDir, `report_${eventId}_${Date.now()}.html`);
+    // Convert DOCX to HTML using mammoth
+    const result = await mammoth.convertToHtml({ buffer: content });
+    const html = result.value;
     
-    // Add basic HTML structure around the content
-    const fullHtml = `
+    // Return the HTML for preview
+    res.send(`
       <!DOCTYPE html>
       <html>
       <head>
-        <meta charset="UTF-8">
-        <title>${event.name} - Report</title>
+        <title>Report Preview</title>
         <style>
-          body { font-family: 'Times New Roman', Times, serif; line-height: 1.6; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
           h1, h2, h3 { margin-top: 1.5rem; margin-bottom: 1rem; }
           p { margin-bottom: 1rem; }
           table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
           table, th, td { border: 1px solid #ddd; padding: 8px; }
           th { background-color: #f2f2f2; text-align: left; }
+          .preview-container { max-width: 800px; margin: 0 auto; }
+          .preview-header { background: #f8f9fa; padding: 15px; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+          .download-btn { display: inline-block; padding: 10px 15px; background: #4CAF50; color: white; text-decoration: none; border-radius: 4px; }
         </style>
       </head>
       <body>
-        ${htmlContent}
+        <div class="preview-header">
+          <h2>Report Preview</h2>
+          <a href="/uploads/${filename}" download class="download-btn">Download DOCX</a>
+        </div>
+        <div class="preview-container">
+          ${html}
+        </div>
       </body>
       </html>
-    `;
-    
-    fs.writeFileSync(htmlPath, fullHtml);
-    
-    // Convert HTML to DOCX using libreoffice
-    const outputPath = path.join(uploadsDir, `report_${eventId}_${Date.now()}.docx`);
-    
-    // Use libreoffice to convert HTML to DOCX
-    const htmlFile = fs.readFileSync(htmlPath);
-    const docxBuffer = await libreConvert(htmlFile, ".docx", undefined);
-    
-    // Save the DOCX file
-    fs.writeFileSync(outputPath, docxBuffer);
-    
-    // Send the file as response
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-    res.setHeader("Content-Disposition", `attachment; filename="report_${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.docx"`);
-    res.send(docxBuffer);
-    
-    // Clean up - delete temporary files after a delay
-    setTimeout(() => {
-      try {
-        fs.unlinkSync(htmlPath);
-        fs.unlinkSync(outputPath);
-        console.log(`📄 Deleted temporary files`);
-      } catch (err) {
-        console.error(`📄 Error deleting temporary files: ${err.message}`);
-      }
-    }, 5000);
-    
+    `);
   } catch (error) {
-    console.error("📄 Error updating report:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error", 
-      error: error.message 
-    });
+    console.error("📄 Error generating preview:", error);
+    res.status(500).json({ success: false, message: "Failed to generate preview" });
   }
 });
 
-// Route to convert DOCX to PDF
-app.post("/api/convert-to-pdf", reportUpload.single("docx"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No DOCX file provided" });
-    }
-    
-    console.log(`📄 Converting DOCX to PDF: ${req.file.path}`);
-    
-    // Read the DOCX file
-    const docxBuffer = fs.readFileSync(req.file.path);
-    
-    // Convert DOCX to PDF using libreoffice
-    const pdfBuffer = await libreConvert(docxBuffer, ".pdf", undefined);
-    
-    // Send the PDF file as response
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="report.pdf"`);
-    res.send(pdfBuffer);
-    
-    // Clean up - delete the DOCX file after a delay
-    setTimeout(() => {
-      try {
-        fs.unlinkSync(req.file.path);
-        console.log(`📄 Deleted DOCX file: ${req.file.path}`);
-      } catch (err) {
-        console.error(`📄 Error deleting DOCX file: ${err.message}`);
-      }
-    }, 5000);
-    
-  } catch (error) {
-    console.error("📄 Error converting to PDF:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error", 
-      error: error.message 
-    });
-  }
+// Simple test endpoint to verify server is working
+app.post("/api/test-report", (req, res) => {
+  console.log("Test report endpoint hit");
+  res.json({ success: true, message: "Test endpoint working" });
+});
+
+// Test upload endpoint to verify file uploads are working
+app.post("/api/test-upload", reportUpload.single("file"), (req, res) => {
+  console.log("Test upload received");
+  console.log("File:", req.file ? req.file.filename : "No file");
+  console.log("Body:", req.body);
+  
+  res.json({
+    success: true,
+    message: "Test upload successful",
+    file: req.file ? req.file.filename : null,
+    body: req.body
+  });
 });
 
 // Make uploads directory accessible
