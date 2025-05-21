@@ -2558,6 +2558,56 @@ app.post("/api/upload-image", diskUpload.single("image"), async (req, res) => {
   }
 })
 
+
+
+app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
+  try {
+    const { eventId, eventDetails } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No template file uploaded." });
+    }
+
+    // Log incoming data
+    console.log("eventDetails:", eventDetails);
+
+    let data;
+    try {
+      data = JSON.parse(eventDetails);
+    } catch (parseError) {
+      return res.status(400).json({ success: false, message: "eventDetails is not valid JSON." });
+    }
+
+    const templatePath = req.file.path;
+    const content = fs.readFileSync(templatePath, "binary");
+    const zip = new PizZip(content);
+    const doc = new docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.setData(data);
+
+    try {
+      doc.render();
+    } catch (renderError) {
+      console.error("Docxtemplater render error:", renderError);
+      return res.status(500).json({ success: false, message: "Template rendering failed: " + renderError.message });
+    }
+
+    const buffer = doc.getZip().generate({ type: "nodebuffer" });
+
+    const outputPath = path.join(__dirname, "uploads", `report_${eventId}.docx`);
+    fs.writeFileSync(outputPath, buffer);
+
+    res.status(200).json({
+      success: true,
+      message: "Report generated successfully",
+      downloadUrl: `/uploads/report_${eventId}.docx`,
+    });
+  } catch (error) {
+    console.error("❌ Report generation failed:", error);
+    res.status(500).json({ success: false, message: "Failed to generate report: " + error.message });
+  }
+});
+
 // ==================== SERVER STARTUP ====================
 
 // Connect to MongoDB and start server
