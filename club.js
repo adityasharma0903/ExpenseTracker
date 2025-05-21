@@ -2488,7 +2488,16 @@ async function fetchEvents(clubId = null) {
         "x-auth-token": token,
       },
     });
-    const data = await response.json();
+    const text = await response.text();
+    console.log("[fetchEvents] Raw response text:", text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error("[fetchEvents] Failed to parse JSON:", e);
+      return [];
+    }
 
     console.log("[fetchEvents] API response:", data);
     return (data.success && Array.isArray(data.events)) ? data.events : [];
@@ -2497,8 +2506,6 @@ async function fetchEvents(clubId = null) {
     return [];
   }
 }
-
-
 
 async function showDocxPreview(blob) {
   const container = document.getElementById("docx-preview-container");
