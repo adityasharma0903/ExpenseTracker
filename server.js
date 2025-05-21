@@ -22,9 +22,15 @@ const tmp = require("tmp")
 const libreConvert = promisify(libre.convert)
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, "uploads")
+// At the top of your server.js file
+const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true })
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log(`✅ Created uploads directory: ${uploadsDir}`);
+  } catch (err) {
+    console.error(`❌ Failed to create uploads directory: ${err.message}`);
+  }
 }
 
 // Configure multer storage for report templates
@@ -2255,33 +2261,76 @@ const testResponse = await fetch("https://expensetracker-qppb.onrender.com/api/t
 });
 
 
+
+app.post("/api/test-upload", reportUpload.single("file"), (req, res) => {
+  console.log("Test upload received");
+  console.log("File:", req.file ? req.file.filename : "No file");
+  console.log("Body:", req.body);
+  
+  res.json({
+    success: true,
+    message: "Test upload successful",
+    file: req.file ? req.file.filename : null,
+    body: req.body
+  });
+});
+
+
 // Route to generate report from template - IMPROVED VERSION
 app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
   console.log("📄 Report generation request received");
   
-  try {
-    console.log("📄 Request body:", req.body);
-    console.log("📄 Request file:", req.file);
-  
-  
- 
-    const { eventId, eventDetails } = req.body;
+  // Log request information
+  console.log("📄 Request body:", req.body);
+  console.log("📄 Request file:", req.file ? {
+    filename: req.file.filename,
+    path: req.file.path,
+    size: req.file.size,
+    mimetype: req.file.mimetype
+  } : "No file received");
 
-    console.log("📄 Event ID:", eventId);
-    
+  try {
+    // Validate request
     if (!req.file) {
       console.error("📄 No template file uploaded");
-      return res.status(400).json({ success: false, message: "No template file uploaded." });
+      return res.status(400).json({ 
+        success: false, 
+        message: "No template file uploaded. Please provide a DOCX template file." 
+      });
     }
+
+    const { eventId, eventDetails } = req.body;
+
+    if (!eventId) {
+      console.error("📄 No eventId provided");
+      return res.status(400).json({ 
+        success: false, 
+        message: "No eventId provided. Please specify an event ID." 
+      });
+    }
+
+    if (!eventDetails) {
+      console.error("📄 No eventDetails provided");
+      return res.status(400).json({ 
+        success: false, 
+        message: "No eventDetails provided. Please provide event data for the report." 
+      });
+    }
+
+    console.log("📄 Event ID:", eventId);
 
     // Parse event details with error handling
     let data;
     try {
       console.log("📄 Event details:", eventDetails);
       data = JSON.parse(eventDetails);
+      console.log("📄 Parsed event details:", data);
     } catch (parseError) {
       console.error("📄 Failed to parse event details:", parseError);
-      return res.status(400).json({ success: false, message: "eventDetails is not valid JSON." });
+      return res.status(400).json({ 
+        success: false, 
+        message: "eventDetails is not valid JSON. Please provide properly formatted JSON data." 
+      });
     }
 
     // Verify the event exists in the database
@@ -2293,27 +2342,99 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
         console.log("📄 Continuing with client-provided data");
       } else {
         console.log(`📄 Event found in database: ${event.name}`);
+        
+        // Optionally enhance data with additional database information
+        data = {
+          ...data,
+          // Add any missing fields from the database that might be useful
+          dbEventName: event.name,
+          dbEventDate: `${event.startDate} - ${event.endDate}`,
+          // Add more fields as needed
+        };
       }
     } catch (dbError) {
       console.error("📄 Database error when verifying event:", dbError);
       // Continue anyway with client data
+      console.log("📄 Continuing with client-provided data despite database error");
     }
 
+    // Verify template file exists and is accessible
     const templatePath = req.file.path;
     console.log(`📄 Template file path: ${templatePath}`);
     
-    // Read the template file
-    const content = fs.readFileSync(templatePath, "binary");
-    const zip = new PizZip(content);
+    if (!fs.existsSync(templatePath)) {
+      console.error(`📄 Template file not found at path: ${templatePath}`);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Template file not found on server. Upload may have failed." 
+      });
+    }
     
-    // Create docxtemplater instance
-    const doc = new docxtemplater(zip, { 
-      paragraphLoop: true, 
-      linebreaks: true 
-    });
+    // Check file size
+    const stats = fs.statSync(templatePath);
+    console.log(`📄 Template file size: ${stats.size} bytes`);
+    
+    if (stats.size === 0) {
+      console.error("📄 Template file is empty (0 bytes)");
+      return res.status(400).json({ 
+        success: false, 
+        message: "Template file is empty. Please upload a valid DOCX template." 
+      });
+    }
+    
+    // Read the template file with error handling
+    let content;
+    try {
+      content = fs.readFileSync(templatePath, "binary");
+      console.log(`📄 Successfully read template file (${content.length} bytes)`);
+    } catch (readError) {
+      console.error("📄 Error reading template file:", readError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to read template file: " + readError.message 
+      });
+    }
+    
+    // Create PizZip instance with error handling
+    let zip;
+    try {
+      zip = new PizZip(content);
+      console.log("📄 Successfully created PizZip instance");
+    } catch (zipError) {
+      console.error("📄 Error creating PizZip instance:", zipError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to process template file. The file may be corrupted or not a valid DOCX file." 
+      });
+    }
+    
+    // Create docxtemplater instance with error handling
+    let doc;
+    try {
+      doc = new docxtemplater(zip, { 
+        paragraphLoop: true, 
+        linebreaks: true 
+      });
+      console.log("📄 Successfully created docxtemplater instance");
+    } catch (docError) {
+      console.error("📄 Error creating docxtemplater instance:", docError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to initialize document templating engine: " + docError.message 
+      });
+    }
 
     // Set the data for template rendering
-    doc.setData(data);
+    try {
+      doc.setData(data);
+      console.log("📄 Successfully set template data");
+    } catch (dataError) {
+      console.error("📄 Error setting template data:", dataError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to set template data: " + dataError.message 
+      });
+    }
 
     // Render the document (replace all variables with their values)
     try {
@@ -2321,33 +2442,116 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
       console.log("📄 Template rendered successfully");
     } catch (renderError) {
       console.error("📄 Template rendering error:", renderError);
+      
+      // Get more detailed error information
+      let errorMessage = "Template rendering failed";
+      if (renderError.properties && renderError.properties.errors) {
+        errorMessage += ": " + JSON.stringify(renderError.properties.errors);
+      } else {
+        errorMessage += ": " + renderError.message;
+      }
+      
+      // Log detailed error information for debugging
+      if (renderError.properties && renderError.properties.explanation) {
+        console.error("📄 Error explanation:", renderError.properties.explanation);
+      }
+      
       return res.status(500).json({ 
         success: false, 
-        message: "Template rendering failed: " + renderError.message 
+        message: errorMessage
       });
     }
 
-    // Generate buffer
-    const buffer = doc.getZip().generate({ type: "nodebuffer" });
+    // Generate buffer with error handling
+    let buffer;
+    try {
+      buffer = doc.getZip().generate({ type: "nodebuffer" });
+      console.log(`📄 Successfully generated document buffer (${buffer.length} bytes)`);
+    } catch (bufferError) {
+      console.error("📄 Error generating document buffer:", bufferError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to generate document: " + bufferError.message 
+      });
+    }
 
-    // Create output path
-    const outputPath = path.join(__dirname, "uploads", `report_${eventId}.docx`);
-    fs.writeFileSync(outputPath, buffer);
-    console.log(`📄 Report saved to: ${outputPath}`);
+    // Ensure uploads directory exists
+    const uploadsDir = path.join(__dirname, "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        console.log(`📄 Created uploads directory: ${uploadsDir}`);
+      } catch (mkdirError) {
+        console.error("📄 Error creating uploads directory:", mkdirError);
+        return res.status(500).json({ 
+          success: false, 
+          message: "Failed to create uploads directory: " + mkdirError.message 
+        });
+      }
+    }
 
-    // Return success response
+    // Create output path and write file with error handling
+    const outputFileName = `report_${eventId}_${Date.now()}.docx`;
+    const outputPath = path.join(uploadsDir, outputFileName);
+    
+    try {
+      fs.writeFileSync(outputPath, buffer);
+      console.log(`📄 Report saved to: ${outputPath}`);
+    } catch (writeError) {
+      console.error("📄 Error writing output file:", writeError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to save generated report: " + writeError.message 
+      });
+    }
+
+    // Verify the output file exists and has content
+    if (!fs.existsSync(outputPath)) {
+      console.error(`📄 Output file not found after writing: ${outputPath}`);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to save report file. File not found after writing." 
+      });
+    }
+    
+    const outputStats = fs.statSync(outputPath);
+    if (outputStats.size === 0) {
+      console.error(`📄 Output file is empty: ${outputPath}`);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Generated report file is empty. Template processing may have failed." 
+      });
+    }
+    
+    console.log(`📄 Output file size: ${outputStats.size} bytes`);
+
+    // Return success response with download URL
+    const downloadUrl = `/uploads/${outputFileName}`;
     res.status(200).json({
       success: true,
       message: "Report generated successfully",
-      downloadUrl: `/uploads/report_${eventId}.docx`,
+      downloadUrl: downloadUrl,
+      fileSize: outputStats.size
     });
     
-    console.log("📄 Report generation completed successfully");
+    console.log(`📄 Report generation completed successfully. Download URL: ${downloadUrl}`);
+    
+    // Clean up the template file after successful processing
+    try {
+      fs.unlinkSync(templatePath);
+      console.log(`📄 Cleaned up template file: ${templatePath}`);
+    } catch (cleanupError) {
+      console.error(`📄 Warning: Failed to clean up template file: ${cleanupError.message}`);
+      // Non-critical error, don't fail the request
+    }
+    
   } catch (error) {
-    console.error("📄 Report generation failed:", error);
+    // Catch-all for any unhandled errors
+    console.error("📄 Unhandled error in report generation:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Failed to generate report: " + error.message 
+      message: "Failed to generate report due to an unexpected error: " + error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

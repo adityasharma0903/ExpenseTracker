@@ -2376,8 +2376,6 @@ async function generateEventReport(eventId) {
       return;
     }
     
-    console.log("[ReportGen] All event IDs:", events.map(e => e._id || e.id));
-    
     // Find the event - convert IDs to strings for comparison
     const event = events.find(e => 
       String(e._id) === String(eventId) || 
@@ -2395,33 +2393,60 @@ async function generateEventReport(eventId) {
 
     // Create a new FormData object
     const formData = new FormData();
+    
+    // Check if the template file exists and is valid
+    if (!window.reportTemplateFile || !(window.reportTemplateFile instanceof File)) {
+      console.error("[ReportGen] Invalid template file:", window.reportTemplateFile);
+      showToast("Error", "Invalid template file. Please upload a valid DOCX file.", "error");
+      hideLoader();
+      return;
+    }
+    
+    // Log template file details
+    console.log("[ReportGen] Template file:", window.reportTemplateFile.name, 
+                "Size:", window.reportTemplateFile.size, 
+                "Type:", window.reportTemplateFile.type);
+    
+    // Add template file to FormData
     formData.append("template", window.reportTemplateFile);
+    
+    // Add event ID to FormData
     formData.append("eventId", eventId);
 
-    // Prepare event details
+    // Prepare event details - with fallbacks for all properties
     const eventDetails = {
-      eventName: event.name || "",
-      eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
-      eventTime: `${event.startTime || ""} - ${event.endTime || ""}`,
-      eventVenue: event.venue || "",
-      eventDescription: event.description || "",
+      eventName: event.name || "Unnamed Event",
+      eventDate: `${formatDate(new Date(event.startDate || Date.now()))} - ${formatDate(new Date(event.endDate || Date.now()))}`,
+      eventTime: `${event.startTime || "N/A"} - ${event.endTime || "N/A"}`,
+      eventVenue: event.venue || "N/A",
+      eventDescription: event.description || "No description available",
       eventBudget: event.totalBudget || 0,
-      clubName: event.clubId || "",
+      clubName: event.clubId || "N/A",
       teamCount: event.teams || 0,
-      prizePool: event.prizes?.pool || 0
+      prizePool: (event.prizes && event.prizes.pool) || 0
     };
     
-    // Add event details to formData
+    // Log event details to verify
+    console.log("[ReportGen] Event details:", eventDetails);
+    
+    // Add event details to FormData
     formData.append("eventDetails", JSON.stringify(eventDetails));
     
-    console.log("[ReportGen] Sending request to server with formData:", formData);
+    // Verify FormData contents by iterating through entries
+    console.log("[ReportGen] FormData contents:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + (pair[0] === 'template' ? 'File object' : pair[1]));
+    }
 
-    // Send to the server
+    // Send to the server with proper headers
+    console.log("[ReportGen] Sending request to server...");
     const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
       method: "POST",
-      body: formData
+      body: formData,
+      // Don't set Content-Type header - browser will set it with boundary for FormData
     });
 
+    // Check for server errors
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[ReportGen] Server error response:", errorText);
@@ -2436,7 +2461,15 @@ async function generateEventReport(eventId) {
 
     // Download the generated report
     const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
-    window.open(downloadUrl, '_blank');
+    console.log("[ReportGen] Download URL:", downloadUrl);
+    
+    // Create and click a download link
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     
     showToast("Success", "Report generated successfully", "success");
   } catch (error) {
@@ -2446,6 +2479,22 @@ async function generateEventReport(eventId) {
     hideLoader();
   }
 }
+
+
+async function testUpload() {
+  const formData = new FormData();
+  formData.append("file", window.reportTemplateFile);
+  formData.append("test", "test data");
+  
+  const response = await fetch("https://expensetracker-qppb.onrender.com/api/test-upload", {
+    method: "POST",
+    body: formData
+  });
+  
+  const data = await response.json();
+  console.log("Test upload response:", data);
+}
+
 
 // Improved fetchEvents function
 async function fetchEvents(clubId = null) {
