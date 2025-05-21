@@ -1450,41 +1450,7 @@ async function createEvent() {
 
 
 // Function to fetch events from MongoDB
-async function fetchEvents(clubId = null) {
-  try {
-    const token = localStorage.getItem("authToken");
-    // Build the URL: add ?clubId=xxx if clubId is provided
-    let url = "https://expensetracker-qppb.onrender.com/api/club-events";
-    if (clubId) {
-      url += `?clubId=${encodeURIComponent(clubId)}`;
-    }
 
-    const response = await fetch(url, {
-      headers: {
-        "x-auth-token": token,
-      },
-    });
-
-    const data = await response.json();
-
-    // Debug output: see exactly what the API returns
-    console.log("[fetchEvents] Fetched from URL:", url);
-    console.log("[fetchEvents] API response:", data);
-
-    if (data.success && Array.isArray(data.events)) {
-      if (data.events.length === 0) {
-        console.warn("[fetchEvents] No events found for this club.");
-      }
-      return data.events;
-    } else {
-      console.error("[fetchEvents] Failed to fetch events:", data.message || data);
-      return [];
-    }
-  } catch (error) {
-    console.error("[fetchEvents] Error fetching events:", error);
-    return [];
-  }
-}
 
 // Load dashboard data - Modified to use MongoDB
 async function loadDashboardData() {
@@ -2389,6 +2355,21 @@ async function fetchEventById(eventId) {
 }
 // Function to generate event report
 async function generateEventReport(eventId) {
+  console.log("[ReportGen] Searching for eventId:", eventId, "Type:", typeof eventId);
+
+  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
+  const clubId = loggedInClub?.id;
+
+  const events = await fetchEvents(clubId);
+  console.log("[ReportGen] All fetched event IDs:", events.map(e => e._id || e.id));
+
+  const event = events.find(e => e._id === eventId || e.id === eventId);
+
+  if (!event) {
+    console.error("[ReportGen] Event not found. eventId:", eventId, "All IDs:", events.map(e => e._id || e.id));
+    showToast("Error", "Event not found for report generation", "error");
+    return;
+  }
   showLoader();
 
   try {
@@ -2475,37 +2456,7 @@ async function generateEventReport(eventId) {
 
 
 
-async function fetchEvents(clubId = null) {
-  try {
-    const token = localStorage.getItem("authToken");
-    let url = "https://expensetracker-qppb.onrender.com/api/club-events";
-    if (clubId) url += `?clubId=${encodeURIComponent(clubId)}`;
 
-    console.log("[fetchEvents] Fetching from URL:", url, "with token:", token);
-
-    const response = await fetch(url, {
-      headers: {
-        "x-auth-token": token,
-      },
-    });
-    const text = await response.text();
-    console.log("[fetchEvents] Raw response text:", text);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      console.error("[fetchEvents] Failed to parse JSON:", e);
-      return [];
-    }
-
-    console.log("[fetchEvents] API response:", data);
-    return (data.success && Array.isArray(data.events)) ? data.events : [];
-  } catch (error) {
-    console.error("[fetchEvents] Error fetching events:", error);
-    return [];
-  }
-}
 
 async function showDocxPreview(blob) {
   const container = document.getElementById("docx-preview-container");
@@ -4525,28 +4476,40 @@ function setupDetailModalListeners() {
 }
 
 // Fetch events from server
-async function fetchEvents(clubId) {
+async function fetchEvents(clubId = null) {
   try {
-    const token = localStorage.getItem("authToken")
-    const response = await fetch(`https://expensetracker-qppb.onrender.com/api/club-events?clubId=${clubId}`, {
+    const token = localStorage.getItem("authToken");
+    let url = "https://expensetracker-qppb.onrender.com/api/club-events";
+    if (clubId) {
+      url += `?clubId=${encodeURIComponent(clubId)}`;
+    }
+
+    const response = await fetch(url, {
       headers: {
         "x-auth-token": token,
       },
-    })
+    });
 
-    const data = await response.json()
+    const data = await response.json();
 
-    if (data.success) {
-      return data.events
+    console.log("[fetchEvents] Fetched from URL:", url);
+    console.log("[fetchEvents] API response:", data);
+
+    if (data.success && Array.isArray(data.events)) {
+      if (data.events.length === 0) {
+        console.warn("[fetchEvents] No events found for this club.");
+      }
+      return data.events;
     } else {
-      console.error("Failed to fetch events:", data.message)
-      return []
+      console.error("[fetchEvents] Failed to fetch events:", data.message || data);
+      return [];
     }
   } catch (error) {
-    console.error("Error fetching events:", error)
-    return []
+    console.error("[fetchEvents] Error fetching events:", error);
+    return [];
   }
 }
+
 
 // Fetch expenses directly from server
 async function fetchExpensesFromServer(clubId) {
