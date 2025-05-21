@@ -2238,11 +2238,33 @@ app.get("/api/approved-teams", async (req, res) => {
 
 // ==================== REPORT GENERATION ROUTES ====================
 
+
+// On your server, add a simple test endpoint
+app.post("/api/test-report", (req, res) => {
+  console.log("Test report endpoint hit");
+  res.json({ success: true, message: "Test endpoint working" });
+});
+
+// Then test from your client
+const testResponse = await fetch("https://expensetracker-qppb.onrender.com/api/test-report", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ test: "data" })
+});
+
+
 // Route to generate report from template - IMPROVED VERSION
 app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
   console.log("📄 Report generation request received");
   
   try {
+    console.log("📄 Request body:", req.body);
+    console.log("📄 Request file:", req.file);
+  
+  
+ 
     const { eventId, eventDetails } = req.body;
 
     console.log("📄 Event ID:", eventId);
