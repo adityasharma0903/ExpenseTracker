@@ -2676,14 +2676,21 @@ app.get("/api/preview-report/:filename", async (req, res) => {
 
 
 // Add this new endpoint for editable report preview
+// Add this new endpoint for editable report preview
 app.get("/api/edit-report/:filename", async (req, res) => {
   try {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, "uploads", filename);
     
+    console.log("📄 Edit report request for file:", filename);
+    console.log("📄 Looking for file at path:", filePath);
+    
     if (!fs.existsSync(filePath)) {
+      console.error("📄 File not found at path:", filePath);
       return res.status(404).json({ success: false, message: "Report file not found" });
     }
+    
+    console.log("📄 File found, generating editable preview");
     
     // Read the DOCX file
     const content = fs.readFileSync(filePath);
