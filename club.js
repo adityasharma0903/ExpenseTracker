@@ -2358,7 +2358,7 @@ async function fetchEventById(eventId) {
 // Modify your generateEventReport function to handle more complex data
 
 async function generateEventReport(eventId) {
-  console.log("[ReportGen] Searching for eventId:", eventId, "Type:", typeof eventId);
+  console.log("[ReportGen] Generating report for event:", eventId);
 
   try {
     if (!window.reportTemplateFile) {
@@ -2368,21 +2368,9 @@ async function generateEventReport(eventId) {
 
     showLoader();
 
-    // Fetch all events
+    // Fetch event data
     const events = await fetchEvents();
-    
-    if (!events || events.length === 0) {
-      console.error("[ReportGen] No events found");
-      showToast("Error", "No events found", "error");
-      hideLoader();
-      return;
-    }
-    
-    // Find the event - convert IDs to strings for comparison
-    const event = events.find(e => 
-      String(e._id) === String(eventId) || 
-      String(e.id) === String(eventId)
-    );
+    const event = events.find(e => String(e._id) === String(eventId) || String(e.id) === String(eventId));
 
     if (!event) {
       console.error("[ReportGen] Event not found. eventId:", eventId);
@@ -2395,24 +2383,7 @@ async function generateEventReport(eventId) {
 
     // Create a new FormData object
     const formData = new FormData();
-    
-    // Check if the template file exists and is valid
-    if (!window.reportTemplateFile || !(window.reportTemplateFile instanceof File)) {
-      console.error("[ReportGen] Invalid template file:", window.reportTemplateFile);
-      showToast("Error", "Invalid template file. Please upload a valid DOCX file.", "error");
-      hideLoader();
-      return;
-    }
-    
-    // Log template file details
-    console.log("[ReportGen] Template file:", window.reportTemplateFile.name, 
-                "Size:", window.reportTemplateFile.size, 
-                "Type:", window.reportTemplateFile.type);
-    
-    // Add template file to FormData
     formData.append("template", window.reportTemplateFile);
-    
-    // Add event ID to FormData
     formData.append("eventId", eventId);
 
     // Format dates properly
@@ -2421,70 +2392,80 @@ async function generateEventReport(eventId) {
     const formattedStartDate = formatDate(startDate);
     const formattedEndDate = formatDate(endDate);
     
-    // Prepare event details - MAKE SURE THESE MATCH YOUR TEMPLATE VARIABLES
+    // Get current date for "Generated on" field
+    const currentDate = new Date();
+    const generatedDate = formatDate(currentDate, { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Calculate total budget
+    let totalBudget = 0;
+    if (event.expenses && Array.isArray(event.expenses)) {
+      totalBudget = event.expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    }
+    
+    // Format prize information
+    const prizes = {
+      first: {
+        amount: event.prizes?.first?.amount || 0,
+        description: event.prizes?.first?.description || "prize given to the first winner"
+      },
+      second: {
+        amount: event.prizes?.second?.amount || 0,
+        description: event.prizes?.second?.description || "-"
+      },
+      third: {
+        amount: event.prizes?.third?.amount || 0,
+        description: event.prizes?.third?.description || "-"
+      },
+      total: event.prizes?.pool || 0
+    };
+
+    // Prepare detailed event details object that matches your template variables
     const eventDetails = {
       // Basic event info
       eventName: event.name || "Unnamed Event",
-      eventDescription: event.description || "",
       eventDate: `${formattedStartDate} - ${formattedEndDate}`,
-      eventStartDateFormatted: formatDate(startDate, { day: 'numeric', month: 'long', year: 'numeric' }),
       eventTime: `${event.startTime || ""} - ${event.endTime || ""}`,
-      eventVenue: event.venue || "",
-      generatedDate: formatDate(new Date(), { month: 'short', day: 'numeric', year: 'numeric' }),
+      eventVenue: event.venue || "TBD",
+      eventDescription: event.description || "",
+      generatedDate: generatedDate,
       
       // Team info
       teamSizeMin: event.teamMin || 1,
       teamSizeMax: event.teamMax || 5,
+      teamSize: `${event.teamMin || 1} - ${event.teamMax || 5} members`,
       
       // Organization info
-      organizerName: event.organizer || event.clubId || "Chitkara University",
-      collaborator: event.collaborator || "SAP Labs India Pvt. Ltd.",
+      clubName: getClubName(event.clubId) || event.clubId || "",
+      organizerName: getClubName(event.clubId) || event.clubId || "",
       
       // Theme info
-      themes: event.theme || "Sustainable Business, Preventing Digital Fraud, Ethics in AI Models for Business",
+      theme: event.theme || "",
+      themes: event.theme ? event.theme.split(',').map(t => t.trim()).join(' ') : "",
       
       // Prize information
-      prizePool: event.prizePool || 210000,
-      firstPrize: event.firstPrize || 150000,
-      firstPrizeDescription: event.firstPrizeDescription || "prize given to the first winner",
-      secondPrize: event.secondPrize || 100000,
-      secondPrizeDescription: event.secondPrizeDescription || "-",
-      thirdPrize: event.thirdPrize || 50000,
-      thirdPrizeDescription: event.thirdPrizeDescription || "-",
+      prizePool: prizes.total,
+      firstPrize: prizes.first.amount,
+      firstPrizeDescription: prizes.first.description,
+      secondPrize: prizes.second.amount,
+      secondPrizeDescription: prizes.second.description,
+      thirdPrize: prizes.third.amount,
+      thirdPrizeDescription: prizes.third.description,
       
       // Budget information
-      totalBudget: event.totalBudget || 310000,
+      totalBudget: totalBudget,
+      expenses: event.expenses || [],
       
-      // Budget items
-      venueDescription: "stay",
-      venueAmount: 50000,
-      refreshmentsDescription: "breakfast lunch dinner",
-      refreshmentsAmount: 50000,
-      prizesDescription: "prizes",
-      prizesAmount: 210000,
-      
-      // Dynamic budget items
-      expenses: [
-        { category: "Venue", description: "stay", amount: 50000 },
-        { category: "Refreshments", description: "breakfast lunch dinner", amount: 50000 },
-        { category: "Prizes", description: "prizes", amount: 210000 }
-      ],
+      // Add all event properties to ensure we cover all template variables
+      ...event,
       
       // Year for copyright
       currentYear: new Date().getFullYear()
     };
     
-    // Log event details to verify
-    console.log("[ReportGen] Event details:", eventDetails);
+    console.log("[ReportGen] Prepared event details:", eventDetails);
     
     // Add event details to FormData
     formData.append("eventDetails", JSON.stringify(eventDetails));
-    
-    // Verify FormData contents by iterating through entries
-    console.log("[ReportGen] FormData contents:");
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ': ' + (pair[0] === 'template' ? 'File object' : pair[1]));
-    }
 
     // Send to the server
     console.log("[ReportGen] Sending request to server...");
@@ -2493,7 +2474,6 @@ async function generateEventReport(eventId) {
       body: formData
     });
 
-    // Check for server errors
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[ReportGen] Server error response:", errorText);
@@ -2506,17 +2486,10 @@ async function generateEventReport(eventId) {
       throw new Error(data.message || "Failed to generate report");
     }
 
-    // Get download and preview URLs
+    // Get download URL
     const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
-    const previewUrl = `https://expensetracker-qppb.onrender.com/api/preview-report/${data.fileName || data.downloadUrl.split('/').pop()}`;
     
-    console.log("[ReportGen] Download URL:", downloadUrl);
-    console.log("[ReportGen] Preview URL:", previewUrl);
-    
-    // Open preview in new tab
-    window.open(previewUrl, '_blank');
-    
-    // Also provide download link
+    // Create download link
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
@@ -2531,21 +2504,6 @@ async function generateEventReport(eventId) {
   } finally {
     hideLoader();
   }
-}
-
-// Enhanced date formatter
-function formatDate(date, options = {}) {
-  if (!date || isNaN(date.getTime())) {
-    return "N/A";
-  }
-  
-  const defaultOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  };
-  
-  return date.toLocaleDateString('en-US', {...defaultOptions, ...options});
 }
 
 // Enhanced date formatter
