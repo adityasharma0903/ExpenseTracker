@@ -2357,10 +2357,15 @@ async function fetchEventById(eventId) {
 // This is the fixed generateEventReport function for club.js
 // Modify your generateEventReport function to handle more complex data
 
+/**
+ * Generates a report for an event using a template
+ * @param {string} eventId - The ID of the event to generate a report for
+ */
 async function generateEventReport(eventId) {
   console.log("[ReportGen] Generating report for event:", eventId);
 
   try {
+    // Check if a template file has been uploaded
     if (!window.reportTemplateFile) {
       showToast("Error", "Please upload a template file", "error");
       return;
@@ -2368,7 +2373,7 @@ async function generateEventReport(eventId) {
 
     showLoader();
 
-    // Fetch event data
+    // Fetch all events
     let events;
     try {
       events = await fetchEvents();
@@ -2396,9 +2401,8 @@ async function generateEventReport(eventId) {
     }
 
     console.log("[ReportGen] Found event:", event.name);
-    console.log("[ReportGen] FULL EVENT OBJECT:", JSON.stringify(event, null, 2));
-
-    // Check template variables
+    
+    // Check template variables if possible
     try {
       const templateVars = await checkTemplateVariables(window.reportTemplateFile);
       console.log("[ReportGen] Template variables:", templateVars);
@@ -2409,7 +2413,24 @@ async function generateEventReport(eventId) {
 
     // Create a new FormData object
     const formData = new FormData();
+    
+    // Check if the template file exists and is valid
+    if (!window.reportTemplateFile || !(window.reportTemplateFile instanceof File)) {
+      console.error("[ReportGen] Invalid template file:", window.reportTemplateFile);
+      showToast("Error", "Invalid template file. Please upload a valid DOCX file.", "error");
+      hideLoader();
+      return;
+    }
+    
+    // Log template file details
+    console.log("[ReportGen] Template file:", window.reportTemplateFile.name, 
+                "Size:", window.reportTemplateFile.size, 
+                "Type:", window.reportTemplateFile.type);
+    
+    // Add template file to FormData
     formData.append("template", window.reportTemplateFile);
+    
+    // Add event ID to FormData
     formData.append("eventId", eventId);
 
     // Format dates properly
@@ -2425,6 +2446,7 @@ async function generateEventReport(eventId) {
       eventDescription: event.description || "No description available",
       eventDate: `${formattedStartDate} - ${formattedEndDate}`,
       eventStartDateFormatted: formatDate(startDate, { day: 'numeric', month: 'long', year: 'numeric' }),
+      eventEndDateFormatted: formatDate(endDate, { day: 'numeric', month: 'long', year: 'numeric' }),
       eventTime: `${event.startTime || "00:00"} - ${event.endTime || "00:00"}`,
       eventVenue: event.venue || "TBD",
       generatedDate: formatDate(new Date(), { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -2476,11 +2498,17 @@ async function generateEventReport(eventId) {
       ...event
     };
     
-    console.log("[ReportGen] FULL EVENT DETAILS:", JSON.stringify(eventDetails, null, 2));
+    // Log event details for debugging
     console.log("[ReportGen] Available data keys:", Object.keys(eventDetails));
     
     // Add event details to FormData
     formData.append("eventDetails", JSON.stringify(eventDetails));
+    
+    // Verify FormData contents by iterating through entries
+    console.log("[ReportGen] FormData contents:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + (pair[0] === 'template' ? 'File object' : pair[1]));
+    }
 
     // Send to the server
     console.log("[ReportGen] Sending request to server...");
@@ -2489,6 +2517,7 @@ async function generateEventReport(eventId) {
       body: formData
     });
 
+    // Check for server errors
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[ReportGen] Server error response:", errorText);
@@ -2501,30 +2530,172 @@ async function generateEventReport(eventId) {
       throw new Error(data.message || "Failed to generate report");
     }
 
-    // Get download and preview URLs
+    // Get download and editable preview URLs
     const downloadUrl = `https://expensetracker-qppb.onrender.com${data.downloadUrl}`;
-    const previewUrl = `https://expensetracker-qppb.onrender.com/api/preview-report/${data.fileName || data.downloadUrl.split('/').pop()}`;
+    const editablePreviewUrl = `https://expensetracker-qppb.onrender.com/api/edit-report/${data.fileName || data.downloadUrl.split('/').pop()}`;
     
     console.log("[ReportGen] Download URL:", downloadUrl);
-    console.log("[ReportGen] Preview URL:", previewUrl);
+    console.log("[ReportGen] Editable Preview URL:", editablePreviewUrl);
     
-    // Open preview in new tab
-    window.open(previewUrl, '_blank');
+    // Open editable preview in new tab
+    window.open(editablePreviewUrl, '_blank');
     
-    // Also provide download link
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = `${event.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.docx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    
-    showToast("Success", "Report generated successfully", "success");
+    // Show success message
+    showToast("Success", "Report generated successfully. Preview opened in new tab.", "success");
   } catch (error) {
     console.error("[ReportGen] Error generating report:", error);
     showToast("Error", "Failed to generate report: " + error.message, "error");
   } finally {
     hideLoader();
+  }
+}
+
+/**
+ * Checks a template file for variables
+ * @param {File} templateFile - The template file to check
+ * @returns {Promise<string[]>} - A promise that resolves to an array of variable names
+ */
+async function checkTemplateVariables(templateFile) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const content = e.target.result;
+        
+        // Simple regex to find template variables in the form {variableName}
+        const regex = /\{([^{}]+)\}/g;
+        const templateVars = [];
+        let match;
+        
+        while ((match = regex.exec(content)) !== null) {
+          templateVars.push(match[1]);
+        }
+        
+        console.log("[TemplateCheck] Variables found in template:", templateVars);
+        resolve(templateVars);
+      } catch (error) {
+        console.error("[TemplateCheck] Error checking template:", error);
+        reject(error);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsBinaryString(templateFile);
+  });
+}
+
+/**
+ * Formats a date with the specified options
+ * @param {Date} date - The date to format
+ * @param {Object} options - The formatting options
+ * @returns {string} - The formatted date string
+ */
+function formatDate(date, options = {}) {
+  if (!date || isNaN(date.getTime())) {
+    return "N/A";
+  }
+  
+  const defaultOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  };
+  
+  return date.toLocaleDateString('en-US', {...defaultOptions, ...options});
+}
+
+/**
+ * Shows a toast message
+ * @param {string} title - The toast title
+ * @param {string} message - The toast message
+ * @param {string} type - The toast type (success, error, warning, info)
+ * @param {number} duration - The toast duration in milliseconds
+ */
+function showToast(title, message, type = "info", duration = 5000) {
+  // Check if we have a toast container
+  let toastContainer = document.getElementById("toast-container");
+  
+  // Create one if it doesn't exist
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toast-container";
+    toastContainer.style.position = "fixed";
+    toastContainer.style.top = "20px";
+    toastContainer.style.right = "20px";
+    toastContainer.style.zIndex = "9999";
+    document.body.appendChild(toastContainer);
+  }
+  
+  // Create toast element
+  const toast = document.createElement("div");
+  toast.style.minWidth = "300px";
+  toast.style.margin = "0 0 10px 0";
+  toast.style.padding = "15px";
+  toast.style.borderRadius = "4px";
+  toast.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+  toast.style.display = "flex";
+  toast.style.flexDirection = "column";
+  toast.style.transition = "all 0.3s ease";
+  
+  // Set background color based on type
+  switch (type) {
+    case "success":
+      toast.style.backgroundColor = "#4CAF50";
+      toast.style.color = "white";
+      break;
+    case "error":
+      toast.style.backgroundColor = "#F44336";
+      toast.style.color = "white";
+      break;
+    case "warning":
+      toast.style.backgroundColor = "#FF9800";
+      toast.style.color = "white";
+      break;
+    default:
+      toast.style.backgroundColor = "#2196F3";
+      toast.style.color = "white";
+  }
+  
+  // Add title
+  const titleElement = document.createElement("div");
+  titleElement.style.fontWeight = "bold";
+  titleElement.style.marginBottom = "5px";
+  titleElement.textContent = title;
+  toast.appendChild(titleElement);
+  
+  // Add message - support HTML content
+  const messageElement = document.createElement("div");
+  messageElement.innerHTML = message;
+  toast.appendChild(messageElement);
+  
+  // Add to container
+  toastContainer.appendChild(toast);
+  
+  // Remove after duration
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => {
+      toastContainer.removeChild(toast);
+    }, 300);
+  }, duration);
+}
+
+/**
+ * Shows the loader
+ */
+function showLoader() {
+  const loader = document.getElementById("loader");
+  if (loader) {
+    loader.style.display = "flex";
+  }
+}
+
+/**
+ * Hides the loader
+ */
+function hideLoader() {
+  const loader = document.getElementById("loader");
+  if (loader) {
+    loader.style.display = "none";
   }
 }
 

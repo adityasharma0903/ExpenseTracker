@@ -2668,6 +2668,408 @@ app.get("/api/preview-report/:filename", async (req, res) => {
   }
 });
 
+
+// Add this new endpoint for editable report preview
+app.get("/api/edit-report/:filename", async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, "uploads", filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: "Report file not found" });
+    }
+    
+    // Read the DOCX file
+    const content = fs.readFileSync(filePath);
+    
+    // Convert DOCX to HTML using mammoth
+    const mammoth = require('mammoth');
+    const result = await mammoth.convertToHtml({ buffer: content });
+    const html = result.value;
+    
+    // Get the original filename without the timestamp
+    const originalFilename = filename.replace(/^report_[^_]+_\d+/, "report");
+    
+    // Return the HTML with an editable interface
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Report Preview</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <!-- Include TinyMCE -->
+        <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+        
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            padding: 0; 
+            margin: 0;
+            background-color: #f5f5f5;
+          }
+          .editor-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            min-height: 100vh;
+          }
+          .toolbar {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .toolbar h2 {
+            margin: 0;
+            font-size: 1.2rem;
+          }
+          .btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+          }
+          .btn:hover {
+            background: #2980b9;
+          }
+          .btn-group {
+            display: flex;
+            gap: 10px;
+          }
+          .editor-content {
+            padding: 20px;
+            min-height: calc(100vh - 130px);
+          }
+          #image-upload {
+            display: none;
+          }
+          .status-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #2ecc71;
+            color: white;
+            border-radius: 4px;
+            display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+          }
+          .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+          }
+          .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+          }
+          .tab.active {
+            border-bottom: 2px solid #3498db;
+            font-weight: bold;
+          }
+          .tab-content {
+            display: none;
+          }
+          .tab-content.active {
+            display: block;
+          }
+          .preview-content {
+            padding: 20px;
+            min-height: calc(100vh - 130px);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="editor-container">
+          <div class="toolbar">
+            <h2>Report Preview: ${originalFilename}</h2>
+            <div class="btn-group">
+              <button id="download-original-btn" class="btn">Download Original</button>
+              <button id="download-edited-btn" class="btn">Download Edited</button>
+              <button id="download-pdf-btn" class="btn">Download as PDF</button>
+              <label for="image-upload" class="btn">Add Image</label>
+              <input type="file" id="image-upload" accept="image/*">
+            </div>
+          </div>
+          
+          <div class="tabs">
+            <div class="tab active" data-tab="preview">Preview</div>
+            <div class="tab" data-tab="edit">Edit</div>
+          </div>
+          
+          <div id="preview-tab" class="tab-content active">
+            <div class="preview-content">
+              ${html}
+            </div>
+          </div>
+          
+          <div id="edit-tab" class="tab-content">
+            <div class="editor-content">
+              <textarea id="editor">${html}</textarea>
+            </div>
+          </div>
+        </div>
+        
+        <div id="status-message" class="status-message">Changes saved!</div>
+        
+        <script>
+          // Initialize TinyMCE
+          tinymce.init({
+            selector: '#editor',
+            plugins: 'preview importcss searchreplace autolink autosave save directionality code visualblocks visualchars fullscreen image link media template codesample table charmap pagebreak nonbreaking anchor insertdatetime advlist lists wordcount help charmap quickbars emoticons',
+            menubar: 'file edit view insert format tools table help',
+            toolbar: 'undo redo | bold italic underline strikethrough | fontfamily fontsize blocks | alignleft aligncenter alignright alignjustify | outdent indent |  numlist bullist | forecolor backcolor removeformat | pagebreak | charmap emoticons | fullscreen  preview save print | insertfile image media template link anchor codesample | ltr rtl',
+            toolbar_sticky: true,
+            autosave_ask_before_unload: true,
+            autosave_interval: '30s',
+            autosave_prefix: '{path}{query}-{id}-',
+            autosave_restore_when_empty: false,
+            autosave_retention: '2m',
+            image_advtab: true,
+            height: 600,
+            image_caption: true,
+            quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote quickimage quicktable',
+            noneditable_class: 'mceNonEditable',
+            toolbar_mode: 'sliding',
+            contextmenu: 'link image table',
+            skin: 'oxide',
+            content_css: 'default',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
+            images_upload_handler: function (blobInfo, progress) {
+              return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function() {
+                  resolve(reader.result);
+                };
+                reader.onerror = function() {
+                  reject('Failed to read file');
+                };
+                reader.readAsDataURL(blobInfo.blob());
+              });
+            }
+          });
+          
+          // Tab switching
+          document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+              // Remove active class from all tabs
+              document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+              document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+              
+              // Add active class to clicked tab
+              this.classList.add('active');
+              
+              // Show corresponding tab content
+              const tabName = this.getAttribute('data-tab');
+              document.getElementById(tabName + '-tab').classList.add('active');
+              
+              // If switching to edit tab, make sure TinyMCE is initialized
+              if (tabName === 'edit') {
+                tinymce.activeEditor.focus();
+              }
+            });
+          });
+          
+          // Handle image upload button
+          document.getElementById('image-upload').addEventListener('change', function(e) {
+            // First switch to edit tab
+            document.querySelector('.tab[data-tab="edit"]').click();
+            
+            if (e.target.files && e.target.files[0]) {
+              const file = e.target.files[0];
+              const reader = new FileReader();
+              
+              reader.onload = function(e) {
+                tinymce.activeEditor.execCommand('mceInsertContent', false, '<img src="' + e.target.result + '" alt="Uploaded Image" />');
+              };
+              
+              reader.readAsDataURL(file);
+            }
+          });
+          
+          // Handle download original button
+          document.getElementById('download-original-btn').addEventListener('click', function() {
+            const a = document.createElement('a');
+            a.href = '/uploads/${filename}';
+            a.download = '${originalFilename}.docx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          });
+          
+          // Handle download edited button
+          document.getElementById('download-edited-btn').addEventListener('click', function() {
+            const content = tinymce.activeEditor.getContent();
+            
+            // Send content to server to convert to DOCX and download
+            fetch('/api/convert-to-docx/${filename}', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ content: content }),
+            })
+            .then(response => response.blob())
+            .then(blob => {
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = '${originalFilename}_edited.docx';
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            })
+            .catch(error => {
+              console.error('Error downloading DOCX:', error);
+              alert('Error downloading DOCX. Please try again.');
+            });
+          });
+          
+          // Handle PDF download button
+          document.getElementById('download-pdf-btn').addEventListener('click', function() {
+            // Get content from either preview or editor depending on active tab
+            let content;
+            if (document.getElementById('edit-tab').classList.contains('active')) {
+              content = tinymce.activeEditor.getContent();
+            } else {
+              content = document.querySelector('.preview-content').innerHTML;
+            }
+            
+            // Send content to server to convert to PDF and download
+            fetch('/api/convert-to-pdf/${filename}', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ content: content }),
+            })
+            .then(response => response.blob())
+            .then(blob => {
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = '${originalFilename}.pdf';
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            })
+            .catch(error => {
+              console.error('Error downloading PDF:', error);
+              alert('Error downloading PDF. Please try again.');
+            });
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error("📄 Error generating editable preview:", error);
+    res.status(500).json({ success: false, message: "Failed to generate editable preview: " + error.message });
+  }
+});
+
+// Add endpoint to convert HTML to DOCX and download
+app.post("/api/convert-to-docx/:filename", async (req, res) => {
+  try {
+    const { content } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({ success: false, message: "No content provided" });
+    }
+    
+    // Convert HTML to DOCX
+    const HTMLtoDOCX = require('html-to-docx');
+    const docxBuffer = await HTMLtoDOCX(content, null, {
+      table: { row: { cantSplit: true } },
+      footer: true,
+      pageNumber: true,
+    });
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename=${req.params.filename}`);
+    
+    // Send the file
+    res.send(docxBuffer);
+  } catch (error) {
+    console.error("📄 Error converting to DOCX:", error);
+    res.status(500).json({ success: false, message: "Failed to convert to DOCX: " + error.message });
+  }
+});
+
+// Add endpoint to convert HTML to PDF and download
+app.post("/api/convert-to-pdf/:filename", async (req, res) => {
+  try {
+    const { content } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({ success: false, message: "No content provided" });
+    }
+    
+    // Convert HTML to PDF using puppeteer
+    const puppeteer = require('puppeteer');
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    
+    // Set content with proper styling
+    await page.setContent(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+          h1, h2, h3 { margin-top: 1.5rem; margin-bottom: 1rem; }
+          p { margin-bottom: 1rem; }
+          table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+          table, th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f2f2f2; text-align: left; }
+          img { max-width: 100%; height: auto; }
+        </style>
+      </head>
+      <body>
+        ${content}
+      </body>
+      </html>
+    `);
+    
+    // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' }
+    });
+    
+    await browser.close();
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${req.params.filename.replace('.docx', '.pdf')}`);
+    
+    // Send the file
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("📄 Error converting to PDF:", error);
+    res.status(500).json({ success: false, message: "Failed to convert to PDF: " + error.message });
+  }
+});
+
+
+
 // Simple test endpoint to verify server is working
 app.post("/api/test-report", (req, res) => {
   console.log("Test report endpoint hit");
