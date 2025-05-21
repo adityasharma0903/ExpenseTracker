@@ -2384,26 +2384,35 @@ async function generateEventReport(eventId) {
       return;
     }
 
-    // Create FormData to send the template file
-    const formData = new FormData();
-    formData.append("template", window.reportTemplateFile);
-    formData.append("eventId", eventId);
-
-    // Get event data to include in the report
+    // Fetch events and log for debug
     const events = await fetchEvents();
-    console.log("Looking for eventId:", eventId);
-    console.log("Available event IDs:", events.map(e => e._id || e.id));
-    const event = events.find(
-      e => String(e._id) === String(eventId) || String(e.id) === String(eventId)
+    console.log("[ReportGen] Searching for eventId:", eventId, "Type:", typeof eventId);
+
+    // Print all possible IDs for debug
+    events.forEach(ev => {
+      console.log("[ReportGen] Event:", ev.name, "ID:", ev._id, "id:", ev.id, "Type _id:", typeof ev._id, "Type id:", typeof ev.id);
+    });
+
+    // Try to find the event by _id or id, as string
+    const event = events.find(ev =>
+      String(ev._id) === String(eventId) ||
+      String(ev.id) === String(eventId)
     );
 
     if (!event) {
-      showToast("Error", "Event not found (ID: " + eventId + ")", "error");
+      // Show a toast and print all IDs for extra debug
+      showToast("Error", `Event not found (ID: ${eventId})`, "error");
+      console.error("[ReportGen] Event not found. eventId:", eventId, "All IDs:", events.map(ev => ev._id || ev.id));
       hideLoader();
-      throw new Error("Event not found");
+      return; // Stop execution
     }
 
-    // Add event details to the form data
+    // Prepare form data
+    const formData = new FormData();
+    formData.append("template", window.reportTemplateFile);
+    formData.append("eventId", event._id || event.id); // Use the backend's expected key
+
+    // Prepare event details for the report
     const eventDetails = {
       eventName: event.name,
       eventDate: `${formatDate(new Date(event.startDate))} - ${formatDate(new Date(event.endDate))}`,
@@ -2415,7 +2424,6 @@ async function generateEventReport(eventId) {
       teamCount: event.teams || 0,
       prizePool: event.prizes?.pool || 0
     };
-
     formData.append("eventDetails", JSON.stringify(eventDetails));
 
     // Send the template to the server
@@ -2428,7 +2436,6 @@ async function generateEventReport(eventId) {
       throw new Error(`Server returned ${response.status}: ${response.statusText}`);
     }
 
-    // Get the response data
     const data = await response.json();
 
     if (!data.success) {
