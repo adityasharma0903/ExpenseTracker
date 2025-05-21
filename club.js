@@ -2473,6 +2473,33 @@ async function generateEventReport(eventId) {
   }
 }
 
+
+
+async function fetchEvents(clubId = null) {
+  try {
+    const token = localStorage.getItem("authToken");
+    let url = "https://expensetracker-qppb.onrender.com/api/club-events";
+    if (clubId) url += `?clubId=${encodeURIComponent(clubId)}`;
+
+    console.log("[fetchEvents] Fetching from URL:", url, "with token:", token);
+
+    const response = await fetch(url, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+    const data = await response.json();
+
+    console.log("[fetchEvents] API response:", data);
+    return (data.success && Array.isArray(data.events)) ? data.events : [];
+  } catch (error) {
+    console.error("[fetchEvents] Error fetching events:", error);
+    return [];
+  }
+}
+
+
+
 async function showDocxPreview(blob) {
   const container = document.getElementById("docx-preview-container");
   container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading preview...</div>';
