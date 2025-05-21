@@ -2279,6 +2279,7 @@ app.post("/api/test-upload", reportUpload.single("file"), (req, res) => {
 // Add this to your server.js file - this is the complete implementation for the report generation endpoint
 
 // Route to generate report from template - IMPROVED VERSION
+// Route to generate report from template - IMPROVED VERSION
 app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
   console.log("📄 Report generation request received");
   
@@ -2345,7 +2346,7 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
       } else {
         console.log(`📄 Event found in database: ${event.name}`);
         
-        // Optionally enhance data with additional database information
+        // Enhance data with additional database information
         data = {
           ...data,
           // Add any missing fields from the database that might be useful
@@ -2358,28 +2359,6 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
       console.error("📄 Database error when verifying event:", dbError);
       // Continue anyway with client data
       console.log("📄 Continuing with client-provided data despite database error");
-    }
-
-    // Extract template variables for debugging
-    try {
-      const text = zip.file("word/document.xml").asText();
-      const regex = /\{([^{}]+)\}/g;
-      const templateVars = [];
-      let match;
-      while ((match = regex.exec(text)) !== null) {
-        templateVars.push(match[1]);
-      }
-      
-      console.log("📄 Template variables found:", templateVars);
-      console.log("📄 Data keys provided:", Object.keys(data));
-      
-      // Check for missing variables
-      const missingVars = templateVars.filter(v => !(v in data));
-      if (missingVars.length > 0) {
-        console.warn("📄 Warning: Template contains variables that are not in the data:", missingVars);
-      }
-    } catch (err) {
-      console.error("📄 Error extracting template variables:", err);
     }
 
     // Verify template file exists and is accessible
@@ -2432,12 +2411,50 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
       });
     }
     
+    // Extract template variables for debugging
+    try {
+      const text = zip.file("word/document.xml").asText();
+      const regex = /\{([^{}]+)\}/g;
+      const templateVars = [];
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        templateVars.push(match[1]);
+      }
+      
+      console.log("📄 Template variables found:", templateVars);
+      console.log("📄 Data keys provided:", Object.keys(data));
+      
+      // Check for missing variables (excluding loop variables)
+      const missingVars = templateVars.filter(v => 
+        !(v in data) && 
+        !v.startsWith('#') && 
+        !v.startsWith('/') &&
+        !v.includes('.')  // Skip nested properties
+      );
+      
+      if (missingVars.length > 0) {
+        console.warn("📄 Warning: Template contains variables that are not in the data:", missingVars);
+        
+        // Add default values for missing variables to prevent undefined
+        missingVars.forEach(varName => {
+          console.log(`📄 Adding default value for missing variable: ${varName}`);
+          data[varName] = `[No data for ${varName}]`;
+        });
+      }
+    } catch (err) {
+      console.error("📄 Error extracting template variables:", err);
+      // Continue anyway, this is just for debugging
+    }
+    
     // Create docxtemplater instance with error handling
     let doc;
     try {
       doc = new docxtemplater(zip, { 
         paragraphLoop: true, 
-        linebreaks: true 
+        linebreaks: true,
+        nullGetter: function() {
+          return ""; // Return empty string for null/undefined values
+        }
       });
       console.log("📄 Successfully created docxtemplater instance");
     } catch (docError) {
@@ -2447,6 +2464,23 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
         message: "Failed to initialize document templating engine: " + docError.message 
       });
     }
+
+    // Ensure all data values are properly formatted
+    for (const key in data) {
+      // Convert undefined or null values to empty strings
+      if (data[key] === undefined || data[key] === null) {
+        console.log(`📄 Converting undefined/null value for ${key} to empty string`);
+        data[key] = "";
+      }
+      
+      // Handle nested objects that might be stringified
+      if (typeof data[key] === 'object' && data[key] !== null) {
+        console.log(`📄 Found object value for ${key}, ensuring it's properly formatted`);
+        // No need to do anything, docxtemplater handles objects
+      }
+    }
+
+    console.log("📄 Final data for template:", JSON.stringify(data, null, 2));
 
     // Set the data for template rendering
     try {
@@ -2579,6 +2613,66 @@ app.post("/api/generate-report", reportUpload.single("template"), async (req, re
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
+});
+
+// Add a preview endpoint if you don't already have one
+app.get("/api/preview-report/:filename", async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, "uploads", filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: "Report file not found" });
+    }
+    
+    // Read the DOCX file
+    const content = fs.readFileSync(filePath);
+    
+    // Convert DOCX to HTML using mammoth
+    const mammoth = require('mammoth');
+    const result = await mammoth.convertToHtml({ buffer: content });
+    const html = result.value;
+    
+    // Return the HTML for preview
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Report Preview</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+          h1, h2, h3 { margin-top: 1.5rem; margin-bottom: 1rem; }
+          p { margin-bottom: 1rem; }
+          table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+          table, th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f2f2f2; text-align: left; }
+          .preview-container { max-width: 800px; margin: 0 auto; }
+          .preview-header { background: #f8f9fa; padding: 15px; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+          .download-btn { display: inline-block; padding: 10px 15px; background: #4CAF50; color: white; text-decoration: none; border-radius: 4px; }
+        </style>
+      </head>
+      <body>
+        <div class="preview-header">
+          <h2>Report Preview</h2>
+          <a href="/uploads/${filename}" download class="download-btn">Download DOCX</a>
+        </div>
+        <div class="preview-container">
+          ${html}
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error("📄 Error generating preview:", error);
+    res.status(500).json({ success: false, message: "Failed to generate preview: " + error.message });
+  }
+});
+
+// Simple test endpoint to verify server is working
+app.post("/api/test-report", (req, res) => {
+  console.log("Test report endpoint hit");
+  console.log("Request body:", req.body);
+  res.json({ success: true, message: "Test endpoint working", received: req.body });
 });
 
 // Add a preview endpoint
