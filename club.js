@@ -2398,27 +2398,26 @@ async function generateEventReport(eventId) {
       return;
     }
 
-    // Fetch events and log for debug
+    // Fetch all events, ensure they're loaded
     const events = await fetchEvents();
     console.log("[ReportGen] Searching for eventId:", eventId, "Type:", typeof eventId);
 
-    // Print all possible IDs for debug
+    // Debug: print all event IDs
     events.forEach(ev => {
-      console.log("[ReportGen] Event:", ev.name, "ID:", ev._id, "id:", ev.id, "Type _id:", typeof ev._id, "Type id:", typeof ev.id);
+      console.log("[ReportGen] Event:", ev.name, "ID:", ev._id, "id:", ev.id);
     });
 
-    // Try to find the event by _id or id, as string
+    // Try to find the event by _id or id, as string (handles both types)
     const event = events.find(ev =>
       String(ev._id) === String(eventId) ||
-      String(ev.id) === String(eventId)
+      (ev.id && String(ev.id) === String(eventId))
     );
 
     if (!event) {
-      // Show a toast and print all IDs for extra debug
       showToast("Error", `Event not found (ID: ${eventId})`, "error");
       console.error("[ReportGen] Event not found. eventId:", eventId, "All IDs:", events.map(ev => ev._id || ev.id));
       hideLoader();
-      return; // Stop execution
+      return;
     }
 
     // Prepare form data
@@ -2440,7 +2439,7 @@ async function generateEventReport(eventId) {
     };
     formData.append("eventDetails", JSON.stringify(eventDetails));
 
-    // Send the template to the server
+    // Send to the server
     const response = await fetch("https://expensetracker-qppb.onrender.com/api/generate-report", {
       method: "POST",
       body: formData
