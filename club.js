@@ -2354,57 +2354,49 @@ async function fetchEventById(eventId) {
   }
 }
 // Function to generate event report
+// This is the fixed generateEventReport function for club.js
 async function generateEventReport(eventId) {
   console.log("[ReportGen] Searching for eventId:", eventId, "Type:", typeof eventId);
-
-  const loggedInClub = JSON.parse(localStorage.getItem("loggedInClub"));
-  const clubId = loggedInClub?.id;
-
-  const events = await fetchEvents(clubId);
-  console.log("[ReportGen] All fetched event IDs:", events.map(e => e._id || e.id));
-
-  const event = events.find(e => e._id === eventId || e.id === eventId);
-
-  if (!event) {
-    console.error("[ReportGen] Event not found. eventId:", eventId, "All IDs:", events.map(e => e._id || e.id));
-    showToast("Error", "Event not found for report generation", "error");
-    return;
-  }
-  showLoader();
 
   try {
     if (!window.reportTemplateFile) {
       showToast("Error", "Please upload a template file", "error");
-      hideLoader();
       return;
     }
 
-    // Fetch all events, ensure they're loaded
+    showLoader();
+
+    // Fetch all events with proper error handling
     const events = await fetchEvents();
-    console.log("[ReportGen] Searching for eventId:", eventId, "Type:", typeof eventId);
-
-    // Debug: print all event IDs
-    events.forEach(ev => {
-      console.log("[ReportGen] Event:", ev.name, "ID:", ev._id, "id:", ev.id);
-    });
-
-    // Try to find the event by _id or id, as string (handles both types)
-    const event = events.find(ev =>
-      String(ev._id) === String(eventId) ||
-      (ev.id && String(ev.id) === String(eventId))
+    
+    if (!events || events.length === 0) {
+      console.error("[ReportGen] No events found at all");
+      showToast("Error", "No events found", "error");
+      hideLoader();
+      return;
+    }
+    
+    console.log("[ReportGen] All event IDs:", events.map(e => e._id || e.id));
+    
+    // Improved event finding logic - convert both to strings for comparison
+    const event = events.find(e => 
+      String(e._id) === String(eventId) || 
+      String(e.id) === String(eventId)
     );
 
     if (!event) {
+      console.error("[ReportGen] Event not found. eventId:", eventId, "All IDs:", events.map(e => e._id || e.id));
       showToast("Error", `Event not found (ID: ${eventId})`, "error");
-      console.error("[ReportGen] Event not found. eventId:", eventId, "All IDs:", events.map(ev => ev._id || ev.id));
       hideLoader();
       return;
     }
+
+    console.log("[ReportGen] Found event:", event.name);
 
     // Prepare form data
     const formData = new FormData();
     formData.append("template", window.reportTemplateFile);
-    formData.append("eventId", event._id || event.id); // Use the backend's expected key
+    formData.append("eventId", eventId);
 
     // Prepare event details for the report
     const eventDetails = {
@@ -2418,6 +2410,7 @@ async function generateEventReport(eventId) {
       teamCount: event.teams || 0,
       prizePool: event.prizes?.pool || 0
     };
+    
     formData.append("eventDetails", JSON.stringify(eventDetails));
 
     // Send to the server
@@ -2446,13 +2439,55 @@ async function generateEventReport(eventId) {
     document.body.removeChild(a);
 
     showToast("Success", "Report generated successfully", "success");
-    hideLoader();
   } catch (error) {
     console.error("Error generating report:", error);
     showToast("Error", "Failed to generate report: " + error.message, "error");
+  } finally {
     hideLoader();
   }
 }
+
+// Improved fetchEvents function
+async function fetchEvents(clubId = null) {
+  try {
+    const token = localStorage.getItem("authToken");
+    let url = "https://expensetracker-qppb.onrender.com/api/club-events";
+    if (clubId) {
+      url += `?clubId=${encodeURIComponent(clubId)}`;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    console.log("[fetchEvents] Fetched from URL:", url);
+    
+    if (data.success && Array.isArray(data.events)) {
+      if (data.events.length === 0) {
+        console.warn("[fetchEvents] No events found for this club.");
+      }
+      return data.events;
+    } else {
+      console.error("[fetchEvents] Failed to fetch events:", data.message || data);
+      return [];
+    }
+  } catch (error) {
+    console.error("[fetchEvents] Error fetching events:", error);
+    return [];
+  }
+}
+
+// This is just a simulation - in your actual code, these functions would be called
+// by the browser event handlers
+console.log("Functions defined successfully");
 
 
 

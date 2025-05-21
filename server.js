@@ -8,38 +8,34 @@ const nodemailer = require("nodemailer")
 const path = require("path")
 const fs = require("fs")
 const cloudinary = require("cloudinary").v2
-const multer = require("multer") // Add missing multer import
+const multer = require("multer")
 const { CloudinaryStorage } = require("multer-storage-cloudinary")
-const docxtemplater = require("docxtemplater");
-const PizZip = require("pizzip");
-const fs = require("fs");
-const path = require("path");
-const { PDFDocument } = require("pdf-lib");
-const libre = require("libreoffice-convert");
-const { promisify } = require("util");
-const mammoth = require("mammoth");
-const cheerio = require("cheerio");
-const tmp = require("tmp");
+const docxtemplater = require("docxtemplater")
+const PizZip = require("pizzip")
+const { PDFDocument } = require("pdf-lib")
+const libre = require("libreoffice-convert")
+const { promisify } = require("util")
+const mammoth = require("mammoth")
+const cheerio = require("cheerio")
+const tmp = require("tmp")
 
-
-const libreConvert = promisify(libre.convert);
+const libreConvert = promisify(libre.convert)
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = path.join(__dirname, "uploads")
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  fs.mkdirSync(uploadsDir, { recursive: true })
 }
-
 
 // Configure multer storage for report templates
 const reportStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    cb(null, uploadsDir)
   },
   filename: (req, file, cb) => {
-    cb(null, `template_${Date.now()}_${file.originalname}`);
+    cb(null, `template_${Date.now()}_${file.originalname}`)
   }
-});
+})
 
 const reportUpload = multer({ 
   storage: reportStorage,
@@ -47,12 +43,12 @@ const reportUpload = multer({
   fileFilter: (req, file, cb) => {
     // Accept only .docx files
     if (file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-      cb(null, true);
+      cb(null, true)
     } else {
-      cb(new Error("Only .docx files are allowed"), false);
+      cb(new Error("Only .docx files are allowed"), false)
     }
   }
-});
+})
 
 // Load environment variables
 dotenv.config()
@@ -1640,54 +1636,46 @@ app.get("/api/events", async (req, res) => {
   }
 })
 
-
-
-
 // Fetch all club events
 app.get("/api/club-events", async (req, res) => {
   try {
-    const events = await ClubEvent.find();
-    res.json(events);
-  } catch (error) {
-    console.error("❌ Error fetching club events:", error);
-    res.status(500).json({ message: "Server Error" });
-  }
-});
-
-// ✅ Get club events by clubId
-app.get("/api/club-events", async (req, res) => {
-  try {
     const { clubId } = req.query;
-
+    
     let query = {};
     if (clubId) {
       query.clubId = clubId;
     }
-
+    
     const events = await ClubEvent.find(query);
+    
     res.json({
       success: true,
       events,
     });
   } catch (error) {
     console.error("❌ Error fetching club events:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Server Error" 
+    });
   }
 });
-
 
 // @route   GET api/club-events/:id
 // @desc    Get club event by ID
 // @access  Public
 app.get("/api/club-events/:id", async (req, res) => {
   try {
+    console.log("🔍 Fetching event with ID:", req.params.id);
     const event = await ClubEvent.findById(req.params.id) // Fetch event by ID
+    
     if (!event) {
+      console.log("❌ Event not found with ID:", req.params.id);
       return res.status(404).json({ success: false, message: "Event not found" })
     }
 
     // Log the event data for debugging
-    console.log("Event data from database:", JSON.stringify(event, null, 2))
+    console.log("✅ Event found:", event.name);
 
     // Ensure all necessary fields are included in the response with proper structure
     res.json({
@@ -2024,34 +2012,6 @@ app.post("/api/club-events", upload.single("poster"), async (req, res) => {
   }
 })
 
-// @route   GET api/club-events
-// @desc    Get all club events
-// @access  Public
-app.get("/api/club-events", async (req, res) => {
-  try {
-    // Get query parameters
-    const { clubId } = req.query
-
-    // Build query
-    const query = {}
-    if (clubId) query.clubId = clubId
-
-    // Get events
-    const events = await ClubEvent.find(query).sort({ createdAt: -1 })
-
-    res.json({
-      success: true,
-      events,
-    })
-  } catch (error) {
-    console.error("Error fetching club events:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    })
-  }
-})
-
 // @route   PUT api/club-events/:id
 // @desc    Update a club event
 // @access  Public
@@ -2275,41 +2235,100 @@ app.get("/api/approved-teams", async (req, res) => {
     })
   }
 })
-// Route to generate report from template
-app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
-  try {
-    const { eventId, eventName, eventDetails } = req.body;
 
+// ==================== REPORT GENERATION ROUTES ====================
+
+// Route to generate report from template - IMPROVED VERSION
+app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
+  console.log("📄 Report generation request received");
+  
+  try {
+    const { eventId, eventDetails } = req.body;
+
+    console.log("📄 Event ID:", eventId);
+    
     if (!req.file) {
+      console.error("📄 No template file uploaded");
       return res.status(400).json({ success: false, message: "No template file uploaded." });
     }
 
+    // Parse event details with error handling
+    let data;
+    try {
+      console.log("📄 Event details:", eventDetails);
+      data = JSON.parse(eventDetails);
+    } catch (parseError) {
+      console.error("📄 Failed to parse event details:", parseError);
+      return res.status(400).json({ success: false, message: "eventDetails is not valid JSON." });
+    }
+
+    // Verify the event exists in the database
+    try {
+      const event = await ClubEvent.findById(eventId);
+      if (!event) {
+        console.error(`📄 Event not found in database. ID: ${eventId}`);
+        // Continue anyway since we have the data from the client
+        console.log("📄 Continuing with client-provided data");
+      } else {
+        console.log(`📄 Event found in database: ${event.name}`);
+      }
+    } catch (dbError) {
+      console.error("📄 Database error when verifying event:", dbError);
+      // Continue anyway with client data
+    }
+
     const templatePath = req.file.path;
+    console.log(`📄 Template file path: ${templatePath}`);
+    
+    // Read the template file
     const content = fs.readFileSync(templatePath, "binary");
     const zip = new PizZip(content);
-    const doc = new docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    
+    // Create docxtemplater instance
+    const doc = new docxtemplater(zip, { 
+      paragraphLoop: true, 
+      linebreaks: true 
+    });
 
-    doc.setData(JSON.parse(eventDetails));
-    doc.render();
+    // Set the data for template rendering
+    doc.setData(data);
 
+    // Render the document (replace all variables with their values)
+    try {
+      doc.render();
+      console.log("📄 Template rendered successfully");
+    } catch (renderError) {
+      console.error("📄 Template rendering error:", renderError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Template rendering failed: " + renderError.message 
+      });
+    }
+
+    // Generate buffer
     const buffer = doc.getZip().generate({ type: "nodebuffer" });
 
+    // Create output path
     const outputPath = path.join(__dirname, "uploads", `report_${eventId}.docx`);
     fs.writeFileSync(outputPath, buffer);
+    console.log(`📄 Report saved to: ${outputPath}`);
 
+    // Return success response
     res.status(200).json({
       success: true,
       message: "Report generated successfully",
       downloadUrl: `/uploads/report_${eventId}.docx`,
     });
+    
+    console.log("📄 Report generation completed successfully");
   } catch (error) {
-    console.error("❌ Report generation failed:", error);
-    res.status(500).json({ success: false, message: "Failed to generate report" });
+    console.error("📄 Report generation failed:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to generate report: " + error.message 
+    });
   }
 });
-
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
 
 // Route to update report content
 app.post("/api/update-report", express.json({ limit: "10mb" }), async (req, res) => {
@@ -2428,6 +2447,10 @@ app.post("/api/convert-to-pdf", reportUpload.single("docx"), async (req, res) =>
     });
   }
 });
+
+// Make uploads directory accessible
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // ==================== ADMIN DASHBOARD ROUTES ====================
 
 // @route   GET api/admin/club-data
@@ -2593,56 +2616,6 @@ app.post("/api/upload-image", diskUpload.single("image"), async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to upload image" })
   }
 })
-
-
-
-app.post("/api/generate-report", reportUpload.single("template"), async (req, res) => {
-  try {
-    const { eventId, eventDetails } = req.body;
-
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No template file uploaded." });
-    }
-
-    // Log incoming data
-    console.log("eventDetails:", eventDetails);
-
-    let data;
-    try {
-      data = JSON.parse(eventDetails);
-    } catch (parseError) {
-      return res.status(400).json({ success: false, message: "eventDetails is not valid JSON." });
-    }
-
-    const templatePath = req.file.path;
-    const content = fs.readFileSync(templatePath, "binary");
-    const zip = new PizZip(content);
-    const doc = new docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.setData(data);
-
-    try {
-      doc.render();
-    } catch (renderError) {
-      console.error("Docxtemplater render error:", renderError);
-      return res.status(500).json({ success: false, message: "Template rendering failed: " + renderError.message });
-    }
-
-    const buffer = doc.getZip().generate({ type: "nodebuffer" });
-
-    const outputPath = path.join(__dirname, "uploads", `report_${eventId}.docx`);
-    fs.writeFileSync(outputPath, buffer);
-
-    res.status(200).json({
-      success: true,
-      message: "Report generated successfully",
-      downloadUrl: `/uploads/report_${eventId}.docx`,
-    });
-  } catch (error) {
-    console.error("❌ Report generation failed:", error);
-    res.status(500).json({ success: false, message: "Failed to generate report: " + error.message });
-  }
-});
 
 // ==================== SERVER STARTUP ====================
 
