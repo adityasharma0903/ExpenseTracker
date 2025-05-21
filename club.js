@@ -2391,7 +2391,7 @@ async function generateEventReport(eventId) {
 
     // Get event data to include in the report
     const event = await fetchEvents().then(events => 
-      events.find(e => e._id === eventId || e.id === eventId)
+      events.find(e => String(e._id) === String(eventId) || String(e.id) === String(eventId))
     );
 
     if (!event) {
@@ -3234,15 +3234,13 @@ function sortEvents() {
 // Open view event modal - Modified to use MongoDB
 async function openViewEventModal(eventId) {
   // Fetch events from MongoDB
-  const events = await fetchEvents()
-  const teams = JSON.parse(localStorage.getItem("teams")) || []
-
-  // Find event
-  const event = events.find((e) => e._id === eventId || e.id === eventId)
-
-  if (!event) {
-    return
-  }
+  const events = await fetchEvents();
+console.log("Looking for eventId:", eventId);
+console.log("Events loaded:", events.map(e => e._id || e.id));
+const event = events.find(e => String(e._id) === String(eventId) || String(e.id) === String(eventId));
+if (!event) {
+  throw new Error("Event not found");
+}
 
   // Find teams for this event
   const eventTeams = teams.filter((team) => team.eventId === eventId)
