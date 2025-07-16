@@ -2252,13 +2252,24 @@ app.post("/api/test-report", (req, res) => {
 });
 
 // Then test from your client
-const testResponse = await fetch("https://expensetracker-qppb.onrender.com/api/test-report", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ test: "data" })
-});
+// Test function (only run when needed)
+async function testReportEndpoint() {
+  try {
+    const testResponse = await fetch("https://expensetracker-qppb.onrender.com/api/test-report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ test: "data" })
+    });
+    console.log("Test response:", await testResponse.json());
+  } catch (error) {
+    console.error("Test failed:", error);
+  }
+}
+
+// Uncomment to run the test
+// testReportEndpoint();
 
 
 
