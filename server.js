@@ -875,6 +875,7 @@ const validateTeamRegistration = (req, res, next) => {
 
 // Improved email sending function
 // Improved email sending function
+// Improved email sending function
 const sendApprovalEmail = async (team, customEmail = null) => {
   console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED")
   console.log("📧 Team:", team.teamName)
@@ -893,8 +894,8 @@ const sendApprovalEmail = async (team, customEmail = null) => {
     console.log("📧 Email User:", process.env.EMAIL_USER)
     console.log("📧 Email Pass Length:", process.env.EMAIL_PASS.length)
 
-    // ✅ 2. Setup transporter with better configuration
-    const transporter = nodemailer.createTransporter({
+    // ✅ 2. Setup transporter with CORRECT function name
+    const transporter = nodemailer.createTransport({  // ← FIXED: removed 'er'
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
@@ -902,11 +903,6 @@ const sendApprovalEmail = async (team, customEmail = null) => {
       },
       debug: true,
       logger: true,
-      secure: true, // Use SSL
-      port: 465,    // SSL port
-      tls: {
-        rejectUnauthorized: false
-      }
     })
 
     // ✅ 3. Verify transporter connection
