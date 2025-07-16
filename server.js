@@ -874,48 +874,80 @@ const validateTeamRegistration = (req, res, next) => {
 // ==================== EMAIL FUNCTIONALITY ====================
 
 // Improved email sending function
+// Improved email sending function
 const sendApprovalEmail = async (team, customEmail = null) => {
   console.log("📧 SEND APPROVAL EMAIL FUNCTION CALLED")
-
+  console.log("📧 Team:", team.teamName)
+  console.log("📧 Members:", team.members.map(m => `${m.name} <${m.email}>`))
+  
   try {
-    // ✅ 1. Check email credentials
+    // ✅ 1. Check email credentials with detailed logging
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Email credentials missing!")
+      console.error("❌ Email credentials missing!")
+      console.log("EMAIL_USER set:", !!process.env.EMAIL_USER)
+      console.log("EMAIL_PASS set:", !!process.env.EMAIL_PASS)
       throw new Error("Email credentials not configured")
     }
 
-    // ✅ 2. Setup transporter
-    const transporter = nodemailer.createTransport({
+    console.log("✅ Email credentials found")
+    console.log("📧 Email User:", process.env.EMAIL_USER)
+    console.log("📧 Email Pass Length:", process.env.EMAIL_PASS.length)
+
+    // ✅ 2. Setup transporter with better configuration
+    const transporter = nodemailer.createTransporter({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
       debug: true,
+      logger: true,
+      secure: true, // Use SSL
+      port: 465,    // SSL port
+      tls: {
+        rejectUnauthorized: false
+      }
     })
 
-    await transporter.verify()
-    console.log("✅ Transporter verified")
-
-    // ✅ 3. Fetch event details
-    let eventName = "your registered event"
-    let clubName = "your club"
-
+    // ✅ 3. Verify transporter connection
+    console.log("🔍 Verifying email transporter...")
     try {
-      const event = await ClubEvent.findById(team.eventId)
-      console.log("🔍 Fetched Event:", event ? event.name : "Not found")
-
-      if (event) {
-        eventName = event.name || eventName
-        clubName = event.clubId || clubName
-      } else {
-        console.warn("⚠️ No event found for eventId:", team.eventId)
+      await transporter.verify()
+      console.log("✅ Email transporter verified successfully")
+    } catch (verifyError) {
+      console.error("❌ Transporter verification failed:", verifyError.message)
+      
+      // Provide specific error guidance
+      if (verifyError.code === "EAUTH") {
+        console.log("\n🔧 AUTHENTICATION ERROR - Try these solutions:")
+        console.log("1. Enable 2-Factor Authentication on your Gmail account")
+        console.log("2. Generate an App Password: https://myaccount.google.com/apppasswords")
+        console.log("3. Use the App Password instead of your regular password")
       }
-    } catch (err) {
-      console.error("❌ Error fetching event:", err.message)
+      
+      throw new Error(`Email service verification failed: ${verifyError.message}`)
     }
 
-    // ✅ 4. Convert club ID to full name
+    // ✅ 4. Fetch event details
+    let eventName = "your registered event"
+    let clubName = "your club"
+    
+    if (team.eventId) {
+      try {
+        const event = await ClubEvent.findById(team.eventId)
+        if (event) {
+          eventName = event.name || eventName
+          clubName = event.clubId || clubName
+          console.log("✅ Event details fetched:", eventName)
+        } else {
+          console.warn("⚠️ Event not found for ID:", team.eventId)
+        }
+      } catch (eventError) {
+        console.error("❌ Error fetching event details:", eventError.message)
+      }
+    }
+
+    // ✅ 5. Convert club ID to readable name
     const clubMap = {
       osc: "Open Source Chandigarh",
       gfg: "GeeksForGeeks CUIET",
@@ -923,82 +955,175 @@ const sendApprovalEmail = async (team, customEmail = null) => {
       coe: "Center of Excellence",
       explore: "Explore Labs",
       ceed: "CEED",
-      // Add more if needed
+      bnb: "Bits N Bytes",
+      acm: "ACM Chapter",
+      gdg: "GDG CUIET",
+      cb: "Coding Blocks",
+      cn: "Coding Ninjas",
     }
-
     const readableClub = clubMap[clubName] || clubName
 
-    // ✅ 5. Loop through members and send email
-    for (const member of team.members) {
-      // Determine email content - use custom if provided, otherwise default
+    // ✅ 6. Send emails to all team members
+    const emailResults = []
+    console.log(`📧 Sending emails to ${team.members.length} team members:`)
+
+    for (let i = 0; i < team.members.length; i++) {
+      const member = team.members[i]
+      console.log(`📧 Processing member ${i + 1}/${team.members.length}: ${member.name} <${member.email}>`)
+
+      // Validate email address
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(member.email)) {
+        console.error(`❌ Invalid email address: ${member.email}`)
+        emailResults.push({
+          email: member.email,
+          success: false,
+          error: "Invalid email address format"
+        })
+        continue
+      }
+
+      // Prepare email content
       let emailSubject = "🎉 Your Team is Approved!"
       let emailHtml = `
-        <div style="font-family: Arial, sans-serif; padding: 15px;">
-          <h2 style="color: #28a745;">Hi ${member.name},</h2>
-          <p style="font-size: 16px;">
-            We're excited to let you know that your team <b>${team.teamName}</b> has been <span style="color: green;"><b>approved</b></span> to participate in the event <b>${eventName}</b>, proudly organized by <b>${readableClub}</b>! 🥳
-          </p>
-          <p style="font-size: 15px;"><b>Project Idea:</b> ${team.projectIdea || "Not specified"}</p>
-          <p style="font-size: 15px;"><b>Tech Stack:</b> ${team.techStack || "Not specified"}</p>
-          <p style="font-size: 15px;">Get ready to showcase your creativity and innovation! This is your moment. 🌟</p>
-          <br/>
-          <p style="font-size: 16px;">Wishing you all the best,<br><b>${eventName} Team</b></p>
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0; text-align: center;">Team Approved! 🎉</h1>
+          </div>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #28a745; margin-top: 0;">Hi ${member.name},</h2>
+            <p style="font-size: 16px; line-height: 1.6;">
+              We're excited to let you know that your team <strong style="color: #007bff;">${team.teamName}</strong> 
+              has been <span style="color: #28a745; font-weight: bold;">APPROVED</span> to participate in 
+              <strong>${eventName}</strong>, organized by <strong>${readableClub}</strong>! 🥳
+            </p>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #333; margin-top: 0;">Team Details:</h3>
+              <p><strong>Project Idea:</strong> ${team.projectIdea || "Not specified"}</p>
+              <p><strong>Tech Stack:</strong> ${team.techStack || "Not specified"}</p>
+              <p><strong>Team Size:</strong> ${team.members.length} members</p>
+            </div>
+            
+            <p style="font-size: 16px; color: #333;">
+              Get ready to showcase your creativity and innovation! This is your moment to shine. 🌟
+            </p>
+            
+            <p style="font-size: 16px; margin-top: 30px;">
+              Best of luck!<br>
+              <strong>${eventName} Team</strong><br>
+              <strong>${readableClub}</strong>
+            </p>
+          </div>
         </div>
       `
 
-      // If custom email content is provided, use it
+      // Handle custom email content
       if (customEmail) {
-        if (customEmail.subject) emailSubject = customEmail.subject
+        if (customEmail.subject) {
+          emailSubject = customEmail.subject
+          console.log("📧 Using custom subject:", emailSubject)
+        }
         if (customEmail.content) {
-          // Convert plain text to HTML with proper line breaks
           emailHtml = `
-            <div style="font-family: Arial, sans-serif; padding: 15px;">
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
               ${customEmail.content.replace(/\n/g, "<br>")}
             </div>
           `
+          console.log("📧 Using custom content")
         }
       }
 
       const mailOptions = {
-        from: `"Unibux" <${process.env.EMAIL_USER}>`,
+        from: `"Unibux - Event Management" <${process.env.EMAIL_USER}>`,
         to: member.email,
         subject: emailSubject,
         html: emailHtml,
+        replyTo: process.env.EMAIL_USER,
       }
 
       // Add attachments if provided
       if (customEmail && customEmail.attachments && customEmail.attachments.length > 0) {
-        console.log(`📎 Adding ${customEmail.attachments.length} attachments to email`)
-        mailOptions.attachments = customEmail.attachments
+        mailOptions.attachments = customEmail.attachments.map(att => ({
+          filename: att.filename,
+          path: att.path
+        }))
+        console.log(`📎 Added ${customEmail.attachments.length} attachments`)
       }
 
-      console.log(`📧 Sending approval email to: ${member.email}`)
       try {
+        console.log(`📧 Sending email to: ${member.email}`)
         const info = await transporter.sendMail(mailOptions)
-        console.log(`✅ Email sent to ${member.email}: ${info.messageId}`)
+        console.log(`✅ Email sent successfully to ${member.email}`)
+        console.log(`📧 Message ID: ${info.messageId}`)
+        console.log(`📧 Response: ${info.response}`)
+
+        emailResults.push({
+          email: member.email,
+          success: true,
+          messageId: info.messageId,
+          response: info.response
+        })
+
+        // Add delay between emails to avoid rate limiting
+        if (i < team.members.length - 1) {
+          console.log("⏳ Waiting 1 second before next email...")
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+
       } catch (sendError) {
         console.error(`❌ Failed to send email to ${member.email}:`, sendError.message)
+        console.error("Full error:", sendError)
+
+        emailResults.push({
+          email: member.email,
+          success: false,
+          error: sendError.message
+        })
       }
     }
 
-    console.log("✅ All approval emails sent successfully")
-    return true
+    // ✅ 7. Summary of results
+    const successCount = emailResults.filter(r => r.success).length
+    const failCount = emailResults.filter(r => !r.success).length
+
+    console.log(`📊 Email Summary: ${successCount} sent, ${failCount} failed`)
+
+    if (failCount > 0) {
+      console.log("❌ Failed emails:")
+      emailResults.filter(r => !r.success).forEach(result => {
+        console.log(`   - ${result.email}: ${result.error}`)
+      })
+    }
+
+    // Return detailed results
+    return {
+      success: successCount > 0,
+      totalSent: successCount,
+      totalFailed: failCount,
+      results: emailResults
+    }
+
   } catch (error) {
-    console.error("❌ ERROR in sendApprovalEmail function:", error)
-    return false
+    console.error("❌ CRITICAL ERROR in sendApprovalEmail:", error)
+    return {
+      success: false,
+      error: error.message,
+      totalSent: 0,
+      totalFailed: team.members?.length || 0
+    }
   }
 }
 
 // ==================== ROUTES ====================
 
 // Team approval route with improved email handling
+// Team approval route with improved email handling
 app.put("/api/team-registrations/:id/approve", async (req, res) => {
   console.log("🔍 APPROVE TEAM ROUTE CALLED for ID:", req.params.id)
-
+  
   try {
-    console.log("🔍 Finding team registration...")
     const teamRegistration = await TeamRegistration.findById(req.params.id)
-
     if (!teamRegistration) {
       console.log("❌ Team registration not found!")
       return res.status(404).json({
@@ -1010,16 +1135,12 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
     console.log("✅ Team found:", teamRegistration.teamName)
 
     // Update team status
-    console.log("🔍 Updating team status to approved...")
     teamRegistration.status = "approved"
     if (req.body.notes) teamRegistration.notes = req.body.notes
     await teamRegistration.save()
-    console.log("✅ Team status updated successfully")
 
+    // Create approved team record
     const leader = teamRegistration.members.find((m) => m.isLeader)
-    console.log("🔍 Team leader:", leader ? leader.name : "No leader found")
-
-    console.log("🔍 Creating approved team record...")
     const approvedTeam = new ApprovedTeam({
       eventId: teamRegistration.eventId,
       teamName: teamRegistration.teamName,
@@ -1028,40 +1149,32 @@ app.put("/api/team-registrations/:id/approve", async (req, res) => {
       projectIdea: teamRegistration.projectIdea,
       techStack: teamRegistration.techStack,
     })
-
     await approvedTeam.save()
-    console.log("✅ Approved team saved to database")
 
-    // Check if custom email data is provided
+    // Send emails
+    console.log("📧 Sending approval emails...")
     const customEmail = req.body.customEmail
+    const emailResult = await sendApprovalEmail(approvedTeam, customEmail)
 
-    // Send emails to all team members
-    console.log("📧 Attempting to send emails to team members:")
-    approvedTeam.members.forEach((m, i) => {
-      console.log(`   ${i + 1}. ${m.name} <${m.email}>`)
-    })
-
-    try {
-      console.log("📧 Calling sendApprovalEmail function...")
-      // Pass custom email data if provided
-      const emailResult = await sendApprovalEmail(approvedTeam, customEmail)
-      if (emailResult) {
-        console.log("✅ All approval emails sent successfully")
+    // Prepare response based on email results
+    let responseMessage = "Team approved"
+    if (emailResult.success) {
+      if (emailResult.totalFailed > 0) {
+        responseMessage += ` and ${emailResult.totalSent} emails sent (${emailResult.totalFailed} failed)`
       } else {
-        console.log("⚠️ There were issues sending some emails, but the approval process continued")
+        responseMessage += ` and all emails sent successfully`
       }
-    } catch (emailError) {
-      console.error("❌ EMAIL ERROR:", emailError)
-      // Continue execution even if email fails
-      console.log("⚠️ Continuing despite email error")
+    } else {
+      responseMessage += " but failed to send emails"
     }
 
-    console.log("🔍 Sending success response to client")
     res.json({
       success: true,
-      message: "Team approved and emails sent",
+      message: responseMessage,
       teamRegistration,
+      emailResults: emailResult,
     })
+
   } catch (error) {
     console.error("❌ ERROR in approve team route:", error)
     res.status(500).json({
@@ -1208,6 +1321,55 @@ app.post("/api/team-registrations/:id/custom-email", diskUpload.array("attachmen
     res.status(500).json({
       success: false,
       message: "Server error: " + error.message,
+      error: error.toString(),
+    })
+  }
+})
+
+
+// Enhanced test email route
+app.get("/api/test-email-detailed", async (req, res) => {
+  console.log("🧪 DETAILED EMAIL TEST ROUTE CALLED")
+  
+  try {
+    // Test email configuration first
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        success: false,
+        message: "Email credentials not configured",
+        emailUserSet: !!process.env.EMAIL_USER,
+        emailPassSet: !!process.env.EMAIL_PASS
+      })
+    }
+
+    const testTeam = {
+      teamName: "Test Team",
+      eventId: "test-event-id",
+      projectIdea: "Test project for email verification",
+      techStack: "Node.js, Express, MongoDB",
+      members: [
+        {
+          name: "Test User",
+          email: req.query.email || process.env.EMAIL_USER, // Send to yourself for testing
+        },
+      ],
+    }
+
+    console.log("📧 Testing email with:", testTeam.members[0].email)
+    const result = await sendApprovalEmail(testTeam)
+    
+    res.json({
+      success: result.success,
+      message: result.success ? "Test email sent successfully" : "Test email failed",
+      details: result,
+      testEmail: testTeam.members[0].email
+    })
+
+  } catch (error) {
+    console.error("❌ TEST EMAIL ERROR:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to send test email",
       error: error.toString(),
     })
   }
@@ -2253,20 +2415,7 @@ app.post("/api/test-report", (req, res) => {
 
 // Then test from your client
 // Test function (only run when needed)
-async function testReportEndpoint() {
-  try {
-    const testResponse = await fetch("https://expensetracker-qppb.onrender.com/api/test-report", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ test: "data" })
-    });
-    console.log("Test response:", await testResponse.json());
-  } catch (error) {
-    console.error("Test failed:", error);
-  }
-}
+
 
 // Uncomment to run the test
 // testReportEndpoint();
